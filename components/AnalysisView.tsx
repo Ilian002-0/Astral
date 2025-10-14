@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+// FIX: Import the `Label` component from recharts to be used with `ReferenceLine`.
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { Trade, ChartDataPoint, Account } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import MultiSelectDropdown from './MultiSelectDropdown';
@@ -266,7 +267,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} domain={[domainMin, domainMax]} tickLine={false} axisLine={false} allowDataOverflow />
                                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
                                 <ReferenceLine y={initialBalance} stroke="#a0aec0" strokeDasharray="4 4" strokeWidth={1}>
-                                    <label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} />
+                                    {/* FIX: Use the `Label` component from recharts, not the standard HTML `label` tag. */}
+                                    <Label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} />
                                 </ReferenceLine>
                                 {/* These two Areas are for the dual-color fill, clipped at the initial balance line */}
                                 <Area type="monotone" dataKey="balance" stroke={strokeColor} strokeWidth={2} fillOpacity={1} fill="url(#analysisProfitGradient)" clipPath="url(#analysisClipAbove)" />

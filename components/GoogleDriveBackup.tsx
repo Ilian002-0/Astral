@@ -19,8 +19,11 @@ const GoogleDriveBackup: React.FC = () => {
   const [backupStatus, setBackupStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
+  const isConfigured = !!CLIENT_ID;
+
   const initTokenClient = useCallback(() => {
-    if (window.google && CLIENT_ID) {
+    // Only initialize if the client ID is configured and the Google library is loaded.
+    if (isConfigured && window.google) {
       const client = window.google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: DRIVE_API_SCOPE,
@@ -36,18 +39,22 @@ const GoogleDriveBackup: React.FC = () => {
       });
       setTokenClient(client);
     }
-  }, []);
+  }, [isConfigured]);
 
   useEffect(() => {
-    // GIS library is loaded asynchronously
+    // If not configured, do nothing.
+    if (!isConfigured) return;
+
+    // GIS library is loaded asynchronously, so we poll for it.
     const checkGoogle = setInterval(() => {
       if (window.google) {
         clearInterval(checkGoogle);
         initTokenClient();
       }
     }, 100);
+
     return () => clearInterval(checkGoogle);
-  }, [initTokenClient]);
+  }, [isConfigured, initTokenClient]);
 
   const createBackupData = (): Blob => {
     const backupData: { [key: string]: any } = {};
@@ -57,9 +64,9 @@ const GoogleDriveBackup: React.FC = () => {
       const data = localStorage.getItem(key);
       if (data) {
         try {
+          // Attempt to parse as JSON, but store as string if it fails
           backupData[key] = JSON.parse(data);
         } catch (e) {
-          // If not JSON, store as is
           backupData[key] = data;
         }
       }
@@ -79,16 +86,16 @@ const GoogleDriveBackup: React.FC = () => {
     setBackupStatus('loading');
     setErrorMessage(null);
 
-    const fileContent = createBackupData();
-    const timestamp = new Date().toISOString().replace(/:/g, '-');
-    const fileName = `TradeTrack_Backup_${timestamp}.json`;
+    const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
+    const fileName = `Atlas_Backup_${timestamp}.json`;
 
     const metadata = {
       name: fileName,
       mimeType: 'application/json',
-      parents: ['appDataFolder'] // Or use 'root' to save in the main Drive folder
+      parents: ['appDataFolder'] // Use 'appDataFolder' for app-private storage
     };
 
+    const fileContent = createBackupData();
     const formData = new FormData();
     formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     formData.append('file', fileContent);
@@ -117,21 +124,33 @@ const GoogleDriveBackup: React.FC = () => {
   };
 
   const handleAuthClick = () => {
-    if (!CLIENT_ID) {
-      setErrorMessage(t('profile.backup_no_client_id'));
-      setBackupStatus('error');
-      return;
-    }
     if (tokenClient) {
       if (gdriveAccessToken) {
-        // If we have a token, just do the backup
         uploadToDrive();
       } else {
-        // Otherwise, request a token
         tokenClient.requestAccessToken();
       }
+    } else {
+      setErrorMessage(t('profile.backup_no_client_id'));
+      setBackupStatus('error');
     }
   };
+
+  if (!isConfigured) {
+    return (
+      <div className="text-center">
+        <p className="text-sm text-gray-400 mb-4">{t('profile.backup_description')}</p>
+        <button
+          disabled={true}
+          className="w-full px-6 py-3 text-white font-bold rounded-lg shadow-md bg-gray-600 cursor-not-allowed opacity-50"
+          aria-label={t('profile.backup_no_client_id')}
+        >
+          {t('profile.connect_google')}
+        </button>
+        <p className="text-yellow-500 text-xs mt-3">{t('profile.backup_no_client_id')}</p>
+      </div>
+    );
+  }
 
   const renderButtonContent = () => {
     switch (backupStatus) {
@@ -151,7 +170,6 @@ const GoogleDriveBackup: React.FC = () => {
       backupStatus === 'error' ? 'bg-red-600 hover:bg-red-700' : 
       'bg-blue-600 hover:bg-blue-700'
     }`;
-
 
   return (
     <div className="text-center">

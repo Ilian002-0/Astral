@@ -1,4 +1,4 @@
-const CACHE_NAME = 'atlas-cache-v2'; // Renamed cache for the new branding and asset updates
+const CACHE_NAME = 'atlas-cache-v3'; // Renamed cache for the new branding and asset updates
 const urlsToCache = [
   '.',
   'index.html',
