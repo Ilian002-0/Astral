@@ -7,8 +7,6 @@ const urlsToCache = [
   'manifest.json',
   'locales/en.json',
   'locales/fr.json',
-  'icon-192.png',
-  'icon-512.png',
 ];
 
 // Install a service worker
