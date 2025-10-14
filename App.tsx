@@ -89,17 +89,27 @@ const App: React.FC = () => {
             setInstallPrompt(null);
         });
     };
+    
+    // This effect handles the logic of selecting the current account safely after render.
+    useEffect(() => {
+        const accountExists = accounts.some(acc => acc.name === currentAccountName);
+        
+        if (!currentAccountName && accounts.length > 0) {
+            // If no account is selected, default to the first one.
+            setCurrentAccountName(accounts[0].name);
+        } else if (currentAccountName && !accountExists && accounts.length > 0) {
+            // If the selected account was deleted, switch to the first one.
+            setCurrentAccountName(accounts[0].name);
+        } else if (accounts.length === 0) {
+            // If there are no accounts, clear the selection.
+            setCurrentAccountName(null);
+        }
+    }, [accounts, currentAccountName, setCurrentAccountName]);
 
     const currentAccount = useMemo(() => {
-        if (!currentAccountName) {
-            if (accounts.length > 0) {
-                setCurrentAccountName(accounts[0].name);
-                return accounts[0];
-            }
-            return null;
-        }
+        // This memo now only performs the calculation without side effects.
         return accounts.find(acc => acc.name === currentAccountName) || null;
-    }, [accounts, currentAccountName, setCurrentAccountName]);
+    }, [accounts, currentAccountName]);
 
     const processedData: ProcessedData | null = useMemo(() => processAccountData(currentAccount), [currentAccount]);
 
