@@ -1,0 +1,420 @@
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import useLocalStorage from './hooks/useLocalStorage';
+import { Account, AppView, ProcessedData, Trade, Goals } from './types';
+import { processAccountData } from './utils/calculations';
+import { parseCSV } from './utils/csvParser';
+import usePullToRefresh from './hooks/usePullToRefresh';
+import { getDayIdentifier } from './utils/calendar';
+import useMediaQuery from './hooks/useMediaQuery';
+
+// Components
+import Header from './components/Header';
+import Dashboard from './components/Dashboard';
+import BalanceChart from './components/BalanceChart';
+import DailyResultsTable from './components/DailyResultsTable';
+import RecentTradesTable from './components/RecentTradesTable';
+import OpenTradesTable from './components/OpenTradesTable';
+import AddAccountModal from './components/AddAccount';
+import AccountSelector from './components/AccountSelector';
+import BottomNav from './components/BottomNav';
+import Sidebar from './components/Sidebar';
+import TradesList from './components/TradesList';
+import CalendarView from './components/CalendarView';
+import ProfileView from './components/ProfileView';
+import AnalysisView from './components/AnalysisView';
+import AccountActionModal from './components/AccountActionModal';
+import DashboardMetricsBottom from './components/DashboardMetricsBottom';
+import GoalsView from './components/GoalsView';
+import DayDetailModal from './components/DayDetailModal';
+
+// Memoize components to prevent unnecessary re-renders
+const MemoizedDashboard = React.memo(Dashboard);
+const MemoizedTradesList = React.memo(TradesList);
+const MemoizedCalendarView = React.memo(CalendarView);
+const MemoizedAnalysisView = React.memo(AnalysisView);
+const MemoizedGoalsView = React.memo(GoalsView);
+const MemoizedProfileView = React.memo(ProfileView);
+
+
+const App: React.FC = () => {
+    const [accounts, setAccounts] = useLocalStorage<Account[]>('trading_accounts_v1', []);
+    const [currentAccountName, setCurrentAccountName] = useLocalStorage<string | null>('current_account_v1', null);
+    
+    const [isAddAccountModalOpen, setAddAccountModalOpen] = useState(false);
+    const [isAccountActionModalOpen, setAccountActionModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<'add' | 'update'>('add');
+    
+    const [view, setView] = useState<AppView>('dashboard');
+    const [error, setError] = useState<string | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [installPrompt, setInstallPrompt] = useState<any>(null);
+    const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
+
+    const isDesktop = useMediaQuery('(min-width: 768px)');
+
+    // Hide splash screen on app mount
+    useEffect(() => {
+        const splashScreen = document.getElementById('splash-screen');
+        if (splashScreen) {
+            splashScreen.classList.add('hidden');
+            // To improve performance, remove the splash screen from the layout flow after it has faded out.
+            const transitionDuration = 500; // Corresponds to the 0.5s transition in index.html
+            setTimeout(() => {
+                if (splashScreen) {
+                    splashScreen.style.display = 'none';
+                }
+            }, transitionDuration);
+        }
+    }, []);
+    
+    // PWA Install prompt handler
+    useEffect(() => {
+        const handler = (e: Event) => {
+            e.preventDefault();
+            setInstallPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstallClick = () => {
+        if (!installPrompt) return;
+        installPrompt.prompt();
+        installPrompt.userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed' }) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            } else {
+                console.log('User dismissed the install prompt');
+            }
+            setInstallPrompt(null);
+        });
+    };
+
+    const currentAccount = useMemo(() => {
+        if (!currentAccountName) {
+            if (accounts.length > 0) {
+                setCurrentAccountName(accounts[0].name);
+                return accounts[0];
+            }
+            return null;
+        }
+        return accounts.find(acc => acc.name === currentAccountName) || null;
+    }, [accounts, currentAccountName, setCurrentAccountName]);
+
+    const processedData: ProcessedData | null = useMemo(() => processAccountData(currentAccount), [currentAccount]);
+
+    // Data for DayDetailModal
+    const tradesForSelectedDay = useMemo(() => {
+        if (!selectedCalendarDate || !processedData) return [];
+        const selectedId = getDayIdentifier(selectedCalendarDate);
+        return processedData.closedTrades.filter(trade => getDayIdentifier(trade.closeTime) === selectedId);
+    }, [selectedCalendarDate, processedData]);
+
+    const startOfDayBalance = useMemo(() => {
+        if (!selectedCalendarDate || !processedData || !currentAccount) return 0;
+    
+        const startOfSelectedDay = new Date(selectedCalendarDate);
+        startOfSelectedDay.setHours(0, 0, 0, 0);
+    
+        const tradesBeforeSelectedDay = processedData.closedTrades.filter(
+            trade => trade.closeTime.getTime() < startOfSelectedDay.getTime()
+        );
+        
+        const profitBeforeSelectedDay = tradesBeforeSelectedDay.reduce(
+            (sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0
+        );
+    
+        return currentAccount.initialBalance + profitBeforeSelectedDay;
+    }, [selectedCalendarDate, processedData, currentAccount]);
+
+
+    const refreshData = useCallback(async () => {
+        if (!currentAccount || !currentAccount.dataUrl || isSyncing) return;
+
+        setIsSyncing(true);
+        setError(null);
+        try {
+            const response = await fetch(currentAccount.dataUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch data: ${response.statusText}`);
+            }
+            const csvText = await response.text();
+            const newTrades = parseCSV(csvText);
+
+            setAccounts(prevAccounts => {
+                return prevAccounts.map(acc => {
+                    if (acc.name === currentAccount.name) {
+                        const existingTicketIds = new Set(acc.trades.map(t => t.ticket));
+                        const uniqueNewTrades = newTrades.filter(t => !existingTicketIds.has(t.ticket));
+                        return {
+                            ...acc,
+                            trades: [...acc.trades, ...uniqueNewTrades],
+                            lastUpdated: new Date().toISOString(),
+                        };
+                    }
+                    return acc;
+                });
+            });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An unknown error occurred during sync.');
+        } finally {
+            setIsSyncing(false);
+        }
+    }, [currentAccount, setAccounts, isSyncing]);
+    
+    const { pullToRefreshRef, isRefreshing } = usePullToRefresh(refreshData);
+
+    useEffect(() => {
+        if (currentAccount?.dataUrl) {
+            const interval = setInterval(() => {
+                refreshData();
+            }, 5 * 60 * 1000); // Auto-refresh every 5 minutes
+
+            return () => clearInterval(interval);
+        }
+    }, [currentAccount, refreshData]);
+
+    const handleOpenAccountActions = () => {
+        setAccountActionModalOpen(true);
+    };
+
+    const handleInitiateAdd = () => {
+        setModalMode('add');
+        setAccountActionModalOpen(false);
+        setAddAccountModalOpen(true);
+    };
+    
+    const handleInitiateUpdate = () => {
+        if (currentAccount) {
+            setModalMode('update');
+            setAccountActionModalOpen(false);
+            setAddAccountModalOpen(true);
+        }
+    };
+
+    const handleSaveAccount = (accountData: { name: string, trades: Trade[], initialBalance: number, dataUrl?: string }, mode: 'add' | 'update') => {
+        if (mode === 'add') {
+            if (accounts.some(acc => acc.name.toLowerCase() === accountData.name.toLowerCase())) {
+                setError(`An account with the name "${accountData.name}" already exists.`);
+                setAddAccountModalOpen(true); // Keep modal open to show error
+                return;
+            }
+            const newAccount: Account = {
+                name: accountData.name,
+                trades: accountData.trades,
+                initialBalance: accountData.initialBalance,
+                goals: {},
+                dataUrl: accountData.dataUrl,
+                lastUpdated: new Date().toISOString(),
+            };
+            const newAccounts = [...accounts, newAccount];
+            setAccounts(newAccounts);
+            if (!currentAccountName || accounts.length === 0) {
+                setCurrentAccountName(newAccount.name);
+            }
+        } else { // update mode
+            if (!currentAccount) return;
+
+            setAccounts(accounts.map(acc => {
+                if (acc.name === currentAccount.name) {
+                    const existingTicketIds = new Set(acc.trades.map(t => t.ticket));
+                    const uniqueNewTrades = accountData.trades.filter(t => !existingTicketIds.has(t.ticket));
+                    
+                    return {
+                        ...acc,
+                        initialBalance: accountData.initialBalance,
+                        trades: [...acc.trades, ...uniqueNewTrades],
+                        dataUrl: accountData.dataUrl,
+                        lastUpdated: new Date().toISOString(),
+                    };
+                }
+                return acc;
+            }));
+        }
+        setAddAccountModalOpen(false);
+        setError(null);
+    };
+
+    const handleSelectAccount = (accountName: string) => {
+        setCurrentAccountName(accountName);
+        setView('dashboard'); // Switch to dashboard on account change
+    };
+    
+    const handleSaveGoals = (newGoals: Goals) => {
+        if (!currentAccount) return;
+    
+        setAccounts(accounts.map(acc => {
+            if (acc.name === currentAccount.name) {
+                return { ...acc, goals: newGoals };
+            }
+            return acc;
+        }));
+    };
+
+    const renderDashboard = () => {
+        if (!processedData || !currentAccount) return null;
+        return (
+            <div className="space-y-6">
+                <div className="animate-fade-in-up">
+                    <Header 
+                      metrics={processedData.metrics} 
+                      accountName={currentAccount?.name}
+                      lastUpdated={currentAccount.lastUpdated}
+                      onRefresh={currentAccount.dataUrl ? refreshData : undefined}
+                      isSyncing={isSyncing || isRefreshing}
+                    />
+                </div>
+                <div className="animate-fade-in-up animation-delay-100">
+                    <MemoizedDashboard metrics={processedData.metrics} />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 animate-fade-in-up animation-delay-200">
+                    <div className="lg:col-span-3">
+                        <BalanceChart 
+                            data={processedData.chartData} 
+                            onAdvancedAnalysisClick={() => setView('analysis')} 
+                            initialBalance={currentAccount.initialBalance}
+                        />
+                    </div>
+                    <div className="lg:col-span-2">
+                        <DailyResultsTable data={processedData.dailySummary} />
+                    </div>
+                </div>
+                <div className="animate-fade-in-up animation-delay-300">
+                    <DashboardMetricsBottom metrics={processedData.metrics} />
+                </div>
+                <div className="animate-fade-in-up animation-delay-400">
+                    <RecentTradesTable trades={processedData.recentTrades} />
+                </div>
+                 {processedData.openTrades.length > 0 && (
+                    <div className="animate-fade-in-up animation-delay-500">
+                        <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} />
+                    </div>
+                )}
+            </div>
+        );
+    }
+    
+    const renderCurrentView = () => {
+        if (!processedData || !currentAccount) {
+             return (
+                <div className="flex flex-col items-center justify-center text-center h-full pt-16">
+                    <h1 className="text-3xl font-bold text-white mb-4">Welcome to Atlas</h1>
+                    <p className="text-gray-400 mb-8 max-w-md">
+                        Get started by adding your first trading account. Upload your MT4/MT5 CSV report to analyze your performance.
+                    </p>
+                    <button
+                        onClick={handleInitiateAdd}
+                        className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105"
+                    >
+                        Add Your First Account
+                    </button>
+                </div>
+            );
+        }
+    
+        switch (view) {
+            case 'dashboard':
+                return renderDashboard();
+            case 'trades':
+                return <MemoizedTradesList trades={processedData.closedTrades} />;
+            case 'calendar':
+                return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} />;
+            case 'analysis':
+                return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} />;
+            case 'goals':
+                return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={handleSaveGoals} />;
+            case 'profile':
+                return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} />;
+            default:
+                return renderDashboard();
+        }
+    }
+
+
+    return (
+        <div className="bg-[#0c0b1e] text-gray-300 min-h-screen font-sans">
+            <div className="flex min-h-screen">
+                {isDesktop && currentAccount && (
+                    <Sidebar 
+                        currentView={view}
+                        onNavigate={setView}
+                    />
+                )}
+                <main ref={pullToRefreshRef} className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+                    {error && (
+                        <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-center text-sm mb-4 flex justify-between items-center">
+                            <span><strong>Error:</strong> {error}</span>
+                            <button onClick={() => setError(null)} className="ml-4 font-bold text-xl leading-none">&times;</button>
+                        </div>
+                    )}
+                    
+                    {accounts.length > 0 && (
+                        <div className="flex justify-between items-center mb-6">
+                            {(view === 'dashboard' && !isDesktop) ? (
+                                <div className="flex items-center gap-3">
+                                    <svg viewBox="0 0 128 112" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
+                                        <g>
+                                            <circle cx="64" cy="47" r="18" fill="#404B69"/>
+                                            <path d="M56 38 A 12 12 0 0 1 72 38 M54 49 A 12 12 0 0 0 74 49 M58 60 A 10 10 0 0 1 70 60" stroke="#0c0b1e" strokeWidth="2.5" fill="none"/>
+                                            <path d="M36.8,80 L61.6,0 h11.2 L47.2,80 H36.8 Z" fill="#404B69"/>
+                                            <path d="M91.2,80 L66.4,0 h-11.2 L80.8,80 H91.2 Z" fill="#8B9BBD"/>
+                                            <path d="M24,66 C50,18 90,25 110,32 L116,24 L124,36 L110,32 Z" fill="#8B9BBD"/>
+                                        </g>
+                                        <text x="64" y="100" text-anchor="middle" dominantBaseline="middle" font-family="inherit" font-size="22" font-weight="bold" letter-spacing="5" fill="#8B9BBD">ATLAS</text>
+                                    </svg>
+                                </div>
+                            ) : <div />}
+                            <AccountSelector
+                                accountNames={accounts.map(a => a.name)}
+                                currentAccount={currentAccount?.name || null}
+                                onSelectAccount={handleSelectAccount}
+                                onAddAccount={handleOpenAccountActions}
+                            />
+                        </div>
+                    )}
+
+                    <div className={!isDesktop ? "pb-24" : ""}>
+                        <div key={view} className="animate-fade-in">
+                            {renderCurrentView()}
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            {!isDesktop && currentAccount && (
+                <BottomNav 
+                    currentView={view}
+                    onNavigate={setView}
+                />
+            )}
+            
+            <AccountActionModal
+                isOpen={isAccountActionModalOpen}
+                onClose={() => setAccountActionModalOpen(false)}
+                onAddAccount={handleInitiateAdd}
+                onUpdateAccount={handleInitiateUpdate}
+                canUpdate={!!currentAccount}
+            />
+
+            <AddAccountModal
+                isOpen={isAddAccountModalOpen || (accounts.length === 0 && !currentAccountName && !isAccountActionModalOpen)}
+                onClose={() => setAddAccountModalOpen(false)}
+                onSaveAccount={handleSaveAccount}
+                mode={modalMode}
+                accountToUpdate={currentAccount}
+            />
+            
+            {processedData && (
+                <DayDetailModal
+                    isOpen={!!selectedCalendarDate}
+                    onClose={() => setSelectedCalendarDate(null)}
+                    date={selectedCalendarDate || new Date()}
+                    trades={tradesForSelectedDay}
+                    startOfDayBalance={startOfDayBalance}
+                />
+            )}
+        </div>
+    );
+};
+
+export default App;

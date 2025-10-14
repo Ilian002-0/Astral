@@ -1,0 +1,27 @@
+{
+  "short_name": "Atlas",
+  "name": "Atlas Trading Dashboard",
+  "description": "Atlas helps you visualize your trading history from a CSV file. Upload your trade report to see an interactive dashboard with key performance metrics and a beautiful equity curve chart.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0c0b1e",
+  "background_color": "#0c0b1e"
+}

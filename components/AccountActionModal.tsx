@@ -1,0 +1,59 @@
+import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import useLockBodyScroll from '../hooks/useLockBodyScroll';
+
+interface AccountActionModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onAddAccount: () => void;
+    onUpdateAccount: () => void;
+    canUpdate: boolean;
+}
+
+const AccountActionModal: React.FC<AccountActionModalProps> = ({ isOpen, onClose, onAddAccount, onUpdateAccount, canUpdate }) => {
+    const { t } = useLanguage();
+    useLockBodyScroll(isOpen);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50" onClick={onClose}>
+            <div 
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] sm:w-full max-w-sm p-6 sm:p-8 bg-[#16152c] border border-gray-700/50 rounded-2xl shadow-2xl animate-fade-in" 
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-white">{t('account_action_modal.title')}</h2>
+                    <p className="text-gray-400 mt-2">{t('account_action_modal.subtitle')}</p>
+                </div>
+
+                <div className="space-y-4">
+                    <button
+                        onClick={onAddAccount}
+                        className="w-full flex items-center justify-center px-6 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105"
+                    >
+                        {t('account_action_modal.add_new')}
+                    </button>
+                    <button
+                        onClick={onUpdateAccount}
+                        disabled={!canUpdate}
+                        className="w-full flex items-center justify-center px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                         {t('account_action_modal.update_current')}
+                    </button>
+                </div>
+
+                <div className="text-center mt-8">
+                     <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white"
+                    >
+                        {t('common.cancel')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default AccountActionModal;

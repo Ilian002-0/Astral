@@ -1,0 +1,5 @@
+{
+  "name": "Atlas - Trading Dashboard",
+  "description": "Atlas helps you visualize your trading history from a CSV file. Upload your trade report to see an interactive dashboard with key performance metrics and a beautiful equity curve chart.",
+  "requestFramePermissions": []
+}
