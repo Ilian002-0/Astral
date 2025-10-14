@@ -166,7 +166,8 @@
     "backup_loading": "Backing up...",
     "backup_success": "Backup Successful!",
     "backup_retry": "Retry Backup",
-    "backup_no_client_id": "Google Client ID is not configured. Backup is unavailable."
+    "backup_no_client_id": "Google Client ID is not configured. Backup is unavailable.",
+    "feature_coming_soon": "Functionality coming soon."
   },
   "analysis": {
     "title": "Advanced Analysis",

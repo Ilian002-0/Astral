@@ -51,21 +51,6 @@ const App: React.FC = () => {
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
 
     const isDesktop = useMediaQuery('(min-width: 768px)');
-
-    // Hide splash screen on app mount
-    useEffect(() => {
-        const splashScreen = document.getElementById('splash-screen');
-        if (splashScreen) {
-            splashScreen.classList.add('hidden');
-            // To improve performance, remove the splash screen from the layout flow after it has faded out.
-            const transitionDuration = 500; // Corresponds to the 0.5s transition in index.html
-            setTimeout(() => {
-                if (splashScreen) {
-                    splashScreen.style.display = 'none';
-                }
-            }, transitionDuration);
-        }
-    }, []);
     
     // PWA Install prompt handler
     useEffect(() => {
