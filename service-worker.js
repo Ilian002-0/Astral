@@ -1,14 +1,14 @@
 const CACHE_NAME = 'atlas-cache-v2'; // Renamed cache for the new branding and asset updates
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/index.tsx',
-  '/logo.svg',
-  '/manifest.json',
-  '/locales/en.json',
-  '/locales/fr.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  '.',
+  'index.html',
+  'index.tsx',
+  'logo.svg',
+  'manifest.json',
+  'locales/en.json',
+  'locales/fr.json',
+  'icon-192.png',
+  'icon-512.png',
 ];
 
 // Install a service worker
