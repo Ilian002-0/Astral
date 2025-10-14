@@ -19,7 +19,9 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useLocalStorage<Language>('app_language', 'en');
-  const [translations, setTranslations] = useState<Translations | null>(null);
+  // Initialize with an empty object. This prevents the app from blocking if translations fail to load.
+  // It might cause a brief flash of untranslated keys, but ensures the app is always usable.
+  const [translations, setTranslations] = useState<Translations>({});
 
   useEffect(() => {
     const loadTranslations = async (lang: Language) => {
@@ -42,7 +44,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         setTranslations(data);
       } catch (error) {
         console.error(error);
-        // Fallback to an empty object if fetch fails to allow app to render
+        // On error, we can reset to an empty object, ensuring the app continues to function
+        // by displaying translation keys as fallbacks.
         setTranslations({});
       }
     };
@@ -51,16 +54,12 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   }, [language]);
 
   const t = (key: string, options?: { [key: string]: string | number }): string => {
-    // If translations are not loaded yet, return the key as a fallback
-    if (!translations) {
-      return key;
-    }
-    
     // Navigate through the nested JSON object using the key (e.g., "nav.dashboard")
     let text = key.split('.').reduce((obj, k) => obj && obj[k], translations);
     
     if (typeof text !== 'string') {
-      // If the key is not found, return the key itself so developers can spot missing translations
+      // If the key is not found (e.g., translations not loaded yet or key is missing),
+      // return the key itself so developers can spot missing translations.
       return key;
     }
 
@@ -81,11 +80,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     t,
   };
 
-  // Do not render the rest of the app until translations are loaded to prevent a flash of untranslated text.
-  if (!translations) {
-    return null;
-  }
-
+  // The provider now renders its children immediately, removing the loading block.
   return (
     <LanguageContext.Provider value={value}>
       {children}
