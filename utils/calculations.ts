@@ -13,7 +13,18 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     return null;
   }
   
-  const { trades, initialBalance } = account;
+  // FIX: Add robust validation to prevent crashes from malformed data in localStorage.
+  // This filters out any trades that are null, or don't have valid Date objects for time properties.
+  const validTrades = account.trades.filter(t =>
+    t && t.openTime instanceof Date && t.closeTime instanceof Date
+  );
+
+  if (validTrades.length === 0) {
+    return null;
+  }
+  
+  const trades = validTrades; // Use the sanitized list of trades for all calculations
+  const { initialBalance } = account;
   
   // Separate open and closed trades
   const openTrades = trades.filter(t => t.closePrice === 0);
