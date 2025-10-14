@@ -33,7 +33,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       
       try {
         // Fetch the JSON file. Path is relative to the root index.html
-        const response = await fetch(`locales/${lang}.json`);
+        const response = await fetch(`./locales/${lang}.json`);
         if (!response.ok) {
           throw new Error(`Could not load translations for language: ${lang}`);
         }

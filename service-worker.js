@@ -1,12 +1,13 @@
 const CACHE_NAME = 'atlas-cache-v3'; // Renamed cache for the new branding and asset updates
 const urlsToCache = [
-  '.',
-  'index.html',
-  'index.tsx',
-  'logo.svg',
-  'manifest.json',
-  'locales/en.json',
-  'locales/fr.json',
+  './',
+  './index.html',
+  './index.tsx',
+  './App.tsx',
+  './logo.svg',
+  './manifest.json',
+  './locales/en.json',
+  './locales/fr.json',
 ];
 
 // Install a service worker
@@ -49,7 +50,7 @@ self.addEventListener('fetch', event => {
 
     // For HTML and local assets, use a Cache First strategy.
     const isAppShell = urlsToCache.some(url => request.url.endsWith(url));
-    const isCDN = request.url.includes('aistudiocdn.com') || request.url.includes('fonts.googleapis.com') || request.url.includes('fonts.gstatic.com');
+    const isCDN = request.url.includes('aistudiocdn.com') || request.url.includes('fonts.googleapis.com') || request.url.includes('fonts.gstatic.com') || request.url.includes('unpkg.com');
 
     if (isAppShell || isCDN) {
         event.respondWith(
