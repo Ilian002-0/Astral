@@ -109,6 +109,20 @@
 </head>
   <body class="text-gray-300">
     <div id="root"></div>
+    <!--
+      DEVELOPER NOTE:
+      You may see a warning in the browser console: "You are using the in-browser Babel transformer...".
+      This is expected and not an error for this development environment.
+      
+      This application uses Babel directly in the browser to transform modern JavaScript (JSX and TypeScript)
+      into a format that all browsers can understand. This is a great setup for rapid prototyping and development.
+      
+      For a production website, this transformation step is typically done beforehand (a "build step") for
+      better performance. Since this environment doesn't include a build step, we use the in-browser
+      transformer. The warning is just a friendly reminder from Babel about this distinction.
+      
+      You can safely ignore this warning while working on the app here.
+    -->
     <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {

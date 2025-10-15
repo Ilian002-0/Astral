@@ -47,6 +47,9 @@ const App: React.FC = () => {
     const [view, setView] = useState<AppView>('dashboard');
     const [error, setError] = useState<string | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
+    const isSyncingRef = useRef(isSyncing);
+    isSyncingRef.current = isSyncing;
+
     const [installPrompt, setInstallPrompt] = useState<any>(null);
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
 
@@ -124,7 +127,7 @@ const App: React.FC = () => {
 
 
     const refreshData = useCallback(async () => {
-        if (!currentAccount || !currentAccount.dataUrl || isSyncing) return;
+        if (!currentAccount || !currentAccount.dataUrl || isSyncingRef.current) return;
 
         setIsSyncing(true);
         setError(null);
@@ -155,7 +158,7 @@ const App: React.FC = () => {
         } finally {
             setIsSyncing(false);
         }
-    }, [currentAccount, setAccounts, isSyncing]);
+    }, [currentAccount, setAccounts]);
     
     const { pullToRefreshRef, isRefreshing } = usePullToRefresh(refreshData);
 
