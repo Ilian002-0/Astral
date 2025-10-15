@@ -2,132 +2,32 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Atlas</title>
-    <link rel="manifest" href="./manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0c0b1e" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-          },
-        },
-      }
-    </script>
-    <style>
-      body {
-        background-color: #0c0b1e;
-      }
-      /* Custom scrollbar for a better look */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #1a1932;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #4a4a6a;
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #5a5a8a;
-      }
-
-      /* Hide scrollbar on mobile devices for a cleaner look */
-      @media (max-width: 768px) {
-        ::-webkit-scrollbar {
-          display: none;
-        }
-      }
-
-      /* Animations */
-      @keyframes fade-in {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-
-      @keyframes fade-in-up {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      
-      @keyframes fade-out {
-        from { opacity: 1; }
-        to { opacity: 0; }
-      }
-
-      .animate-fade-in {
-        animation: fade-in 0.5s ease-out forwards;
-      }
-      
-      .animate-fade-in-up {
-        opacity: 0;
-        animation: fade-in-up 0.6s ease-out forwards;
-      }
-      
-      /* Stagger delays */
-      .animation-delay-100 { animation-delay: 100ms; }
-      .animation-delay-200 { animation-delay: 200ms; }
-      .animation-delay-300 { animation-delay: 300ms; }
-      .animation-delay-400 { animation-delay: 400ms; }
-      .animation-delay-500 { animation-delay: 500ms; }
-      .animation-delay-600 { animation-delay: 600ms; }
-      .animation-delay-700 { animation-delay: 700ms; }
-      
-      /* Responsive Typography */
-      .text-main-header { font-size: clamp(2rem, 8vw, 3rem); }
-      .text-modal-title { font-size: clamp(1.125rem, 4vw, 1.5rem); }
-      .text-stat-value { font-size: clamp(1.125rem, 4vw, 1.5rem); }
-      .text-calendar-profit { font-size: clamp(0.7rem, 2.5vw, 1rem); }
-      .text-calendar-trades { font-size: clamp(0.6rem, 2vw, 0.75rem); }
-    </style>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
-    "react/": "https://esm.sh/react@18.2.0/",
-    "recharts": "https://esm.sh/recharts@2.12.7"
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.2.1"
   }
 }
 </script>
 </head>
   <body class="text-gray-300">
     <div id="root"></div>
-    <!--
-      DEVELOPER NOTE:
-      You may see a warning in the browser console: "You are using the in-browser Babel transformer...".
-      This is expected and not an error for this development environment.
-      
-      This application uses Babel directly in the browser to transform modern JavaScript (JSX and TypeScript)
-      into a format that all browsers can understand. This is a great setup for rapid prototyping and development.
-      
-      For a production website, this transformation step is typically done beforehand (a "build step") for
-      better performance. Since this environment doesn't include a build step, we use the in-browser
-      transformer. The warning is just a friendly reminder from Babel about this distinction.
-      
-      You can safely ignore this warning while working on the app here.
-    -->
-    <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./service-worker.js')
+          navigator.serviceWorker.register('/service-worker.js')
             .then(registration => {
               console.log('ServiceWorker registration successful with scope: ', registration.scope);
             })
