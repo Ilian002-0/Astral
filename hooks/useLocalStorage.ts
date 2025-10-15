@@ -1,4 +1,3 @@
-// FIX: Import Dispatch and SetStateAction types to use them directly without the 'React' namespace.
 import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 
 // Custom reviver for JSON.parse to reconstruct Date objects from ISO strings
@@ -10,7 +9,6 @@ const dateReviver = (key: string, value: any) => {
   return value;
 };
 
-// FIX: Use Dispatch<SetStateAction<T>> instead of React.Dispatch<React.SetStateAction<T>>.
 function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
   const readValue = useCallback((): T => {
     if (typeof window === 'undefined') {
@@ -28,7 +26,6 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetState
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
 
-  // FIX: Use Dispatch<SetStateAction<T>> instead of React.Dispatch<React.SetStateAction<T>>.
   const setValue: Dispatch<SetStateAction<T>> = (value) => {
     if (typeof window === 'undefined') {
       console.warn(`Tried setting localStorage key “${key}” in a non-browser environment.`);

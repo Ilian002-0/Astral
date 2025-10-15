@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-// FIX: Import the `Label` component from recharts to be used with `ReferenceLine`.
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { Trade, ChartDataPoint, Account } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -35,7 +34,6 @@ const CustomTooltip: React.FC<any> = ({ active, payload }) => {
     }
     
     const { trade, balance, timestamp } = dataPoint;
-    // Correctly add negative commission/swap values to find the net profit.
     const netProfit = trade.profit + trade.commission + trade.swap;
     return (
       <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
@@ -96,7 +94,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     };
 
     const filteredProfit = useMemo(() => {
-        // Correctly add negative commission/swap values to find the net profit.
         return filteredTrades.reduce((sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0);
     }, [filteredTrades]);
 
@@ -267,7 +264,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} domain={[domainMin, domainMax]} tickLine={false} axisLine={false} allowDataOverflow />
                                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
                                 <ReferenceLine y={initialBalance} stroke="#a0aec0" strokeDasharray="4 4" strokeWidth={1}>
-                                    {/* FIX: Use the `Label` component from recharts, not the standard HTML `label` tag. */}
                                     <Label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} />
                                 </ReferenceLine>
                                 {/* These two Areas are for the dual-color fill, clipped at the initial balance line */}

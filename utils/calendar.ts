@@ -12,7 +12,6 @@ export const generateCalendarData = (trades: Trade[], displayDate: Date, languag
         if (!tradesByDate[dayId]) {
             tradesByDate[dayId] = { profit: 0, tradeCount: 0 };
         }
-        // FIX: Correctly add negative commission/swap values to find the net profit.
         tradesByDate[dayId].profit += (trade.profit + trade.commission + trade.swap);
         tradesByDate[dayId].tradeCount += 1;
     });

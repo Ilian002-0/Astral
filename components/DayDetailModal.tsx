@@ -26,7 +26,6 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
         if (!trades || trades.length === 0) {
             return { netProfit: 0, totalLotSize: 0, dailyReturn: 0 };
         }
-        // FIX: Correctly add negative commission/swap values to find the net profit.
         const netProfit = trades.reduce((sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0);
         const totalLotSize = trades.reduce((sum, trade) => sum + trade.size, 0);
         
@@ -79,7 +78,6 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
                         <tbody className="divide-y divide-gray-800">
                             {trades.map((trade) => {
                                 const isBuy = trade.type.toLowerCase() === 'buy';
-                                // FIX: Correctly add negative commission/swap values to find the net profit.
                                 const netProfit = trade.profit + trade.commission + trade.swap;
                                 const isProfit = netProfit >= 0;
                                 return (

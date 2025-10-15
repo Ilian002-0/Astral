@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-// FIX: Import the `Label` component from recharts to be used with `ReferenceLine`.
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { ChartDataPoint } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -36,7 +35,6 @@ const CustomTooltip: React.FC<any> = ({ active, payload }) => {
     }
 
     if (trade) {
-      // Correctly add negative commission/swap values to find the net profit.
       const netProfit = trade.profit + trade.commission + trade.swap;
 
       return (
@@ -281,7 +279,6 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
               />
               <Tooltip content={<CustomTooltip />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
               <ReferenceLine y={initialBalance} stroke="#a0aec0" strokeDasharray="4 4" strokeWidth={1}>
-                {/* FIX: Use the `Label` component from recharts, not the standard HTML `label` tag. */}
                 <Label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} />
               </ReferenceLine>
               

@@ -13,7 +13,7 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     return null;
   }
   
-  // FIX: Add robust validation to prevent crashes from malformed data in localStorage.
+  // Add robust validation to prevent crashes from malformed data in localStorage.
   // This filters out any trades that are null, or don't have valid Date objects for time properties.
   const validTrades = account.trades.filter(t =>
     t && t.openTime instanceof Date && t.closeTime instanceof Date
@@ -115,7 +115,6 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
       balanceAtStartOfDay += dailyProfit; // Update balance for the next day
   }
 
-  // FIX: Corrected typo in sort function from a.b to a.dateKey
   const dailySummary = dailySummariesWithReturn.sort((a,b) => b.dateKey.localeCompare(a.dateKey)); // Sort descending for display
 
   // Calculate profit from the last day with trading activity

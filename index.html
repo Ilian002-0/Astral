@@ -10,6 +10,70 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/css">
+      /* Improve visibility of the date picker icon in dark mode */
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(0.8);
+      }
+      /* Custom text sizes used across the application */
+      .text-main-header {
+        font-size: 3.5rem; /* 56px */
+        line-height: 1;
+      }
+      .text-stat-value {
+          font-size: 1.75rem; /* 28px */
+          line-height: 2.25rem; /* 36px */
+      }
+      .text-modal-title {
+          font-size: 1.5rem; /* 24px */
+          line-height: 2rem; /* 32px */
+      }
+      .text-calendar-profit {
+          font-size: 0.8rem; /* 13px */
+          line-height: 1.2;
+      }
+      .text-calendar-trades {
+          font-size: 0.65rem; /* 10.4px */
+          line-height: 1;
+      }
+      /* Custom Animations */
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes fade-in-up {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.5s ease-out forwards;
+        opacity: 0;
+      }
+      .animate-fade-in-fast {
+        animation: fade-in 0.2s ease-out forwards;
+        opacity: 0;
+      }
+      .animate-fade-in-up {
+        animation: fade-in-up 0.5s ease-out forwards;
+        opacity: 0;
+      }
+      /* Animation Delays */
+      .animation-delay-100 { animation-delay: 100ms; }
+      .animation-delay-200 { animation-delay: 200ms; }
+      .animation-delay-300 { animation-delay: 300ms; }
+      .animation-delay-400 { animation-delay: 400ms; }
+      .animation-delay-500 { animation-delay: 500ms; }
+      .animation-delay-600 { animation-delay: 600ms; }
+      .animation-delay-700 { animation-delay: 700ms; }
+    </style>
+    
   <script type="importmap">
 {
   "imports": {
@@ -21,7 +85,7 @@
 }
 </script>
 </head>
-  <body class="text-gray-300">
+  <body class="bg-[#0c0b1e] text-gray-300 font-sans">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
     <script>
