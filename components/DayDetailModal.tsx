@@ -9,6 +9,7 @@ interface DayDetailModalProps {
     trades: Trade[];
     date: Date;
     startOfDayBalance: number;
+    currency: 'USD' | 'EUR';
 }
 
 const StatCard: React.FC<{ title: string; value: string; colorClass?: string; }> = ({ title, value, colorClass = 'text-white' }) => (
@@ -18,7 +19,7 @@ const StatCard: React.FC<{ title: string; value: string; colorClass?: string; }>
     </div>
 );
 
-const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades, date, startOfDayBalance }) => {
+const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades, date, startOfDayBalance, currency }) => {
     const { t, language } = useLanguage();
     useLockBodyScroll(isOpen);
 
@@ -35,8 +36,15 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
     }, [trades, startOfDayBalance]);
 
     const formatCurrency = (value: number) => {
+        const symbol = currency === 'EUR' ? '€' : '$';
         const sign = value >= 0 ? '+' : '';
-        return `${sign}${new Intl.NumberFormat(language, { style: 'currency', currency: 'USD' }).format(value)}`;
+        const formattedValue = new Intl.NumberFormat(language, {
+            style: 'decimal',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(value);
+
+        return `${sign}${formattedValue}${symbol}`;
     };
 
     if (!isOpen) return null;

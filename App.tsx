@@ -190,7 +190,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handleSaveAccount = (accountData: { name: string, trades: Trade[], initialBalance: number, dataUrl?: string }, mode: 'add' | 'update') => {
+    const handleSaveAccount = (accountData: { name: string, trades: Trade[], initialBalance: number, currency: 'USD' | 'EUR', dataUrl?: string }, mode: 'add' | 'update') => {
         if (mode === 'add') {
             if (accounts.some(acc => acc.name.toLowerCase() === accountData.name.toLowerCase())) {
                 setError(`An account with the name "${accountData.name}" already exists.`);
@@ -201,6 +201,7 @@ const App: React.FC = () => {
                 name: accountData.name,
                 trades: accountData.trades,
                 initialBalance: accountData.initialBalance,
+                currency: accountData.currency,
                 goals: {},
                 dataUrl: accountData.dataUrl,
                 lastUpdated: new Date().toISOString(),
@@ -221,6 +222,7 @@ const App: React.FC = () => {
                     return {
                         ...acc,
                         initialBalance: accountData.initialBalance,
+                        currency: accountData.currency,
                         trades: [...acc.trades, ...uniqueNewTrades],
                         dataUrl: accountData.dataUrl,
                         lastUpdated: new Date().toISOString(),
@@ -310,13 +312,15 @@ const App: React.FC = () => {
             );
         }
     
+        const currency = currentAccount?.currency || 'USD';
+
         switch (view) {
             case 'dashboard':
                 return renderDashboard();
             case 'trades':
                 return <MemoizedTradesList trades={processedData.closedTrades} />;
             case 'calendar':
-                return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} />;
+                return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} currency={currency} />;
             case 'analysis':
                 return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} />;
             case 'goals':
@@ -409,6 +413,7 @@ const App: React.FC = () => {
                     date={selectedCalendarDate || new Date()}
                     trades={tradesForSelectedDay}
                     startOfDayBalance={startOfDayBalance}
+                    currency={currentAccount?.currency || 'USD'}
                 />
             )}
         </div>

@@ -28,6 +28,7 @@ export interface Account {
   name: string;
   trades: Trade[];
   initialBalance: number;
+  currency?: 'USD' | 'EUR';
   goals?: Goals;
   dataUrl?: string; // New: For fetching CSV data from a URL
   lastUpdated?: string; // New: ISO string to track last successful update

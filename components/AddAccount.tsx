@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
 
 interface AddAccountProps {
-    onSaveAccount: (account: { name: string, trades: Trade[], initialBalance: number, dataUrl?: string }, mode: 'add' | 'update') => void;
+    onSaveAccount: (account: { name: string, trades: Trade[], initialBalance: number, currency: 'USD' | 'EUR', dataUrl?: string }, mode: 'add' | 'update') => void;
     onClose: () => void;
     isOpen: boolean;
     mode: 'add' | 'update';
@@ -17,6 +17,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
     useLockBodyScroll(isOpen);
     const [accountName, setAccountName] = useState('');
     const [initialBalance, setInitialBalance] = useState('');
+    const [currency, setCurrency] = useState<'USD' | 'EUR'>('USD');
     const [allTradesFromFile, setAllTradesFromFile] = useState<Trade[] | null>(null);
     const [newTradesCount, setNewTradesCount] = useState<number | null>(null);
     const [fileName, setFileName] = useState('');
@@ -27,6 +28,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
     const resetState = () => {
         setAccountName('');
         setInitialBalance('');
+        setCurrency('USD');
         setAllTradesFromFile(null);
         setNewTradesCount(null);
         setFileName('');
@@ -40,6 +42,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
             if (mode === 'update' && accountToUpdate) {
                 setAccountName(accountToUpdate.name);
                 setInitialBalance(String(accountToUpdate.initialBalance));
+                setCurrency(accountToUpdate.currency || 'USD');
                 if (accountToUpdate.dataUrl) {
                     setSourceType('url');
                     setDataUrl(accountToUpdate.dataUrl);
@@ -75,6 +78,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
                 name: accountName.trim(),
                 trades: allTradesFromFile || [], // Pass empty if URL mode, it will be fetched later
                 initialBalance: parseFloat(initialBalance),
+                currency: currency,
                 dataUrl: isUrlMode ? dataUrl.trim() : undefined,
             }, mode);
         }
@@ -98,14 +102,21 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
                 </div>
 
                 <div className="space-y-6">
+                    <div>
+                        <label htmlFor="accountName" className="block text-sm font-medium text-gray-300 mb-2">{t('add_account_modal.account_name')}</label>
+                        <input type="text" id="accountName" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder={t('add_account_modal.account_name_placeholder')} className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition disabled:bg-gray-800 disabled:text-gray-400" disabled={isUpdateMode}/>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="accountName" className="block text-sm font-medium text-gray-300 mb-2">{t('add_account_modal.account_name')}</label>
-                            <input type="text" id="accountName" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder={t('add_account_modal.account_name_placeholder')} className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition disabled:bg-gray-800 disabled:text-gray-400" disabled={isUpdateMode}/>
+                            <label htmlFor="initialBalance" className="block text-sm font-medium text-gray-300 mb-2">{t('add_account_modal.initial_balance', { currency: currency === 'USD' ? '$' : '€' })}</label>
+                            <input type="number" id="initialBalance" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} placeholder={t('add_account_modal.initial_balance_placeholder')} className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"/>
                         </div>
                         <div>
-                            <label htmlFor="initialBalance" className="block text-sm font-medium text-gray-300 mb-2">{t('add_account_modal.initial_balance')}</label>
-                            <input type="number" id="initialBalance" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} placeholder={t('add_account_modal.initial_balance_placeholder')} className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"/>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Currency</label>
+                             <div className="flex rounded-lg bg-[#0c0b1e] border border-gray-600 p-1">
+                                <button onClick={() => setCurrency('USD')} className={`w-1/2 py-2 text-sm font-semibold rounded-md transition ${currency === 'USD' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>USD ($)</button>
+                                <button onClick={() => setCurrency('EUR')} className={`w-1/2 py-2 text-sm font-semibold rounded-md transition ${currency === 'EUR' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>EUR (€)</button>
+                            </div>
                         </div>
                     </div>
 

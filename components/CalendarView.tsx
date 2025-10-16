@@ -7,6 +7,7 @@ import useMediaQuery from '../hooks/useMediaQuery';
 interface CalendarViewProps {
     trades: Trade[];
     onDayClick: (date: Date) => void;
+    currency: 'USD' | 'EUR';
 }
 
 const CalendarHeader: React.FC<{
@@ -33,18 +34,9 @@ const CalendarHeader: React.FC<{
     );
 };
 
-const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void }> = ({ day, onClick }) => {
-    const { t, language } = useLanguage();
+const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void; formatCurrency: (value: number) => string; }> = ({ day, onClick, formatCurrency }) => {
+    const { t } = useLanguage();
     const isMobile = useMediaQuery('(max-width: 640px)');
-
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat(language, {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(value);
-    };
 
     const profitColor = day.profit > 0 ? 'text-green-400' : 'text-red-400';
     const cellClasses = `relative aspect-square flex flex-col justify-between p-2 rounded-lg transition-all duration-300
@@ -71,7 +63,7 @@ const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void }> = ({ 
     );
 };
 
-const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currency }) => {
     const { t, language } = useLanguage();
     const [displayDate, setDisplayDate] = useState(new Date());
 
@@ -80,12 +72,22 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick }) => {
     const handlePrevMonth = () => setDisplayDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
     const handleNextMonth = () => setDisplayDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat(language, {
-            style: 'currency',
-            currency: 'USD',
+    const formatCurrency = (value: number, options: Intl.NumberFormatOptions = {}) => {
+        const symbol = currency === 'EUR' ? '€' : '$';
+        const defaultOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+        const finalOptions = { ...defaultOptions, ...options };
+
+        const formattedValue = new Intl.NumberFormat(language, {
+            style: 'decimal',
+            ...finalOptions
         }).format(value);
+        
+        return `${formattedValue}${symbol}`;
     };
+
+    const formatDayProfit = (value: number) => {
+        return formatCurrency(value, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
 
     const weekDays = [t('calendar.mon'), t('calendar.tue'), t('calendar.wed'), t('calendar.thu'), t('calendar.fri'), t('calendar.sat'), t('calendar.sun')];
 
@@ -101,7 +103,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick }) => {
                     
                     <div className="grid grid-cols-7 gap-1 sm:gap-2">
                         {calendarDays.map((day) => (
-                            <CalendarDayCell key={day.date.toISOString()} day={day} onClick={() => onDayClick(day.date)} />
+                            <CalendarDayCell key={day.date.toISOString()} day={day} onClick={() => onDayClick(day.date)} formatCurrency={formatDayProfit} />
                         ))}
                     </div>
                 </div>
