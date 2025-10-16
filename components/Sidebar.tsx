@@ -76,6 +76,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
                 <NavItem view="goals" currentView={currentView} onNavigate={onNavigate} icon={<GoalsIcon />} label={t('nav.goals')} />
                 <NavItem view="profile" currentView={currentView} onNavigate={onNavigate} icon={<AccountsIcon />} label={t('nav.profile')} />
             </nav>
+            <div className="mt-auto text-center text-gray-500 text-xs pt-4 border-t border-gray-700/50">
+                <p>{t('profile.free_to_use')}</p>
+                <p>{t('profile.data_privacy')}</p>
+            </div>
         </aside>
     );
 };

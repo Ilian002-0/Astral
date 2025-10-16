@@ -22,8 +22,7 @@
   "app": {
     "welcome": "Welcome!",
     "add_account_prompt": "Please add an account to visualize your trading data.",
-    "add_first_account_button": "Add Your First Account",
-    "example_data_banner": "You are currently looking at example data. <1>Contact us</1> to get started."
+    "add_first_account_button": "Add Your First Account"
   },
   "header": {
     "last_update": "Last update",
@@ -167,7 +166,9 @@
     "backup_success": "Backup Successful!",
     "backup_retry": "Retry Backup",
     "backup_no_client_id": "Google Client ID is not configured. Backup is unavailable.",
-    "feature_coming_soon": "Functionality coming soon."
+    "feature_coming_soon": "Functionality coming soon.",
+    "free_to_use": "Atlas is free to use.",
+    "data_privacy": "Your data is stored locally on your device."
   },
   "analysis": {
     "title": "Advanced Analysis",

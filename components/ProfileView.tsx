@@ -49,6 +49,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick })
                     <h3 className="text-lg font-medium text-gray-300 mb-4 text-center">{t('profile.backup_title')}</h3>
                     <GoogleDriveBackup />
                 </div>
+
+                <div className="text-center text-gray-500 text-sm pt-4 border-t border-gray-700/50">
+                    <p>{t('profile.free_to_use')}</p>
+                    <p>{t('profile.data_privacy')}</p>
+                </div>
             </div>
         </div>
     );
