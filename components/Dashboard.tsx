@@ -40,12 +40,12 @@ const Dashboard: React.FC<DashboardProps> = ({ metrics }) => {
         </div>
         <div className="p-6 bg-gray-800/50 rounded-xl shadow-lg border border-gray-700/50 flex justify-around items-center animate-fade-in-up animation-delay-700">
             <div>
-                <h3 className="text-sm font-medium text-gray-400 text-center">Winning Trades</h3>
+                <h3 className="text-sm font-medium text-gray-400 text-center">{t('dashboard.winning_trades')}</h3>
                 <p className="text-3xl font-bold text-green-400 text-center mt-2">{metrics.winningTrades}</p>
             </div>
             <div className="h-16 w-px bg-gray-600"></div>
             <div>
-                <h3 className="text-sm font-medium text-gray-400 text-center">Losing Trades</h3>
+                <h3 className="text-sm font-medium text-gray-400 text-center">{t('dashboard.losing_trades')}</h3>
                 <p className="text-3xl font-bold text-red-400 text-center mt-2">{metrics.losingTrades}</p>
             </div>
         </div>

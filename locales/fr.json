@@ -47,6 +47,8 @@
     "type": "Type",
     "symbol": "Symbole",
     "size": "Taille",
+    "winning_trades": "Trades Gagnants",
+    "losing_trades": "Trades Perdants",
     "time_range": {
       "today": "Aujourd'hui",
       "week": "7 derniers jours",

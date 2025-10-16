@@ -47,6 +47,8 @@
     "type": "Type",
     "symbol": "Symbol",
     "size": "Size",
+    "winning_trades": "Winning Trades",
+    "losing_trades": "Losing Trades",
     "time_range": {
       "today": "Today",
       "week": "Last 7 Days",
