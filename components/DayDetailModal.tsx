@@ -12,12 +12,21 @@ interface DayDetailModalProps {
     currency: 'USD' | 'EUR';
 }
 
-const StatCard: React.FC<{ title: string; value: string; colorClass?: string; }> = ({ title, value, colorClass = 'text-white' }) => (
-    <div className="bg-[#0c0b1e]/60 p-4 rounded-lg text-center">
-        <h4 className="text-sm font-medium text-gray-400">{title}</h4>
-        <p className={`text-stat-value font-bold mt-1 ${colorClass}`}>{value}</p>
-    </div>
-);
+const StatCard: React.FC<{ title: string; value: string; colorClass?: string; }> = ({ title, value, colorClass = 'text-white' }) => {
+    let valueClass = 'text-stat-value';
+    if (value.length > 12) {
+        valueClass = 'text-stat-value-sm';
+    } else if (value.length > 9) {
+        valueClass = 'text-stat-value-md';
+    }
+    
+    return (
+        <div className="bg-[#0c0b1e]/60 p-4 rounded-lg text-center">
+            <h4 className="text-sm font-medium text-gray-400">{title}</h4>
+            <p className={`${valueClass} font-bold mt-1 ${colorClass}`}>{value}</p>
+        </div>
+    );
+};
 
 const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades, date, startOfDayBalance, currency }) => {
     const { t, language } = useLanguage();

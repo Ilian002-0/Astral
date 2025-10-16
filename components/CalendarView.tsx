@@ -48,6 +48,16 @@ const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void; formatC
       ? `(${day.tradeCount})`
       : `${day.tradeCount} ${day.tradeCount > 1 ? t('calendar.trades') : t('calendar.trade')}`;
 
+    const formattedProfit = formatCurrency(day.profit);
+    let profitClass = 'text-calendar-profit';
+
+    // Dynamically adjust font size based on the length of the profit string to prevent overflow
+    if (formattedProfit.length > 8) { // e.g., "-100000$"
+        profitClass = 'text-calendar-profit-xs';
+    } else if (formattedProfit.length > 5) { // e.g., "-1000$"
+        profitClass = 'text-calendar-profit-sm';
+    }
+
     return (
         <div className={cellClasses} onClick={day.tradeCount > 0 ? onClick : undefined}>
             <div className={`text-xs sm:text-sm font-semibold ${!day.isCurrentMonth ? 'text-gray-600' : 'text-white'}`}>
@@ -55,7 +65,7 @@ const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void; formatC
             </div>
             {day.tradeCount > 0 && day.isCurrentMonth && (
                 <div className="text-right">
-                    <p className={`text-calendar-profit font-bold ${profitColor}`}>{formatCurrency(day.profit)}</p>
+                    <p className={`${profitClass} font-bold ${profitColor}`}>{formattedProfit}</p>
                     <p className="text-calendar-trades text-gray-400">{tradeText}</p>
                 </div>
             )}
