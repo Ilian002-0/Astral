@@ -15,7 +15,7 @@ interface AnalysisViewProps {
 const CustomTooltip: React.FC<any> = ({ active, payload }) => {
   const { language } = useLanguage();
   const formatCurrency = (value: number, options?: Intl.NumberFormatOptions) => {
-    return new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', ...options }).format(value);
+    return new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', currencyDisplay: 'symbol', ...options }).format(value);
   }
 
   if (active && payload && payload.length) {
@@ -152,7 +152,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
     const formatCurrency = (value: number) => {
         const sign = value >= 0 ? '+' : '-';
-        return `${sign}${new Intl.NumberFormat(language, { style: 'currency', currency: 'USD' }).format(Math.abs(value))}`;
+        return `${sign}${new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', currencyDisplay: 'symbol' }).format(Math.abs(value))}`;
     };
 
     const chartDomain = useMemo(() => {
@@ -242,7 +242,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 <div style={{ width: '100%', height: 400 }}>
                     {hasEnoughData ? (
                         <ResponsiveContainer>
-                            <AreaChart data={chartData} margin={{ top: 5, right: !isDesktop ? 5 : 20, left: !isDesktop ? 5 : 40, bottom: 5 }}>
+                            <AreaChart data={chartData} margin={{ top: 5, right: !isDesktop ? 5 : 20, left: !isDesktop ? -10 : -30, bottom: 5 }}>
                                 <defs>
                                     <linearGradient id="analysisProfitGradient" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor={strokeColor} stopOpacity={0.4}/>

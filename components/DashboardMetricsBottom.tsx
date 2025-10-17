@@ -1,16 +1,19 @@
 import React from 'react';
 import { DashboardMetrics } from '../types';
 import StatCard from './StatCard';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface DashboardMetricsBottomProps {
   metrics: DashboardMetrics;
 }
 
 const DashboardMetricsBottom: React.FC<DashboardMetricsBottomProps> = ({ metrics }) => {
+    const { language } = useLanguage();
     const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat(language, {
         style: 'currency',
         currency: 'USD',
+        currencyDisplay: 'symbol',
         }).format(value);
     };
 

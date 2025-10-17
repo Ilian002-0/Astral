@@ -8,7 +8,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload }) => {
   const { language } = useLanguage();
   
   const formatCurrency = (value: number, options?: Intl.NumberFormatOptions) => {
-    return new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', ...options }).format(value);
+    return new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', currencyDisplay: 'symbol', ...options }).format(value);
   }
 
   if (active && payload && payload.length) {
@@ -239,7 +239,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
           <ResponsiveContainer>
             <AreaChart
               data={filteredData}
-              margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 5 : 40, bottom: 5 }}
+              margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? -10 : -30, bottom: 5 }}
             >
               <defs>
                 <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">

@@ -11,7 +11,6 @@ import useMediaQuery from './hooks/useMediaQuery';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import BalanceChart from './components/BalanceChart';
-import DailyResultsTable from './components/DailyResultsTable';
 import RecentTradesTable from './components/RecentTradesTable';
 import OpenTradesTable from './components/OpenTradesTable';
 import AddAccountModal from './components/AddAccount';
@@ -267,17 +266,12 @@ const App: React.FC = () => {
                 <div className="animate-fade-in-up animation-delay-100">
                     <MemoizedDashboard metrics={processedData.metrics} />
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 animate-fade-in-up animation-delay-200">
-                    <div className="lg:col-span-3">
-                        <BalanceChart 
-                            data={processedData.chartData} 
-                            onAdvancedAnalysisClick={() => setView('analysis')} 
-                            initialBalance={currentAccount.initialBalance}
-                        />
-                    </div>
-                    <div className="lg:col-span-2">
-                        <DailyResultsTable data={processedData.dailySummary} />
-                    </div>
+                <div className="animate-fade-in-up animation-delay-200">
+                    <BalanceChart 
+                        data={processedData.chartData} 
+                        onAdvancedAnalysisClick={() => setView('analysis')} 
+                        initialBalance={currentAccount.initialBalance}
+                    />
                 </div>
                 <div className="animate-fade-in-up animation-delay-300">
                     <DashboardMetricsBottom metrics={processedData.metrics} />

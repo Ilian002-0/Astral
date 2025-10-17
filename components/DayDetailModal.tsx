@@ -45,6 +45,7 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
         const formattedValue = new Intl.NumberFormat(language, {
             style: 'currency',
             currency: currency,
+            currencyDisplay: 'symbol',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         }).format(Math.abs(value));

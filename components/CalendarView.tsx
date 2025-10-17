@@ -52,9 +52,9 @@ const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void; formatC
     let profitClass = 'text-calendar-profit';
 
     // Dynamically adjust font size based on the length of the profit string to prevent overflow
-    if (formattedProfit.length > 8) { // e.g., "-100000$"
+    if (formattedProfit.length > 7) { // e.g., "-10,000$"
         profitClass = 'text-calendar-profit-xs';
-    } else if (formattedProfit.length > 5) { // e.g., "-1000$"
+    } else if (formattedProfit.length > 4) { // e.g., "-100$"
         profitClass = 'text-calendar-profit-sm';
     }
 

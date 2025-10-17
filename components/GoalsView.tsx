@@ -56,8 +56,9 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
             return `${value.toFixed(2)}%`;
         }
         return new Intl.NumberFormat(language, {
-          style: 'currency',
-          currency: 'USD',
+            style: 'currency',
+            currency: 'USD',
+            currencyDisplay: 'symbol',
         }).format(value);
     };
     

@@ -8,11 +8,12 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ metrics }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(language, {
       style: 'currency',
       currency: 'USD',
+      currencyDisplay: 'symbol',
     }).format(value);
   };
   
