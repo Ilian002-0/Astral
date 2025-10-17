@@ -35,38 +35,61 @@ const CalendarHeader: React.FC<{
 };
 
 const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void; formatCurrency: (value: number) => string; }> = ({ day, onClick, formatCurrency }) => {
-    const { t } = useLanguage();
-    const isMobile = useMediaQuery('(max-width: 640px)');
+    const isToday = day.isToday && day.isCurrentMonth;
+    const hasTrades = day.tradeCount > 0 && day.isCurrentMonth;
 
     const profitColor = day.profit > 0 ? 'text-green-400' : 'text-red-400';
-    const cellClasses = `relative aspect-square flex flex-col justify-between p-2 rounded-lg transition-all duration-300
-        ${day.isCurrentMonth ? 'bg-gray-800/50' : 'bg-transparent text-gray-600'}
-        ${day.tradeCount > 0 ? 'border border-gray-600 cursor-pointer hover:bg-gray-700 hover:scale-105' : ''}
-        ${day.isToday && day.isCurrentMonth ? 'ring-2 ring-cyan-400' : ''}`;
 
-    const tradeText = isMobile
-      ? `(${day.tradeCount})`
-      : `${day.tradeCount} ${day.tradeCount > 1 ? t('calendar.trades') : t('calendar.trade')}`;
+    const tradeDayClasses = useMemo(() => {
+        if (hasTrades) {
+            if (day.profit > 0) {
+                return 'bg-teal-950/70 border border-teal-800 cursor-pointer hover:bg-teal-900/80 hover:scale-105';
+            }
+            if (day.profit < 0) {
+                return 'bg-red-950/70 border border-red-800 cursor-pointer hover:bg-red-900/80 hover:scale-105';
+            }
+            return 'border border-gray-600 cursor-pointer hover:bg-gray-700 hover:scale-105';
+        }
+        return '';
+    }, [hasTrades, day.profit]);
+    
+    const baseBg = day.isCurrentMonth ? 'bg-gray-800/50' : 'bg-transparent';
+
+    const cellClasses = `
+        relative aspect-square flex flex-col justify-between p-2 rounded-lg transition-all duration-300
+        ${baseBg}
+        ${tradeDayClasses}
+        ${isToday ? '!bg-slate-800 border !border-slate-600' : ''}
+        ${!day.isCurrentMonth ? 'text-gray-600' : ''}
+    `;
 
     const formattedProfit = formatCurrency(day.profit);
     let profitClass = 'text-calendar-profit';
 
-    // Dynamically adjust font size based on the length of the profit string to prevent overflow
-    if (formattedProfit.length > 7) { // e.g., "-10,000$"
+    if (formattedProfit.length > 7) {
         profitClass = 'text-calendar-profit-xs';
-    } else if (formattedProfit.length > 4) { // e.g., "-100$"
+    } else if (formattedProfit.length > 4) {
         profitClass = 'text-calendar-profit-sm';
     }
+    
+    const TradeIcon = () => (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline-block ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+    );
 
     return (
         <div className={cellClasses} onClick={day.tradeCount > 0 ? onClick : undefined}>
-            <div className={`text-xs sm:text-sm font-semibold ${!day.isCurrentMonth ? 'text-gray-600' : 'text-white'}`}>
+            <div className={`text-xs sm:text-sm ${isToday ? 'font-bold' : 'font-semibold'} ${!day.isCurrentMonth ? 'text-gray-600' : 'text-white'}`}>
                 {day.date.getDate()}
             </div>
-            {day.tradeCount > 0 && day.isCurrentMonth && (
+            {hasTrades && (
                 <div className="text-right">
                     <p className={`${profitClass} font-bold ${profitColor}`}>{formattedProfit}</p>
-                    <p className="text-calendar-trades text-gray-400">{tradeText}</p>
+                    <p className="text-calendar-trades text-gray-400 flex items-center justify-end">
+                        {day.tradeCount}
+                        <TradeIcon />
+                    </p>
                 </div>
             )}
         </div>

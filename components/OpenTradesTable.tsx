@@ -38,10 +38,10 @@ const OpenTradesTable: React.FC<OpenTradesTableProps> = ({ trades, floatingPnl, 
                     <thead className="text-xs text-gray-400 uppercase border-b border-gray-700">
                         <tr>
                             <th scope="col" className="px-2 sm:px-4 py-3 w-[25%]">{t('trades_list.col_symbol')}</th>
-                            <th scope="col" className="px-2 sm:px-4 py-3 w-[30%]">{t('trades_list.col_open_time')}</th>
+                            <th scope="col" className="px-2 sm:px-4 py-3 w-[25%] sm:w-[30%]">{t('trades_list.col_open_time')}</th>
                             <th scope="col" className="px-2 sm:px-4 py-3 w-[15%]">{t('trades_list.col_type')}</th>
                             <th scope="col" className="px-2 sm:px-4 py-3 text-right w-[15%]">{t('trades_list.col_size')}</th>
-                            <th scope="col" className="px-2 sm:px-4 py-3 text-right w-[15%]">{t('trades_list.col_profit')}</th>
+                            <th scope="col" className="px-2 sm:px-4 py-3 text-right w-[20%] sm:w-[15%]">{t('trades_list.col_profit')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -52,10 +52,16 @@ const OpenTradesTable: React.FC<OpenTradesTableProps> = ({ trades, floatingPnl, 
                             return (
                                 <tr key={trade.ticket} className="border-b border-gray-800 text-xs">
                                     <td className="px-2 sm:px-4 py-3 text-white truncate">{trade.symbol}</td>
-                                    <td className="px-2 sm:px-4 py-3 text-white truncate">{formatDate(trade.openTime)}</td>
+                                    <td className="px-2 sm:px-4 py-3 text-white leading-tight">
+                                        <div className="sm:hidden">
+                                            <div>{trade.openTime.toLocaleDateString(language, { month: 'short', day: 'numeric' })}</div>
+                                            <div className="text-gray-400">{trade.openTime.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+                                        </div>
+                                        <span className="hidden sm:inline truncate">{formatDate(trade.openTime)}</span>
+                                    </td>
                                     <td className={`px-2 sm:px-4 py-3 font-bold uppercase truncate ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`}>{trade.type}</td>
                                     <td className="px-2 sm:px-4 py-3 text-right text-white truncate">{trade.size}</td>
-                                    <td className={`px-2 sm:px-4 py-3 text-right font-bold truncate ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(netProfit)}</td>
+                                    <td className={`px-2 sm:px-4 py-3 text-right font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(netProfit)}</td>
                                 </tr>
                             );
                         })}
