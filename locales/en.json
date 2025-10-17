@@ -179,7 +179,10 @@
     "backup_no_client_id": "Google Client ID is not configured. Backup is unavailable.",
     "feature_coming_soon": "Functionality coming soon.",
     "free_to_use": "Atlas is free to use.",
-    "data_privacy": "Your data is stored locally on your device."
+    "data_privacy": "Your data is stored locally on your device.",
+    "update_title": "Application Update",
+    "update_description": "Force the application to check for the latest version.",
+    "update_button": "Check for Updates"
   },
   "analysis": {
     "title": "Advanced Analysis",

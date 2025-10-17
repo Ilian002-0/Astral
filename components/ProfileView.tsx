@@ -10,6 +10,12 @@ interface ProfileViewProps {
 const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick }) => {
     const { language, setLanguage, t } = useLanguage();
 
+    const handleUpdate = () => {
+        // A simple page reload. The service worker is configured to check for new content first.
+        window.location.reload();
+    };
+
+
     return (
         <div className="bg-[#16152c] p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-700/50">
             <header className="mb-8">
@@ -29,6 +35,17 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick })
                         </button>
                     </div>
                 )}
+
+                <div className="p-4 bg-[#0c0b1e] rounded-lg">
+                    <h3 className="text-lg font-medium text-gray-300 mb-2 text-center">{t('profile.update_title')}</h3>
+                    <p className="text-sm text-gray-400 mb-4 text-center">{t('profile.update_description')}</p>
+                    <button
+                        onClick={handleUpdate}
+                        className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105"
+                    >
+                        {t('profile.update_button')}
+                    </button>
+                </div>
 
                 <div className="flex items-center justify-between p-4 bg-[#0c0b1e] rounded-lg">
                     <label htmlFor="language-select" className="text-lg font-medium text-gray-300">

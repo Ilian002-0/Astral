@@ -1,4 +1,4 @@
-const CACHE_NAME = 'atlas-cache-v4'; // Incremented cache version to force update
+const CACHE_NAME = 'atlas-cache-v5'; // Incremented cache version
 const urlsToCache = [
   '/',
   '/index.html',
@@ -40,57 +40,24 @@ self.addEventListener('activate', event => {
   );
 });
 
+// Use a Network First, then Cache strategy for all GET requests.
+// This ensures that online users get the latest version, while offline users can still access the cached app.
 self.addEventListener('fetch', event => {
-    const { request } = event;
-
-    // We only handle GET requests.
-    if (request.method !== 'GET') {
+    if (event.request.method !== 'GET') {
         return;
     }
 
-    const url = new URL(request.url);
-
-    // For HTML and local assets, use a Cache First strategy.
-    const isAppShell = urlsToCache.includes(url.pathname) || url.pathname === '/';
-    const isCDN = request.url.includes('aistudiocdn.com') || request.url.includes('fonts.googleapis.com') || request.url.includes('fonts.gstatic.com') || request.url.includes('unpkg.com');
-
-    if (isAppShell || isCDN) {
-        event.respondWith(
-            caches.match(request).then(response => {
-                return response || fetch(request).then(fetchResponse => {
-                    const responseToCache = fetchResponse.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(request, responseToCache);
-                    });
-                    return fetchResponse;
-                });
-            })
-        );
-        return;
-    }
-    
-    // For all other requests (like data URLs for CSVs), use a Network First, then Cache strategy.
     event.respondWith(
-        fetch(request)
+        fetch(event.request)
             .then(response => {
-                // If the fetch is successful, update the cache.
                 const responseToCache = response.clone();
                 caches.open(CACHE_NAME).then(cache => {
-                    cache.put(request, responseToCache);
+                    cache.put(event.request, responseToCache);
                 });
                 return response;
             })
             .catch(() => {
-                // If the fetch fails (e.g., offline), try to get the response from the cache.
-                return caches.match(request).then(response => {
-                    if (response) {
-                        return response;
-                    }
-                    // Optional: return a custom offline page if the request is for a navigation and not in cache.
-                    // if (request.mode === 'navigate') {
-                    //   return caches.match('/offline.html');
-                    // }
-                });
+                return caches.match(event.request);
             })
     );
 });
