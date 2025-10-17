@@ -31,7 +31,9 @@
     "profit_yesterday": "Profit d'hier",
     "profit_x_days_ago": "Résultat il y a {{count}} jours",
     "sync_now": "Synchroniser",
-    "syncing": "Synchronisation..."
+    "syncing": "Synchronisation...",
+    "today_total_pnl": "P/L Total du Jour",
+    "floating_pnl": "P/L Flottant"
   },
   "dashboard": {
     "balance_chart_title": "Courbe de capitaux propres",
@@ -125,7 +127,8 @@
     "title": "Actions de Compte",
     "subtitle": "Que souhaitez-vous faire ?",
     "add_new": "Ajouter un nouveau compte",
-    "update_current": "Mettre à jour le compte actuel"
+    "update_current": "Mettre à jour le compte actuel",
+    "delete_current": "Supprimer le Compte Actuel"
   },
   "add_account_modal": {
     "title": "Ajouter un nouveau compte",
@@ -139,6 +142,7 @@
     "file_loaded": "Fichier chargé :",
     "trades_found": "{{count}} trades trouvés.",
     "trades_to_add": "{{count}} nouveaux trades seront ajoutés.",
+    "trades_updated": "{{count}} trades existants seront mis à jour.",
     "clear_file": "Retirer le fichier",
     "save_button": "Enregistrer le compte",
     "save_button_update": "Mettre à jour le Compte",
@@ -148,6 +152,11 @@
     "csv_url": "URL du fichier CSV",
     "csv_url_placeholder": "https://exemple.com/historique.csv",
     "url_helper_text": "L'application récupérera périodiquement cette URL pour synchroniser les nouveaux trades."
+  },
+  "delete_confirmation": {
+    "title": "Confirmer la Suppression",
+    "message": "Êtes-vous sûr de vouloir supprimer le compte '{{accountName}}' ? Cette action est irréversible.",
+    "confirm_button": "Oui, Supprimer"
   },
   "file_upload": {
     "title": "Téléchargez votre historique de trading MT5",

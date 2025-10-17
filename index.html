@@ -12,6 +12,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style type="text/css">
+      /* Disable text selection to make it feel more like a native app */
+      body {
+        -webkit-user-select: none; /* Safari */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+        user-select: none; /* Standard */
+      }
+      /* Re-enable text selection for input fields */
+      input, textarea {
+        -webkit-user-select: text; /* Safari */
+        -moz-user-select: text; /* Firefox */
+        -ms-user-select: text; /* Internet Explorer/Edge */
+        user-select: text; /* Standard */
+      }
       /* Improve visibility of the date picker icon in dark mode */
       input[type="date"]::-webkit-calendar-picker-indicator {
         filter: invert(0.8);
@@ -55,6 +69,14 @@
       .text-calendar-trades {
           font-size: 0.65rem; /* 10.4px */
           line-height: 1;
+      }
+      /* Hide scrollbar for a cleaner, app-like appearance */
+      body::-webkit-scrollbar {
+        display: none; /* for Chrome, Safari, and Opera */
+      }
+      body {
+        -ms-overflow-style: none;  /* for Internet Explorer and Edge */
+        scrollbar-width: none;  /* for Firefox */
       }
       /* Custom Animations */
       @keyframes fade-in {

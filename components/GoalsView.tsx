@@ -7,6 +7,7 @@ interface GoalsViewProps {
   metrics: DashboardMetrics;
   accountGoals: Goals;
   onSaveGoals: (goals: Goals) => void;
+  currency: 'USD' | 'EUR';
 }
 
 const goalDefinitions: { key: GoalMetric; titleKey: string; isLessBetter?: boolean, isPercent?: boolean }[] = [
@@ -16,7 +17,7 @@ const goalDefinitions: { key: GoalMetric; titleKey: string; isLessBetter?: boole
     { key: 'maxDrawdown', titleKey: 'goals.metric_maxDrawdown', isLessBetter: true, isPercent: true },
 ];
 
-const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoals }) => {
+const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoals, currency }) => {
     const { t, language } = useLanguage();
     const [isEditing, setIsEditing] = useState(false);
     const [editableGoals, setEditableGoals] = useState<Goals>(accountGoals);
@@ -55,9 +56,20 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
         if (isPercent) {
             return `${value.toFixed(2)}%`;
         }
+        
+        const symbol = currency === 'USD' ? '$' : '€';
+        if (language === 'fr') {
+            const numberPart = new Intl.NumberFormat('fr', {
+                style: 'decimal',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(value);
+            return `${numberPart}${symbol}`;
+        }
+        
         return new Intl.NumberFormat(language, {
             style: 'currency',
-            currency: 'USD',
+            currency: currency,
             currencyDisplay: 'symbol',
         }).format(value);
     };

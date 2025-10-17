@@ -31,7 +31,9 @@
     "profit_yesterday": "Yesterday's Profit",
     "profit_x_days_ago": "Result {{count}} days ago",
     "sync_now": "Sync Now",
-    "syncing": "Syncing..."
+    "syncing": "Syncing...",
+    "today_total_pnl": "Today's Total P/L",
+    "floating_pnl": "Floating P/L"
   },
   "dashboard": {
     "balance_chart_title": "Equity Curve",
@@ -125,7 +127,8 @@
     "title": "Account Actions",
     "subtitle": "What would you like to do?",
     "add_new": "Add a New Account",
-    "update_current": "Update Current Account"
+    "update_current": "Update Current Account",
+    "delete_current": "Delete Current Account"
   },
   "add_account_modal": {
     "title": "Add New Account",
@@ -139,6 +142,7 @@
     "file_loaded": "File loaded:",
     "trades_found": "{{count}} trades found.",
     "trades_to_add": "{{count}} new trades will be added.",
+    "trades_updated": "{{count}} existing trades will be updated.",
     "clear_file": "Clear file",
     "save_button": "Save Account",
     "save_button_update": "Update Account",
@@ -148,6 +152,11 @@
     "csv_url": "CSV File URL",
     "csv_url_placeholder": "https://example.com/history.csv",
     "url_helper_text": "The app will periodically fetch this URL to sync new trades."
+  },
+  "delete_confirmation": {
+    "title": "Confirm Deletion",
+    "message": "Are you sure you want to delete the account '{{accountName}}'? This action cannot be undone.",
+    "confirm_button": "Yes, Delete"
   },
   "file_upload": {
     "title": "Upload Your MT5 Trade History",

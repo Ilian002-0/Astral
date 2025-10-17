@@ -5,14 +5,25 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface OpenTradesTableProps {
     trades: Trade[];
     floatingPnl: number;
+    currency: 'USD' | 'EUR';
 }
 
-const OpenTradesTable: React.FC<OpenTradesTableProps> = ({ trades, floatingPnl }) => {
+const OpenTradesTable: React.FC<OpenTradesTableProps> = ({ trades, floatingPnl, currency }) => {
     const { t, language } = useLanguage();
 
     const formatCurrency = (value: number) => {
+        const symbol = currency === 'USD' ? '$' : '€';
         const sign = value >= 0 ? '+' : '-';
-        return `${sign}$${new Intl.NumberFormat(language, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(value))}`;
+        const absNumberPart = new Intl.NumberFormat(language, {
+            style: 'decimal',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(Math.abs(value));
+
+        if (language === 'fr') {
+            return `${sign}${absNumberPart}${symbol}`;
+        }
+        return `${sign}${symbol}${absNumberPart}`;
     };
 
     const formatDate = (date: Date) => {

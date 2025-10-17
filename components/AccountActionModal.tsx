@@ -7,10 +7,12 @@ interface AccountActionModalProps {
     onClose: () => void;
     onAddAccount: () => void;
     onUpdateAccount: () => void;
+    onDeleteAccount: () => void;
     canUpdate: boolean;
+    canDelete: boolean;
 }
 
-const AccountActionModal: React.FC<AccountActionModalProps> = ({ isOpen, onClose, onAddAccount, onUpdateAccount, canUpdate }) => {
+const AccountActionModal: React.FC<AccountActionModalProps> = ({ isOpen, onClose, onAddAccount, onUpdateAccount, onDeleteAccount, canUpdate, canDelete }) => {
     const { t } = useLanguage();
     useLockBodyScroll(isOpen);
 
@@ -40,6 +42,13 @@ const AccountActionModal: React.FC<AccountActionModalProps> = ({ isOpen, onClose
                         className="w-full flex items-center justify-center px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed disabled:transform-none"
                     >
                          {t('account_action_modal.update_current')}
+                    </button>
+                    <button
+                        onClick={onDeleteAccount}
+                        disabled={!canDelete}
+                        className="w-full flex items-center justify-center px-6 py-4 bg-red-800 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                         {t('account_action_modal.delete_current')}
                     </button>
                 </div>
 

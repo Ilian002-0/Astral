@@ -38,35 +38,41 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
     }, [trades, startOfDayBalance]);
 
     const formatCurrency = (value: number) => {
-        const symbol = currency === 'EUR' ? '€' : '$';
-        const sign = value >= 0 ? '' : '-';
+        const symbol = currency === 'USD' ? '$' : '€';
+        if (language === 'fr') {
+            const numberPart = new Intl.NumberFormat('fr', {
+                style: 'decimal',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(value);
+            return `${numberPart}${symbol}`;
+        }
         
-        // Use currency style for symbol and formatting, then manually construct with sign.
-        const formattedValue = new Intl.NumberFormat(language, {
+        return new Intl.NumberFormat(language, {
             style: 'currency',
             currency: currency,
             currencyDisplay: 'symbol',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-        }).format(Math.abs(value));
-
-        // Remove the currency symbol from formattedValue if it's there to avoid duplication
-        const numberPart = formattedValue.replace(/[$€]/, '').trim();
-
-        return `${sign}${numberPart}${symbol}`;
+        }).format(value);
     };
     
     // Simplified formatting for the profit values in the table.
     const formatProfit = (value: number) => {
-        const symbol = currency === 'EUR' ? '€' : '$';
-        const sign = value >= 0 ? '+' : '';
-        const formattedValue = new Intl.NumberFormat(language, {
+        const symbol = currency === 'USD' ? '$' : '€';
+        const sign = value >= 0 ? '+' : '-';
+
+        const absNumberPart = new Intl.NumberFormat(language, {
             style: 'decimal',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-        }).format(value);
+        }).format(Math.abs(value));
 
-        return `${sign}${formattedValue}${symbol}`;
+        if (language === 'fr') {
+            return `${sign}${absNumberPart}${symbol}`;
+        }
+        
+        return `${sign}${symbol}${absNumberPart}`;
     };
 
     if (!isOpen) return null;

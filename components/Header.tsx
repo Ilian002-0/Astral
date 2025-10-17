@@ -8,6 +8,7 @@ interface HeaderProps {
     lastUpdated?: string;
     onRefresh?: () => void;
     isSyncing?: boolean;
+    currency: 'USD' | 'EUR';
 }
 
 const SyncIcon: React.FC<{isSyncing?: boolean}> = ({ isSyncing }) => (
@@ -22,12 +23,17 @@ const ShareIcon: React.FC = () => (
     </svg>
 )
 
-const Header: React.FC<HeaderProps> = ({ metrics, accountName, lastUpdated, onRefresh, isSyncing }) => {
+const Header: React.FC<HeaderProps> = ({ metrics, accountName, lastUpdated, onRefresh, isSyncing, currency }) => {
     const { t, language } = useLanguage();
     
     const formatCurrency = (value: number) => {
+        const symbol = currency === 'USD' ? '$' : '€';
         const sign = value >= 0 ? '+' : '-';
-        return `${sign}$${new Intl.NumberFormat(language, { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.abs(value))}`;
+        const numberPart = new Intl.NumberFormat(language, { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.abs(value));
+        if (language === 'fr') {
+            return `${sign}${numberPart}${symbol}`;
+        }
+        return `${sign}${symbol}${numberPart}`;
     };
 
     const formatRelativeTime = (isoDate?: string): string => {
@@ -67,13 +73,6 @@ Tracked with Atlas.`,
         if (daysAgo === 1) return t('header.profit_yesterday');
         return t('header.profit_x_days_ago', { count: daysAgo });
     };
-
-    const { lastDayProfit, lastDayProfitDaysAgo } = metrics;
-    const resultLabel = getDynamicDayLabel(lastDayProfitDaysAgo);
-    const resultColor = lastDayProfit >= 0 ? 'text-green-400' : 'text-red-400';
-    const balanceBeforeLastDay = metrics.totalBalance - lastDayProfit;
-    const percent = balanceBeforeLastDay > 0 ? (lastDayProfit / balanceBeforeLastDay) * 100 : 0;
-
 
     const getSyncStatus = () => {
         if (isSyncing) {
@@ -115,6 +114,40 @@ Tracked with Atlas.`,
 
     const syncStatus = getSyncStatus();
     
+    // New logic for dynamic header display
+    const { lastDayProfit, lastDayProfitDaysAgo, floatingPnl, totalBalance } = metrics;
+    const hadActivityToday = lastDayProfitDaysAgo === 0;
+    const hasOpenTrades = floatingPnl !== 0;
+
+    let displayValue: number;
+    let displayLabel: string;
+
+    if (hadActivityToday) {
+        if (hasOpenTrades) {
+            // Case: Closed trades today + open positions
+            displayValue = lastDayProfit + floatingPnl;
+            displayLabel = t('header.today_total_pnl');
+        } else {
+            // Case: Only closed trades today
+            displayValue = lastDayProfit;
+            displayLabel = t('header.profit_today');
+        }
+    } else { // No closed trades today
+        if (hasOpenTrades) {
+            // Case: Only open positions
+            displayValue = floatingPnl;
+            displayLabel = t('header.floating_pnl');
+        } else {
+            // Case: No activity today, no open positions -> fallback to last active day
+            displayValue = lastDayProfit;
+            displayLabel = getDynamicDayLabel(lastDayProfitDaysAgo);
+        }
+    }
+
+    const balanceBeforeChange = totalBalance - displayValue;
+    const percent = balanceBeforeChange > 0 ? (displayValue / balanceBeforeChange) * 100 : 0;
+    const displayColor = displayValue >= 0 ? 'text-green-400' : 'text-red-400';
+    
     return (
         <header className="bg-gradient-to-br from-teal-500/30 to-teal-600/30 p-6 rounded-3xl shadow-2xl border border-teal-500/20">
             <div className="flex justify-between items-start text-white mb-4">
@@ -147,9 +180,9 @@ Tracked with Atlas.`,
                 </div>
             </div>
             <div className="text-center">
-                <p className="text-sm text-teal-200">{resultLabel}</p>
-                <p className={`text-main-header font-black my-1 ${resultColor}`}>{formatCurrency(lastDayProfit)}</p>
-                <p className={`text-lg font-bold ${resultColor}`}>{percent.toFixed(2)}%</p>
+                <p className="text-sm text-teal-200">{displayLabel}</p>
+                <p className={`text-main-header font-black my-1 ${displayColor}`}>{formatCurrency(displayValue)}</p>
+                <p className={`text-lg font-bold ${displayColor}`}>{percent.toFixed(2)}%</p>
             </div>
         </header>
     );

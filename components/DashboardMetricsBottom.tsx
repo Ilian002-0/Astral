@@ -5,15 +5,26 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface DashboardMetricsBottomProps {
   metrics: DashboardMetrics;
+  currency: 'USD' | 'EUR';
 }
 
-const DashboardMetricsBottom: React.FC<DashboardMetricsBottomProps> = ({ metrics }) => {
+const DashboardMetricsBottom: React.FC<DashboardMetricsBottomProps> = ({ metrics, currency }) => {
     const { language } = useLanguage();
     const formatCurrency = (value: number) => {
+        const symbol = currency === 'USD' ? '$' : '€';
+        if (language === 'fr') {
+            const numberPart = new Intl.NumberFormat('fr', {
+                style: 'decimal',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(value);
+            return `${numberPart}${symbol}`;
+        }
+        
         return new Intl.NumberFormat(language, {
-        style: 'currency',
-        currency: 'USD',
-        currencyDisplay: 'symbol',
+            style: 'currency',
+            currency: currency,
+            currencyDisplay: 'symbol',
         }).format(value);
     };
 

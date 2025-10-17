@@ -92,7 +92,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
             ...finalOptions
         }).format(value);
         
-        return `${formattedValue}${symbol}`;
+        if (language === 'fr') {
+            return `${formattedValue}${symbol}`;
+        }
+        return `${symbol}${formattedValue}`;
     };
 
     const formatDayProfit = (value: number) => {

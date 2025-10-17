@@ -5,11 +5,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface TradesListProps {
   trades: Trade[];
+  currency: 'USD' | 'EUR';
 }
 
 type TradeKeys = keyof Trade;
 
-const TradesList: React.FC<TradesListProps> = ({ trades }) => {
+const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     const { t, language } = useLanguage();
 
     const COLUMN_DEFINITIONS: { key: TradeKeys; label: string; defaultVisible: boolean; }[] = useMemo(() => [
@@ -38,8 +39,18 @@ const TradesList: React.FC<TradesListProps> = ({ trades }) => {
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const formatCurrency = (value: number) => {
-        const sign = value >= 0 ? '+' : '';
-        return `${sign}${new Intl.NumberFormat(language, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}`;
+        const symbol = currency === 'USD' ? '$' : '€';
+        const sign = value >= 0 ? '+' : '-';
+        const absNumberPart = new Intl.NumberFormat(language, {
+            style: 'decimal',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(Math.abs(value));
+
+        if (language === 'fr') {
+            return `${sign}${absNumberPart}${symbol}`;
+        }
+        return `${sign}${symbol}${absNumberPart}`;
     };
 
     const formatDate = (date: Date) => {
@@ -131,7 +142,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades }) => {
                                     const isProfit = trade.profit >= 0;
                                     let cellClass = 'text-white';
                                     if(col.key === 'type') cellClass = `font-bold uppercase ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`;
-                                    if(col.key === 'profit') cellClass = `font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`;
+                                    if(col.key === 'profit' || col.key === 'commission' || col.key === 'swap') cellClass = `font-bold ${trade[col.key] >= 0 ? 'text-green-400' : 'text-red-400'}`;
                                     
                                     const isComment = col.key === 'comment';
 

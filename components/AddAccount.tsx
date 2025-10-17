@@ -20,6 +20,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
     const [currency, setCurrency] = useState<'USD' | 'EUR'>('USD');
     const [allTradesFromFile, setAllTradesFromFile] = useState<Trade[] | null>(null);
     const [newTradesCount, setNewTradesCount] = useState<number | null>(null);
+    const [updatedTradesCount, setUpdatedTradesCount] = useState<number | null>(null);
     const [fileName, setFileName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [sourceType, setSourceType] = useState<'file' | 'url'>('file');
@@ -31,6 +32,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
         setCurrency('USD');
         setAllTradesFromFile(null);
         setNewTradesCount(null);
+        setUpdatedTradesCount(null);
         setFileName('');
         setError(null);
         setSourceType('file');
@@ -60,8 +62,29 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
         setFileName(name);
         setError(null);
         if (mode === 'update' && accountToUpdate) {
-            const existingTicketIds = new Set(accountToUpdate.trades.map(t => t.ticket));
-            setNewTradesCount(data.filter(t => !existingTicketIds.has(t.ticket)).length);
+            const existingTradesMap = new Map(accountToUpdate.trades.map(t => [t.ticket, t]));
+            let newCount = 0;
+            let updatedCount = 0;
+
+            for (const tradeFromFile of data) {
+                const existingTrade = existingTradesMap.get(tradeFromFile.ticket);
+                if (existingTrade) {
+                    // FIX: Cast `existingTrade` to `Trade` to resolve type inference issues where it was being inferred as `unknown`.
+                    const typedExistingTrade = existingTrade as Trade;
+                    // A trade is considered updated if its status changes (e.g., from open to closed)
+                    // or if its profit/cost details are modified.
+                    if (typedExistingTrade.closePrice !== tradeFromFile.closePrice ||
+                        typedExistingTrade.profit !== tradeFromFile.profit ||
+                        typedExistingTrade.commission !== tradeFromFile.commission ||
+                        typedExistingTrade.swap !== tradeFromFile.swap) {
+                        updatedCount++;
+                    }
+                } else {
+                    newCount++;
+                }
+            }
+            setNewTradesCount(newCount);
+            setUpdatedTradesCount(updatedCount);
         }
     };
 
@@ -133,8 +156,15 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
                             <div className="p-4 bg-[#0c0b1e]/50 rounded-lg border border-gray-700 text-center">
                                 <p className="text-gray-300">{t('add_account_modal.file_loaded')}</p>
                                 <p className="font-semibold text-cyan-400">{fileName}</p>
-                                <p className="text-sm text-gray-400 mt-1">{isUpdateMode ? t('add_account_modal.trades_to_add', { count: newTradesCount ?? 0 }) : t('add_account_modal.trades_found', { count: allTradesFromFile?.length || 0 })}</p>
-                                <button onClick={() => { setAllTradesFromFile(null); setFileName(''); setNewTradesCount(null); }} className="text-xs text-red-400 hover:text-red-300 mt-2">{t('add_account_modal.clear_file')}</button>
+                                {isUpdateMode ? (
+                                    <div className="mt-1">
+                                        <p className="text-sm text-gray-400">{t('add_account_modal.trades_updated', { count: updatedTradesCount ?? 0 })}</p>
+                                        <p className="text-sm text-gray-400">{t('add_account_modal.trades_to_add', { count: newTradesCount ?? 0 })}</p>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-400 mt-1">{t('add_account_modal.trades_found', { count: allTradesFromFile?.length || 0 })}</p>
+                                )}
+                                <button onClick={() => { setAllTradesFromFile(null); setFileName(''); setNewTradesCount(null); setUpdatedTradesCount(null); }} className="text-xs text-red-400 hover:text-red-300 mt-2">{t('add_account_modal.clear_file')}</button>
                             </div>
                         ) : (
                             <FileUpload onFileProcessed={handleFileProcessed} onError={handleFileError} />

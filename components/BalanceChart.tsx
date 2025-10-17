@@ -4,11 +4,30 @@ import { ChartDataPoint } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import useMediaQuery from '../hooks/useMediaQuery';
 
-const CustomTooltip: React.FC<any> = ({ active, payload }) => {
+const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
   const { language } = useLanguage();
   
   const formatCurrency = (value: number, options?: Intl.NumberFormatOptions) => {
-    return new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', currencyDisplay: 'symbol', ...options }).format(value);
+    const symbol = currency === 'USD' ? '$' : '€';
+    
+    let sign = '';
+    const _options = options || {};
+    if (_options.signDisplay === 'always') {
+        sign = value >= 0 ? '+' : '-';
+    } else if (value < 0) {
+        sign = '-';
+    }
+
+    const numberPart = new Intl.NumberFormat(language, {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(Math.abs(value));
+
+    if (language === 'fr') {
+        return `${sign}${numberPart}${symbol}`;
+    }
+    return `${sign}${symbol}${numberPart}`;
   }
 
   if (active && payload && payload.length) {
@@ -67,10 +86,11 @@ interface BalanceChartProps {
   data: ChartDataPoint[];
   onAdvancedAnalysisClick: () => void;
   initialBalance: number;
+  currency: 'USD' | 'EUR';
 }
 
 
-const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisClick, initialBalance }) => {
+const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisClick, initialBalance, currency }) => {
   const { t, language } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [isDropdownOpen, setDropdownOpen] = useState(false);
@@ -277,9 +297,9 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 axisLine={false}
                 allowDataOverflow
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+              <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
               <ReferenceLine y={initialBalance} stroke="#a0aec0" strokeDasharray="4 4" strokeWidth={1}>
-                <Label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} />
+                <Label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} dy={4} />
               </ReferenceLine>
               
               <Area 

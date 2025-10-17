@@ -25,6 +25,7 @@ import AccountActionModal from './components/AccountActionModal';
 import DashboardMetricsBottom from './components/DashboardMetricsBottom';
 import GoalsView from './components/GoalsView';
 import DayDetailModal from './components/DayDetailModal';
+import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 
 // Memoize components to prevent unnecessary re-renders
 const MemoizedDashboard = React.memo(Dashboard);
@@ -41,6 +42,7 @@ const App: React.FC = () => {
     
     const [isAddAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [isAccountActionModalOpen, setAccountActionModalOpen] = useState(false);
+    const [isDeleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'add' | 'update'>('add');
     
     const [view, setView] = useState<AppView>('dashboard');
@@ -189,6 +191,19 @@ const App: React.FC = () => {
         }
     };
 
+    const handleInitiateDelete = () => {
+        if (currentAccount) {
+            setAccountActionModalOpen(false);
+            setDeleteConfirmModalOpen(true);
+        }
+    };
+
+    const handleDeleteAccount = () => {
+        if (!currentAccount) return;
+        setAccounts(accounts.filter(acc => acc.name !== currentAccount.name));
+        setDeleteConfirmModalOpen(false);
+    };
+
     const handleSaveAccount = (accountData: { name: string, trades: Trade[], initialBalance: number, currency: 'USD' | 'EUR', dataUrl?: string }, mode: 'add' | 'update') => {
         if (mode === 'add') {
             if (accounts.some(acc => acc.name.toLowerCase() === accountData.name.toLowerCase())) {
@@ -212,17 +227,34 @@ const App: React.FC = () => {
             }
         } else { // update mode
             if (!currentAccount) return;
-
+    
             setAccounts(accounts.map(acc => {
                 if (acc.name === currentAccount.name) {
-                    const existingTicketIds = new Set(acc.trades.map(t => t.ticket));
-                    const uniqueNewTrades = accountData.trades.filter(t => !existingTicketIds.has(t.ticket));
+                    const newTradesFromFile = accountData.trades;
+                    const existingTrades = acc.trades;
+    
+                    // Create a map of all trades, prioritizing the new file's data for updates.
+                    const allTradesMap = new Map<number, Trade>();
+    
+                    // First, add all existing trades to the map. This preserves trades
+                    // that might not be in a partial (e.g., last month's) CSV export.
+                    for (const trade of existingTrades) {
+                        allTradesMap.set(trade.ticket, trade);
+                    }
+    
+                    // Then, add/overwrite with trades from the new file. This updates
+                    // existing trades (like closing an open one) and adds new ones.
+                    for (const trade of newTradesFromFile) {
+                        allTradesMap.set(trade.ticket, trade);
+                    }
+                    
+                    const mergedTrades = Array.from(allTradesMap.values());
                     
                     return {
                         ...acc,
                         initialBalance: accountData.initialBalance,
                         currency: accountData.currency,
-                        trades: [...acc.trades, ...uniqueNewTrades],
+                        trades: mergedTrades,
                         dataUrl: accountData.dataUrl,
                         lastUpdated: new Date().toISOString(),
                     };
@@ -252,6 +284,7 @@ const App: React.FC = () => {
 
     const renderDashboard = () => {
         if (!processedData || !currentAccount) return null;
+        const currency = currentAccount.currency || 'USD';
         return (
             <div className="space-y-6">
                 <div className="animate-fade-in-up">
@@ -261,29 +294,31 @@ const App: React.FC = () => {
                       lastUpdated={currentAccount.lastUpdated}
                       onRefresh={currentAccount.dataUrl ? refreshData : undefined}
                       isSyncing={isSyncing || isRefreshing}
+                      currency={currency}
                     />
                 </div>
                 <div className="animate-fade-in-up animation-delay-100">
-                    <MemoizedDashboard metrics={processedData.metrics} />
+                    <MemoizedDashboard metrics={processedData.metrics} currency={currency} />
                 </div>
                 <div className="animate-fade-in-up animation-delay-200">
                     <BalanceChart 
                         data={processedData.chartData} 
                         onAdvancedAnalysisClick={() => setView('analysis')} 
                         initialBalance={currentAccount.initialBalance}
+                        currency={currency}
                     />
                 </div>
                 <div className="animate-fade-in-up animation-delay-300">
-                    <DashboardMetricsBottom metrics={processedData.metrics} />
-                </div>
-                <div className="animate-fade-in-up animation-delay-400">
-                    <RecentTradesTable trades={processedData.recentTrades} />
+                    <DashboardMetricsBottom metrics={processedData.metrics} currency={currency} />
                 </div>
                  {processedData.openTrades.length > 0 && (
-                    <div className="animate-fade-in-up animation-delay-500">
-                        <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} />
+                    <div className="animate-fade-in-up animation-delay-400">
+                        <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} currency={currency} />
                     </div>
                 )}
+                <div className="animate-fade-in-up animation-delay-500">
+                    <RecentTradesTable trades={processedData.recentTrades} currency={currency} />
+                </div>
             </div>
         );
     }
@@ -312,13 +347,13 @@ const App: React.FC = () => {
             case 'dashboard':
                 return renderDashboard();
             case 'trades':
-                return <MemoizedTradesList trades={processedData.closedTrades} />;
+                return <MemoizedTradesList trades={processedData.closedTrades} currency={currency} />;
             case 'calendar':
                 return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} currency={currency} />;
             case 'analysis':
-                return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} />;
+                return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} currency={currency} onBackToDashboard={() => setView('dashboard')} />;
             case 'goals':
-                return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={handleSaveGoals} />;
+                return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={handleSaveGoals} currency={currency} />;
             case 'profile':
                 return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} />;
             default:
@@ -389,7 +424,9 @@ const App: React.FC = () => {
                 onClose={() => setAccountActionModalOpen(false)}
                 onAddAccount={handleInitiateAdd}
                 onUpdateAccount={handleInitiateUpdate}
+                onDeleteAccount={handleInitiateDelete}
                 canUpdate={!!currentAccount}
+                canDelete={!!currentAccount}
             />
 
             <AddAccountModal
@@ -398,6 +435,13 @@ const App: React.FC = () => {
                 onSaveAccount={handleSaveAccount}
                 mode={modalMode}
                 accountToUpdate={currentAccount}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteConfirmModalOpen}
+                onClose={() => setDeleteConfirmModalOpen(false)}
+                onConfirm={handleDeleteAccount}
+                accountName={currentAccount?.name || ''}
             />
             
             {processedData && (

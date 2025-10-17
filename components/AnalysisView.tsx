@@ -10,12 +10,32 @@ interface AnalysisViewProps {
   trades: Trade[];
   initialBalance: Account['initialBalance'];
   onBackToDashboard: () => void;
+  currency: 'USD' | 'EUR';
 }
 
-const CustomTooltip: React.FC<any> = ({ active, payload }) => {
+const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
   const { language } = useLanguage();
   const formatCurrency = (value: number, options?: Intl.NumberFormatOptions) => {
-    return new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', currencyDisplay: 'symbol', ...options }).format(value);
+    const symbol = currency === 'USD' ? '$' : '€';
+    
+    let sign = '';
+    const _options = options || {};
+    if (_options.signDisplay === 'always') {
+        sign = value >= 0 ? '+' : '-';
+    } else if (value < 0) {
+        sign = '-';
+    }
+
+    const numberPart = new Intl.NumberFormat(language, {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(Math.abs(value));
+
+    if (language === 'fr') {
+        return `${sign}${numberPart}${symbol}`;
+    }
+    return `${sign}${symbol}${numberPart}`;
   }
 
   if (active && payload && payload.length) {
@@ -58,7 +78,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload }) => {
   return null;
 };
 
-const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onBackToDashboard }) => {
+const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onBackToDashboard, currency }) => {
     const { t, language } = useLanguage();
     const isDesktop = useMediaQuery('(min-width: 768px)');
 
@@ -151,8 +171,16 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     const belowInitialColor = '#ef4444';
 
     const formatCurrency = (value: number) => {
+        const symbol = currency === 'USD' ? '$' : '€';
         const sign = value >= 0 ? '+' : '-';
-        return `${sign}${new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', currencyDisplay: 'symbol' }).format(Math.abs(value))}`;
+        const absNumberPart = new Intl.NumberFormat(language, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(Math.abs(value));
+        if (language === 'fr') {
+            return `${sign}${absNumberPart}${symbol}`;
+        }
+        return `${sign}${symbol}${absNumberPart}`;
     };
 
     const chartDomain = useMemo(() => {
@@ -262,9 +290,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                                 <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} type="number" domain={['dataMin', 'dataMax']} allowDecimals={false} />
                                 <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} domain={[domainMin, domainMax]} tickLine={false} axisLine={false} allowDataOverflow />
-                                <Tooltip content={<CustomTooltip />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                                <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
                                 <ReferenceLine y={initialBalance} stroke="#a0aec0" strokeDasharray="4 4" strokeWidth={1}>
-                                    <Label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} />
+                                    <Label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} dy={4} />
                                 </ReferenceLine>
                                 {/* These two Areas are for the dual-color fill, clipped at the initial balance line */}
                                 <Area type="monotone" dataKey="balance" stroke={strokeColor} strokeWidth={2} fillOpacity={1} fill="url(#analysisProfitGradient)" clipPath="url(#analysisClipAbove)" />
@@ -281,7 +309,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 </div>
             </div>
 
-            <FilteredTradesTable trades={filteredTrades.sort((a,b) => b.closeTime.getTime() - a.closeTime.getTime())} />
+            <FilteredTradesTable trades={filteredTrades.sort((a,b) => b.closeTime.getTime() - a.closeTime.getTime())} currency={currency} />
         </div>
     );
 }
