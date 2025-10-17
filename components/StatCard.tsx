@@ -4,7 +4,7 @@ const StatCard: React.FC<{ title: string; value: string; colorClass?: string; to
   <div className="bg-gray-800/50 p-4 rounded-xl shadow-lg border border-gray-700/50 transform transition-transform hover:scale-105 hover:bg-gray-800 group relative">
     <div className="flex justify-between items-center space-x-4">
         <h3 className="text-sm font-medium text-gray-400 truncate">{title}</h3>
-        <p className={`text-stat-value font-bold whitespace-nowrap ${colorClass}`}>{value}</p>
+        <p className={`text-stat-value-md md:text-stat-value font-bold whitespace-nowrap ${colorClass}`}>{value}</p>
     </div>
     {tooltip && (
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">

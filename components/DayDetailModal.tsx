@@ -13,17 +13,10 @@ interface DayDetailModalProps {
 }
 
 const StatCard: React.FC<{ title: string; value: string; colorClass?: string; }> = ({ title, value, colorClass = 'text-white' }) => {
-    let valueClass = 'text-stat-value';
-    if (value.length > 12) {
-        valueClass = 'text-stat-value-sm';
-    } else if (value.length > 9) {
-        valueClass = 'text-stat-value-md';
-    }
-    
     return (
-        <div className="bg-[#0c0b1e]/60 p-4 rounded-lg text-center">
-            <h4 className="text-sm font-medium text-gray-400">{title}</h4>
-            <p className={`${valueClass} font-bold mt-1 ${colorClass}`}>{value}</p>
+        <div className="bg-[#0c0b1e]/60 p-2 sm:p-4 rounded-lg text-center">
+            <h4 className="text-sm font-medium text-gray-400 truncate">{title}</h4>
+            <p className={`text-stat-value-sm sm:text-stat-value-md lg:text-stat-value font-bold mt-1 ${colorClass}`}>{value}</p>
         </div>
     );
 };
@@ -45,6 +38,25 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
     }, [trades, startOfDayBalance]);
 
     const formatCurrency = (value: number) => {
+        const symbol = currency === 'EUR' ? '€' : '$';
+        const sign = value >= 0 ? '' : '-';
+        
+        // Use currency style for symbol and formatting, then manually construct with sign.
+        const formattedValue = new Intl.NumberFormat(language, {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(Math.abs(value));
+
+        // Remove the currency symbol from formattedValue if it's there to avoid duplication
+        const numberPart = formattedValue.replace(/[$€]/, '').trim();
+
+        return `${sign}${numberPart}${symbol}`;
+    };
+    
+    // Simplified formatting for the profit values in the table.
+    const formatProfit = (value: number) => {
         const symbol = currency === 'EUR' ? '€' : '$';
         const sign = value >= 0 ? '+' : '';
         const formattedValue = new Intl.NumberFormat(language, {
@@ -102,7 +114,7 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
                                         <td className="px-4 py-2 font-medium text-white">{trade.symbol}</td>
                                         <td className={`px-4 py-2 font-bold uppercase ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`}>{trade.type}</td>
                                         <td className="px-4 py-2 text-right text-white">{trade.size.toFixed(2)}</td>
-                                        <td className={`px-4 py-2 text-right font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(netProfit)}</td>
+                                        <td className={`px-4 py-2 text-right font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatProfit(netProfit)}</td>
                                     </tr>
                                 );
                             })}
