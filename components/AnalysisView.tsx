@@ -84,6 +84,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     const [selectedComments, setSelectedComments] = useState<string[]>([]);
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
+
+    const animationKey = useMemo(() => {
+        return `${selectedSymbols.join(',')}-${selectedComments.join(',')}-${startDate}-${endDate}`;
+    }, [selectedSymbols, selectedComments, startDate, endDate]);
     
     const uniqueSymbols = useMemo(() => [...new Set(trades.map(t => t.symbol))].sort(), [trades]);
     const uniqueComments = useMemo(() => [...new Set(trades.map(t => t.comment).filter(c => !!c))].sort(), [trades]);
@@ -261,7 +265,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
                 <div style={{ width: '100%', height: 400 }}>
                     {hasEnoughData ? (
-                        <ResponsiveContainer>
+                        <ResponsiveContainer key={animationKey}>
                             <AreaChart data={chartData} margin={{ top: 5, right: !isDesktop ? 5 : 20, left: !isDesktop ? -10 : -30, bottom: 5 }}>
                                 <defs>
                                     <linearGradient id="analysisProfitFill" x1="0" y1="0" x2="0" y2="1">
@@ -279,7 +283,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
                                 
                                 <Area
-                                    isAnimationActive={false}
+                                    isAnimationActive={true}
+                                    animationDuration={800}
+                                    animationEasing="ease-out"
                                     type="monotone"
                                     dataKey={(d) => (d.balance >= initialBalance ? d.balance : initialBalance)}
                                     baseValue={initialBalance}
@@ -288,7 +294,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 />
                                 
                                 <Area
-                                    isAnimationActive={false}
+                                    isAnimationActive={true}
+                                    animationDuration={800}
+                                    animationEasing="ease-out"
                                     type="monotone"
                                     dataKey={(d) => (d.balance < initialBalance ? d.balance : initialBalance)}
                                     baseValue={initialBalance}
@@ -297,7 +305,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 />
 
                                 <Area 
-                                    isAnimationActive={false}
+                                    isAnimationActive={true}
+                                    animationDuration={800}
+                                    animationEasing="ease-out"
                                     type="monotone" 
                                     dataKey="balance" 
                                     stroke={strokeColor} 

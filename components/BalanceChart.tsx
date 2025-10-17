@@ -277,7 +277,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
       </div>
       <div style={{ width: '100%', height: 300 }}>
         {hasAnyData ? (
-          <ResponsiveContainer>
+          <ResponsiveContainer key={timeRange}>
             <AreaChart
               data={filteredData}
               margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? -10 : -30, bottom: 5 }}
@@ -315,7 +315,9 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
               <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
               
               <Area
-                  isAnimationActive={false}
+                  isAnimationActive={true}
+                  animationDuration={800}
+                  animationEasing="ease-out"
                   type="monotone"
                   dataKey={(d) => (d.balance >= initialBalance ? d.balance : initialBalance)}
                   baseValue={initialBalance}
@@ -324,7 +326,9 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
               />
               
               <Area
-                  isAnimationActive={false}
+                  isAnimationActive={true}
+                  animationDuration={800}
+                  animationEasing="ease-out"
                   type="monotone"
                   dataKey={(d) => (d.balance < initialBalance ? d.balance : initialBalance)}
                   baseValue={initialBalance}
@@ -333,7 +337,9 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
               />
               
               <Area 
-                isAnimationActive={false}
+                isAnimationActive={true}
+                animationDuration={800}
+                animationEasing="ease-out"
                 type="monotone" 
                 dataKey="balance" 
                 stroke={strokeColor} 
