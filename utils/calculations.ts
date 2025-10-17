@@ -13,8 +13,6 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     return null;
   }
   
-  // Add robust validation to prevent crashes from malformed data in localStorage.
-  // This filters out any trades that are null, or don't have valid Date objects for time properties.
   const validTrades = account.trades.filter(t =>
     t && t.openTime instanceof Date && t.closeTime instanceof Date
   );
@@ -23,52 +21,57 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     return null;
   }
   
-  const trades = validTrades; // Use the sanitized list of trades for all calculations
+  const trades = validTrades;
   const { initialBalance } = account;
   
-  // Separate open and closed trades
   const openTrades = trades.filter(t => t.closePrice === 0);
   const closedTrades = trades.filter(t => t.closePrice !== 0);
 
-  // Sort open trades by open time, most recent first
   const sortedOpenTrades = [...openTrades].sort((a, b) => b.openTime.getTime() - a.openTime.getTime());
-
   const sortedClosedTrades = [...closedTrades].sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
 
-  // --- Single-Pass Data Processing on Closed Trades ---
-  let currentBalance = initialBalance;
+  // --- Chart Data and Metrics Calculation ---
+  const chartData: ChartDataPoint[] = [];
+  let runningBalance = initialBalance;
+  
+  // 1. Add the true starting point of the account
+  const firstTradeTime = sortedClosedTrades.length > 0 ? sortedClosedTrades[0].openTime.getTime() : Date.now();
+  chartData.push({
+    date: new Date(firstTradeTime - 1).toISOString().split('T')[0],
+    balance: initialBalance,
+    trade: null,
+    index: 0,
+    timestamp: firstTradeTime - 1,
+  });
+
   let peakBalance = initialBalance;
   let maxDrawdown: MaxDrawdown = { absolute: 0, percentage: 0 };
-  
   let grossProfit = 0;
   let grossLoss = 0;
   let winningTradesCount = 0;
   let losingTradesCount = 0;
   let totalCommission = 0;
   let totalSwap = 0;
-
-  const chartData: ChartDataPoint[] = [];
   const tradesByDay: { [key: string]: Trade[] } = {};
 
+  // 2. Iterate through closed trades to build the equity curve and calculate metrics
   sortedClosedTrades.forEach((trade, index) => {
-    // Net Profit Calculation
     const netTradeProfit = trade.profit + trade.commission + trade.swap;
-    currentBalance += netTradeProfit;
-    
-    // Balance Chart Data
+    runningBalance += netTradeProfit;
+
     chartData.push({
       date: trade.closeTime.toISOString().split('T')[0],
-      balance: parseFloat(currentBalance.toFixed(2)),
+      balance: parseFloat(runningBalance.toFixed(2)),
       trade,
-      index: index + 1, // Start trade indices from 1
+      index: index + 1, // index is based on number of closed trades
       timestamp: trade.closeTime.getTime(),
     });
 
     // Max Drawdown Calculation
-    if (currentBalance > peakBalance) {
-      peakBalance = currentBalance;
+    if (runningBalance > peakBalance) {
+      peakBalance = runningBalance;
     }
-    const drawdown = peakBalance - currentBalance;
+    const drawdown = peakBalance - runningBalance;
     if (drawdown > maxDrawdown.absolute) {
       maxDrawdown.absolute = drawdown;
       if (peakBalance > 0) {
@@ -94,8 +97,7 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     }
     tradesByDay[day].push(trade);
   });
-  // --- End of Single Pass ---
-
+  
   // Calculate daily summaries with return percentage
   const sortedDayKeys = Object.keys(tradesByDay).sort((a, b) => a.localeCompare(b));
   let balanceAtStartOfDay = initialBalance;
@@ -112,12 +114,11 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
           dailyReturnPercent: dailyReturnPercent,
       });
       
-      balanceAtStartOfDay += dailyProfit; // Update balance for the next day
+      balanceAtStartOfDay += dailyProfit;
   }
 
-  const dailySummary = dailySummariesWithReturn.sort((a,b) => b.dateKey.localeCompare(a.dateKey)); // Sort descending for display
+  const dailySummary = dailySummariesWithReturn.sort((a,b) => b.dateKey.localeCompare(a.dateKey));
 
-  // Calculate profit from the last day with trading activity
   const lastTradeDayKey = Object.keys(tradesByDay).sort().pop();
   const lastDayProfit = lastTradeDayKey ? dailySummary.find(d => d.dateKey === lastTradeDayKey)?.profit || 0 : 0;
   
@@ -132,18 +133,15 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
   const netProfit = grossProfit + grossLoss + totalCommission + totalSwap;
   const closedTradesBalance = initialBalance + netProfit;
 
-  // Calculate Floating P/L and Equity
   const floatingPnl = openTrades.reduce((sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0);
   const equity = closedTradesBalance + floatingPnl;
 
-  // If there are open trades, add the current equity as the last point of the chart data.
-  if (openTrades.length > 0) {
-      const lastIndex = chartData.length > 0 ? chartData[chartData.length - 1].index : 0;
+  if (openTrades.length > 0 || chartData.length === 1) { // If only initial point exists
+      const lastIndex = chartData[chartData.length - 1].index;
       const equityPoint: ChartDataPoint = {
           date: new Date().toISOString().split('T')[0],
           balance: equity,
           trade: null,
-          // Position it slightly after the last trade on the x-axis for visual separation
           index: lastIndex + 1,
           timestamp: Date.now(),
           isEquityPoint: true,

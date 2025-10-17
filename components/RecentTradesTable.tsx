@@ -48,9 +48,15 @@ const RecentTradesTable: React.FC<RecentTradesTableProps> = ({ trades, currency 
                             const isBuy = trade.type.toLowerCase() === 'buy';
                             const isProfit = trade.profit >= 0;
                             return (
-                                <tr key={trade.ticket} className="border-b border-gray-800 text-xs">
+                                <tr key={trade.ticket} className="border-b border-gray-800 text-xs align-top">
                                     <td className="px-2 sm:px-4 py-3 text-white">{trade.symbol}</td>
-                                    <td className="px-2 sm:px-4 py-3 text-white">{formatDate(trade.closeTime)}</td>
+                                    <td className="px-2 sm:px-4 py-3 text-white leading-tight">
+                                        <div className="sm:hidden">
+                                            <div>{trade.closeTime.toLocaleDateString(language, { month: 'short', day: 'numeric' })}</div>
+                                            <div className="text-gray-400">{trade.closeTime.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+                                        </div>
+                                        <span className="hidden sm:inline truncate">{formatDate(trade.closeTime)}</span>
+                                    </td>
                                     <td className={`px-2 sm:px-4 py-3 font-bold uppercase ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`}>{trade.type}</td>
                                     <td className="px-2 sm:px-4 py-3 text-right text-white">{trade.size}</td>
                                     <td className={`px-2 sm:px-4 py-3 text-right font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(trade.profit)}</td>

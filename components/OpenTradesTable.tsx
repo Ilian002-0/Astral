@@ -50,7 +50,7 @@ const OpenTradesTable: React.FC<OpenTradesTableProps> = ({ trades, floatingPnl, 
                             const netProfit = trade.profit + trade.commission + trade.swap;
                             const isProfit = netProfit >= 0;
                             return (
-                                <tr key={trade.ticket} className="border-b border-gray-800 text-xs">
+                                <tr key={trade.ticket} className="border-b border-gray-800 text-xs align-top">
                                     <td className="px-2 sm:px-4 py-3 text-white truncate">{trade.symbol}</td>
                                     <td className="px-2 sm:px-4 py-3 text-white leading-tight">
                                         <div className="sm:hidden">

@@ -41,8 +41,6 @@ const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
   if (active && payload && payload.length) {
     const dataPoint: ChartDataPoint = payload[0].payload;
 
-    // The starting point for a filtered view might not have an index of 0,
-    // but it will always have a null `trade` property. Check for this case first.
     if (!dataPoint.trade) {
         const label = dataPoint.index === 0 ? 'Initial Balance' : 'Balance Before Filter';
         return (
@@ -96,7 +94,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
             const commentMatch = selectedComments.length === 0 || selectedComments.includes(trade.comment);
             
             const startMatch = !startDate || trade.closeTime.getTime() >= new Date(startDate).getTime();
-            // for end date, we must include the whole day.
             const endMatch = !endDate || trade.closeTime.getTime() <= new Date(endDate).setHours(23, 59, 59, 999);
 
             return symbolMatch && commentMatch && startMatch && endMatch;
@@ -104,13 +101,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     }, [trades, selectedSymbols, selectedComments, startDate, endDate]);
 
     const yAxisTickFormatter = (value: number) => {
+        const thousands = value / 1000;
         const formattedValue = new Intl.NumberFormat(language, {
-            notation: 'compact',
-            compactDisplay: 'short',
             minimumFractionDigits: 1,
             maximumFractionDigits: 1,
-        }).format(value);
-        return `$${formattedValue}`;
+        }).format(thousands) + 'K';
+        return formattedValue;
     };
 
     const filteredProfit = useMemo(() => {
@@ -145,7 +141,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 date: trade.closeTime.toISOString().split('T')[0],
                 balance: parseFloat(currentBalance.toFixed(2)),
                 trade,
-                index: trades.indexOf(trade) + 1, // Start trades from index 1
+                index: trades.indexOf(trade) + 1,
                 timestamp: trade.closeTime.getTime(),
             };
         });
@@ -165,10 +161,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     }, [filteredTrades, initialBalance, trades]);
     
     const hasEnoughData = chartData && chartData.length >= 2;
-    const endBalance = hasEnoughData ? chartData[chartData.length - 1].balance : initialBalance;
   
-    const strokeColor = endBalance >= initialBalance ? '#2dd4bf' : '#f87171';
-    const belowInitialColor = '#ef4444';
+    const strokeColor = '#f87171';
+    const profitFillColor = 'rgb(13 148 136)';
+    const lossFillColor = 'rgb(159 18 57)';
+    const grayColor = '#6b7280';
 
     const formatCurrency = (value: number) => {
         const symbol = currency === 'USD' ? '$' : '€';
@@ -184,19 +181,14 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     };
 
     const chartDomain = useMemo(() => {
-        if (!hasEnoughData) return { domainMin: 0, domainMax: 0 };
+        if (!hasEnoughData) return { domainMin: initialBalance * 0.95, domainMax: initialBalance * 1.05 };
     
         const balanceValues = chartData.map(d => d.balance);
         const minBalance = Math.min(...balanceValues, initialBalance);
         const maxBalance = Math.max(...balanceValues, initialBalance);
         const range = maxBalance - minBalance;
         
-        let padding = 0;
-        if (range === 0) {
-            padding = maxBalance > 0 ? maxBalance * 0.1 : 1000;
-        } else {
-            padding = range * 0.05;
-        }
+        let padding = range === 0 ? (maxBalance > 0 ? maxBalance * 0.1 : 1000) : range * 0.05;
     
         const domainMin = Math.floor(minBalance - padding);
         const domainMax = Math.ceil(maxBalance + padding);
@@ -204,7 +196,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
       }, [chartData, hasEnoughData, initialBalance]);
     
     const { domainMin, domainMax } = chartDomain;
-
+    
     return (
         <div className="space-y-6">
             {!isDesktop && (
@@ -272,33 +264,51 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                         <ResponsiveContainer>
                             <AreaChart data={chartData} margin={{ top: 5, right: !isDesktop ? 5 : 20, left: !isDesktop ? -10 : -30, bottom: 5 }}>
                                 <defs>
-                                    <linearGradient id="analysisProfitGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor={strokeColor} stopOpacity={0.4}/>
-                                    <stop offset="95%" stopColor={strokeColor} stopOpacity={0.05}/>
+                                    <linearGradient id="analysisProfitFill" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/>
+                                        <stop offset="95%" stopColor={profitFillColor} stopOpacity={0.4}/>
                                     </linearGradient>
-                                    <linearGradient id="analysisLossGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={belowInitialColor} stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor={belowInitialColor} stopOpacity={0.05} />
+                                    <linearGradient id="analysisLossFill" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/>
+                                        <stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/>
                                     </linearGradient>
-                                    <clipPath id="analysisClipAbove">
-                                        <rect x="0" y="0" width="100%" height={initialBalance ? (1 - (initialBalance - domainMin) / (domainMax - domainMin)) * 100 + '%' : '100%'} />
-                                    </clipPath>
-                                    <clipPath id="analysisClipBelow">
-                                        <rect x="0" y={initialBalance ? (1 - (initialBalance - domainMin) / (domainMax - domainMin)) * 100 + '%' : '0'} width="100%" height={initialBalance ? ((initialBalance - domainMin) / (domainMax - domainMin)) * 100 + '%' : '0'} />
-                                    </clipPath>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                                 <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} type="number" domain={['dataMin', 'dataMax']} allowDecimals={false} />
                                 <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} domain={[domainMin, domainMax]} tickLine={false} axisLine={false} allowDataOverflow />
                                 <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
-                                <ReferenceLine y={initialBalance} stroke="#a0aec0" strokeDasharray="4 4" strokeWidth={1}>
-                                    <Label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} dy={4} />
+                                
+                                <Area
+                                    isAnimationActive={false}
+                                    type="monotone"
+                                    dataKey={(d) => (d.balance >= initialBalance ? d.balance : initialBalance)}
+                                    baseValue={initialBalance}
+                                    stroke="none"
+                                    fill="url(#analysisProfitFill)"
+                                />
+                                
+                                <Area
+                                    isAnimationActive={false}
+                                    type="monotone"
+                                    dataKey={(d) => (d.balance < initialBalance ? d.balance : initialBalance)}
+                                    baseValue={initialBalance}
+                                    stroke="none"
+                                    fill="url(#analysisLossFill)"
+                                />
+
+                                <Area 
+                                    isAnimationActive={false}
+                                    type="monotone" 
+                                    dataKey="balance" 
+                                    stroke={strokeColor} 
+                                    strokeWidth={2} 
+                                    fill="none" 
+                                    activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: strokeColor }} 
+                                />
+                                
+                                <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
+                                    <Label value="Initial" position="insideRight" fill={grayColor} fontSize={10} dy={-4} />
                                 </ReferenceLine>
-                                {/* These two Areas are for the dual-color fill, clipped at the initial balance line */}
-                                <Area type="monotone" dataKey="balance" stroke={strokeColor} strokeWidth={2} fillOpacity={1} fill="url(#analysisProfitGradient)" clipPath="url(#analysisClipAbove)" />
-                                <Area type="monotone" dataKey="balance" stroke={strokeColor} strokeWidth={2} fillOpacity={1} fill="url(#analysisLossGradient)" clipPath="url(#analysisClipBelow)" />
-                                {/* This invisible Area is for catching hover events to show the tooltip and activeDot */}
-                                <Area type="monotone" dataKey="balance" fill="transparent" stroke="transparent" activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: strokeColor }} />
                             </AreaChart>
                         </ResponsiveContainer>
                     ) : (

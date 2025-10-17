@@ -76,6 +76,14 @@ const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
         </div>
       );
     }
+    
+    // Fallback for initial balance point
+    return (
+      <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
+          <p className="font-bold text-lg text-white mb-1">Initial Balance</p>
+          <p className="text-gray-400">{formatCurrency(balance)}</p>
+      </div>
+    );
   }
   return null;
 };
@@ -108,13 +116,12 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   }, []);
 
   const yAxisTickFormatter = (value: number) => {
+    const thousands = value / 1000;
     const formattedValue = new Intl.NumberFormat(language, {
-        notation: 'compact',
-        compactDisplay: 'short',
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
-    }).format(value);
-    return `$${formattedValue}`;
+    }).format(thousands) + 'K';
+    return formattedValue;
   };
 
   const timeRangeOptions: { key: TimeRange; label: string; }[] = useMemo(() => [
@@ -125,50 +132,65 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   ], [t]);
 
   const filteredData = useMemo(() => {
-    if (!data || data.length === 0) return [];
+    if (!data || data.length < 1) return []; // Should have at least the initial point
+
+    if (timeRange === 'all') {
+      return data; // The original data is already complete
+    }
 
     const historicalData = data;
     const now = new Date();
     let timeFilteredData: ChartDataPoint[] = [];
+    let startTime: number;
 
     switch (timeRange) {
-        case 'today': {
-            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            timeFilteredData = historicalData.filter(d => d.timestamp >= startOfToday.getTime());
-            break;
-        }
-        case 'week': {
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(now.getDate() - 7);
-            timeFilteredData = historicalData.filter(d => d.timestamp >= sevenDaysAgo.getTime());
-            break;
-        }
-        case 'month': {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(now.getDate() - 30);
-            timeFilteredData = historicalData.filter(d => d.timestamp >= thirtyDaysAgo.getTime());
-            break;
-        }
-        case 'all':
-        default:
-            timeFilteredData = historicalData;
+      case 'today':
+        startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        break;
+      case 'week':
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(now.getDate() - 7);
+        startTime = sevenDaysAgo.getTime();
+        break;
+      case 'month':
+      default:
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        startTime = thirtyDaysAgo.getTime();
+        break;
     }
     
-    const firstPointTime = timeFilteredData[0]?.timestamp;
-    const lastPointBeforeRange = historicalData.slice().reverse().find(d => d.timestamp < firstPointTime);
-    const startingBalance = lastPointBeforeRange ? lastPointBeforeRange.balance : initialBalance;
-    const startingIndex = lastPointBeforeRange ? lastPointBeforeRange.index : 0;
+    timeFilteredData = historicalData.filter(d => d.timestamp >= startTime);
 
-    const startingPoint: ChartDataPoint = {
-        date: new Date(firstPointTime ? firstPointTime - 1 : Date.now()).toISOString().split('T')[0],
-        balance: startingBalance,
-        trade: null,
-        index: startingIndex,
-        timestamp: firstPointTime ? firstPointTime - 1 : Date.now(),
-    };
+    // Find the last data point just before the selected time range starts to anchor the chart
+    const lastPointBeforeRange = historicalData
+      .slice()
+      .reverse()
+      .find(d => d.timestamp < startTime);
+
+    // If the filtered data includes the very first point of all time, we don't need to add anything.
+    // The first point in historicalData is always the initial balance point with index 0.
+    if (timeFilteredData.some(d => d.index === 0)) {
+        return timeFilteredData;
+    }
+
+    // If we have a point before the range, prepend it.
+    if (lastPointBeforeRange) {
+      // If the filtered data starts right after our anchor, we don't need the anchor.
+      if (timeFilteredData.length > 0 && timeFilteredData[0].index === lastPointBeforeRange.index + 1) {
+          return [lastPointBeforeRange, ...timeFilteredData];
+      }
+      return [lastPointBeforeRange, ...timeFilteredData];
+    }
     
-    return [startingPoint, ...timeFilteredData];
-  }, [data, timeRange, initialBalance]);
+    // If there's no data in range and no point before, it means all trades are in the future.
+    // In this case, just show the initial balance point.
+    if (timeFilteredData.length === 0 && !lastPointBeforeRange) {
+        return [historicalData[0]];
+    }
+
+    return timeFilteredData;
+  }, [data, timeRange]);
 
   const handleSelect = (range: TimeRange) => {
     setTimeRange(range);
@@ -176,16 +198,15 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   };
   
   const currentLabel = timeRangeOptions.find(opt => opt.key === timeRange)?.label;
-  const hasEnoughCurveData = filteredData && filteredData.length >= 2;
-  const hasAnyData = filteredData.length > 0;
-  
-  const endBalance = hasEnoughCurveData ? filteredData[filteredData.length - 1].balance : initialBalance;
-  
-  const strokeColor = endBalance >= initialBalance ? '#2dd4bf' : '#f87171';
-  const belowInitialColor = '#ef4444';
+  const hasAnyData = filteredData.length > 1; // Need at least 2 points to draw a line/area
+
+  const strokeColor = '#f87171'; // Static salmon/red color for the line
+  const profitFillColor = 'rgb(13 148 136)'; // teal-600
+  const lossFillColor = 'rgb(159 18 57)'; // rose-800
+  const grayColor = '#6b7280'; // gray-500
 
   const chartDomain = useMemo(() => {
-    if (!hasAnyData) return { domainMin: 0, domainMax: 0 };
+    if (!hasAnyData) return { domainMin: initialBalance * 0.95, domainMax: initialBalance * 1.05 };
 
     const balanceValues = filteredData.map(d => d.balance).filter(b => b !== null) as number[];
     if (balanceValues.length === 0) return { domainMin: initialBalance - 500, domainMax: initialBalance + 500 };
@@ -225,7 +246,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
             <div className="relative" ref={dropdownRef}>
                 <button
                 onClick={() => setDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-between w-40 px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-gray-300 rounded-lg shadow-sm transition-colors"
+                className="flex items-center justify-between w-36 px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-gray-300 rounded-lg shadow-sm transition-colors"
                 aria-haspopup="true"
                 aria-expanded={isDropdownOpen}
                 >
@@ -235,7 +256,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 </svg>
                 </button>
                 {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-40 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 animate-fade-in-fast">
+                    <div className="absolute right-0 mt-2 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 animate-fade-in-fast">
                         <ul className="py-1">
                             {timeRangeOptions.map(({ key, label }) => (
                                 <li key={key}>
@@ -262,20 +283,14 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
               margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? -10 : -30, bottom: 5 }}
             >
               <defs>
-                <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={strokeColor} stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor={strokeColor} stopOpacity={0.05}/>
+                 <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/>
+                    <stop offset="95%" stopColor={profitFillColor} stopOpacity={0.4}/>
                 </linearGradient>
-                <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={belowInitialColor} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={belowInitialColor} stopOpacity={0.05} />
+                <linearGradient id="lossFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/>
                 </linearGradient>
-                <clipPath id="clipAbove">
-                    <rect x="0" y="0" width="100%" height={initialBalance ? (1 - (initialBalance - domainMin) / (domainMax - domainMin)) * 100 + '%' : '100%'} />
-                </clipPath>
-                <clipPath id="clipBelow">
-                    <rect x="0" y={initialBalance ? (1 - (initialBalance - domainMin) / (domainMax - domainMin)) * 100 + '%' : '0'} width="100%" height={initialBalance ? ((initialBalance - domainMin) / (domainMax - domainMin)) * 100 + '%' : '0'} />
-                </clipPath>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
               <XAxis 
@@ -298,30 +313,38 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 allowDataOverflow
               />
               <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
-              <ReferenceLine y={initialBalance} stroke="#a0aec0" strokeDasharray="4 4" strokeWidth={1}>
-                <Label value="Initial" position="insideRight" fill="#a0aec0" fontSize={10} dy={4} />
-              </ReferenceLine>
+              
+              <Area
+                  isAnimationActive={false}
+                  type="monotone"
+                  dataKey={(d) => (d.balance >= initialBalance ? d.balance : initialBalance)}
+                  baseValue={initialBalance}
+                  stroke="none"
+                  fill="url(#profitFill)"
+              />
+              
+              <Area
+                  isAnimationActive={false}
+                  type="monotone"
+                  dataKey={(d) => (d.balance < initialBalance ? d.balance : initialBalance)}
+                  baseValue={initialBalance}
+                  stroke="none"
+                  fill="url(#lossFill)"
+              />
               
               <Area 
-                  type="monotone" 
-                  dataKey="balance" 
-                  stroke={strokeColor}
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#balanceGradient)"
-                  clipPath="url(#clipAbove)"
+                isAnimationActive={false}
+                type="monotone" 
+                dataKey="balance" 
+                stroke={strokeColor} 
+                strokeWidth={2} 
+                fill="none" 
+                activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: strokeColor }} 
               />
-              <Area 
-                  type="monotone" 
-                  dataKey="balance" 
-                  stroke={strokeColor}
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#lossGradient)"
-                  clipPath="url(#clipBelow)"
-              />
-              {/* This invisible Area must be last to be the top layer for catching hover events across the whole curve. */}
-              <Area type="monotone" dataKey="balance" fill="transparent" stroke="transparent" activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: strokeColor }} />
+
+              <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
+                <Label value="Initial" position="insideRight" fill={grayColor} fontSize={10} dy={-4} />
+              </ReferenceLine>
             </AreaChart>
           </ResponsiveContainer>
         ) : (
