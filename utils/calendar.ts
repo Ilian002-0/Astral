@@ -50,6 +50,15 @@ export const generateCalendarData = (trades: Trade[], displayDate: Date, languag
         calendarDays.push({ date, profit: 0, tradeCount: 0, isCurrentMonth: false, isToday: false });
     }
 
+    // If the calendar grid extends to 6 weeks, check if the last week is entirely
+    // composed of days from the next month. If so, remove it for a tighter view.
+    if (calendarDays.length > 35) {
+        const lastWeek = calendarDays.slice(35);
+        if (!lastWeek.some(day => day.isCurrentMonth)) {
+            calendarDays.splice(35);
+        }
+    }
+
     const weeklySummaries: WeeklySummary[] = [];
     const monthWeeks: CalendarDay[][] = [];
     

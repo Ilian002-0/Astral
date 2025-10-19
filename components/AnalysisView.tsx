@@ -117,7 +117,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         return filteredTrades.reduce((sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0);
     }, [filteredTrades]);
 
-    const chartData = useMemo(() => {
+    const { chartData, baseBalanceForChart } = useMemo(() => {
         const sortedFilteredTrades = [...filteredTrades].sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
 
         if (sortedFilteredTrades.length === 0) {
@@ -128,40 +128,39 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 index: 0,
                 timestamp: Date.now(),
             };
-            return [emptyStartPoint];
+            return { chartData: [emptyStartPoint], baseBalanceForChart: initialBalance };
         }
 
         const firstFilteredTrade = sortedFilteredTrades[0];
-        const firstFilteredTradeOriginalIndex = trades.indexOf(firstFilteredTrade);
-
+        const firstFilteredTradeOriginalIndex = trades.findIndex(t => t.ticket === firstFilteredTrade.ticket);
+        
         const tradesBefore = firstFilteredTradeOriginalIndex > 0 ? trades.slice(0, firstFilteredTradeOriginalIndex) : [];
         const balanceBefore = initialBalance + tradesBefore.reduce((sum, t) => sum + (t.profit + t.commission + t.swap), 0);
         
         let currentBalance = balanceBefore;
         
-        const dataPoints: ChartDataPoint[] = sortedFilteredTrades.map((trade) => {
+        const dataPoints: ChartDataPoint[] = sortedFilteredTrades.map((trade, idx) => {
             currentBalance += (trade.profit + trade.commission + trade.swap);
             return {
                 date: trade.closeTime.toISOString().split('T')[0],
                 balance: parseFloat(currentBalance.toFixed(2)),
                 trade,
-                index: trades.indexOf(trade) + 1,
+                index: idx + 1,
                 timestamp: trade.closeTime.getTime(),
             };
         });
 
-        const startingIndex = firstFilteredTradeOriginalIndex > 0 ? trades.indexOf(trades[firstFilteredTradeOriginalIndex - 1]) + 1 : 0;
         const startingTimestamp = firstFilteredTrade.openTime.getTime() - 1;
 
         const startingPoint: ChartDataPoint = {
             date: new Date(startingTimestamp).toISOString().split('T')[0],
             balance: parseFloat(balanceBefore.toFixed(2)),
             trade: null,
-            index: startingIndex,
+            index: 0,
             timestamp: startingTimestamp,
         };
 
-        return [startingPoint, ...dataPoints];
+        return { chartData: [startingPoint, ...dataPoints], baseBalanceForChart: balanceBefore };
     }, [filteredTrades, initialBalance, trades]);
     
     const hasEnoughData = chartData && chartData.length >= 2;
@@ -185,11 +184,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     };
 
     const chartDomain = useMemo(() => {
-        if (!hasEnoughData) return { domainMin: initialBalance * 0.95, domainMax: initialBalance * 1.05 };
+        if (!hasEnoughData) return { domainMin: baseBalanceForChart * 0.95, domainMax: baseBalanceForChart * 1.05 };
     
         const balanceValues = chartData.map(d => d.balance);
-        const minBalance = Math.min(...balanceValues, initialBalance);
-        const maxBalance = Math.max(...balanceValues, initialBalance);
+        const minBalance = Math.min(...balanceValues);
+        const maxBalance = Math.max(...balanceValues);
         const range = maxBalance - minBalance;
         
         let padding = range === 0 ? (maxBalance > 0 ? maxBalance * 0.1 : 1000) : range * 0.05;
@@ -197,7 +196,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         const domainMin = Math.floor(minBalance - padding);
         const domainMax = Math.ceil(maxBalance + padding);
         return { domainMin, domainMax };
-      }, [chartData, hasEnoughData, initialBalance]);
+      }, [chartData, hasEnoughData, baseBalanceForChart]);
     
     const { domainMin, domainMax } = chartDomain;
     
@@ -287,8 +286,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                     animationDuration={800}
                                     animationEasing="ease-out"
                                     type="monotone"
-                                    dataKey={(d) => (d.balance >= initialBalance ? d.balance : initialBalance)}
-                                    baseValue={initialBalance}
+                                    dataKey={(d) => (d.balance >= baseBalanceForChart ? d.balance : baseBalanceForChart)}
+                                    baseValue={baseBalanceForChart}
                                     stroke="none"
                                     fill="url(#analysisProfitFill)"
                                 />
@@ -298,8 +297,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                     animationDuration={800}
                                     animationEasing="ease-out"
                                     type="monotone"
-                                    dataKey={(d) => (d.balance < initialBalance ? d.balance : initialBalance)}
-                                    baseValue={initialBalance}
+                                    dataKey={(d) => (d.balance < baseBalanceForChart ? d.balance : baseBalanceForChart)}
+                                    baseValue={baseBalanceForChart}
                                     stroke="none"
                                     fill="url(#analysisLossFill)"
                                 />
@@ -316,7 +315,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                     activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: strokeColor }} 
                                 />
                                 
-                                <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
+                                <ReferenceLine y={baseBalanceForChart} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
                                     <Label value="Initial" position="insideRight" fill={grayColor} fontSize={10} dy={-4} />
                                 </ReferenceLine>
                             </AreaChart>
