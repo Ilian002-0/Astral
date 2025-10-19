@@ -18,6 +18,7 @@ export type GoalMetric = 'netProfit' | 'winRate' | 'profitFactor' | 'maxDrawdown
 export interface Goal {
   target: number;
   enabled: boolean;
+  showOnChart?: boolean;
 }
 
 export type Goals = {

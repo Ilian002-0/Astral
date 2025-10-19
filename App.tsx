@@ -306,6 +306,7 @@ const App: React.FC = () => {
                         onAdvancedAnalysisClick={() => setView('analysis')} 
                         initialBalance={currentAccount.initialBalance}
                         currency={currency}
+                        goals={currentAccount.goals || {}}
                     />
                 </div>
                 <div className="animate-fade-in-up animation-delay-300">

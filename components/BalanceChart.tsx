@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
-import { ChartDataPoint } from '../types';
+import { ChartDataPoint, Goals } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import useMediaQuery from '../hooks/useMediaQuery';
 
@@ -95,15 +95,19 @@ interface BalanceChartProps {
   onAdvancedAnalysisClick: () => void;
   initialBalance: number;
   currency: 'USD' | 'EUR';
+  goals: Goals;
 }
 
 
-const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisClick, initialBalance, currency }) => {
+const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisClick, initialBalance, currency, goals }) => {
   const { t, language } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const profitGoal = goals?.netProfit;
+  const drawdownGoal = goals?.maxDrawdown;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -208,9 +212,17 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const chartDomain = useMemo(() => {
     if (!hasAnyData) return { domainMin: initialBalance * 0.95, domainMax: initialBalance * 1.05 };
 
-    const balanceValues = filteredData.map(d => d.balance).filter(b => b !== null) as number[];
-    if (balanceValues.length === 0) return { domainMin: initialBalance - 500, domainMax: initialBalance + 500 };
+    let balanceValues = filteredData.map(d => d.balance).filter(b => b !== null) as number[];
+    if (balanceValues.length === 0) balanceValues = [initialBalance];
 
+     if (profitGoal?.enabled && profitGoal.showOnChart && profitGoal.target) {
+        balanceValues.push(initialBalance + profitGoal.target);
+    }
+    if (drawdownGoal?.enabled && drawdownGoal.showOnChart && drawdownGoal.target) {
+        const drawdownValue = initialBalance - (initialBalance * (drawdownGoal.target / 100));
+        balanceValues.push(drawdownValue);
+    }
+    
     const minBalance = Math.min(...balanceValues, initialBalance);
     const maxBalance = Math.max(...balanceValues, initialBalance);
     const range = maxBalance - minBalance;
@@ -220,7 +232,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
     const domainMin = Math.floor(minBalance - padding);
     const domainMax = Math.ceil(maxBalance + padding);
     return { domainMin, domainMax };
-  }, [filteredData, hasAnyData, initialBalance]);
+  }, [filteredData, hasAnyData, initialBalance, profitGoal, drawdownGoal]);
 
   const { domainMin, domainMax } = chartDomain;
   
@@ -349,8 +361,19 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
               />
 
               <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
-                <Label value="Initial" position="insideRight" fill={grayColor} fontSize={10} dy={-4} />
+                <Label value="Initial" position="insideRight" fill={grayColor} fontSize={12} dy={-8} />
               </ReferenceLine>
+
+              {profitGoal?.enabled && profitGoal.showOnChart && profitGoal.target && (
+                  <ReferenceLine y={initialBalance + profitGoal.target} stroke="#22c55e" strokeDasharray="5 5" strokeWidth={2}>
+                      <Label value={t('goals.profit_target_label')} position="insideRight" fill="#22c55e" fontSize={12} dy={-8} />
+                  </ReferenceLine>
+              )}
+              {drawdownGoal?.enabled && drawdownGoal.showOnChart && drawdownGoal.target && (
+                  <ReferenceLine y={initialBalance - (initialBalance * (drawdownGoal.target / 100))} stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2}>
+                      <Label value={t('goals.drawdown_target_label')} position="insideRight" fill="#ef4444" fontSize={12} dy={-8} />
+                  </ReferenceLine>
+              )}
             </AreaChart>
           </ResponsiveContainer>
         ) : (

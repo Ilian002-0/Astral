@@ -28,20 +28,33 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
 
     const handleGoalChange = (metric: GoalMetric, value: string) => {
         const target = parseFloat(value);
-        setEditableGoals(prev => ({
-            ...prev,
-            [metric]: { ...prev[metric], target: isNaN(target) ? 0 : target }
-        }));
+        setEditableGoals(prev => {
+            const currentGoal = prev[metric] || { enabled: false, target: 0, showOnChart: false };
+            return {
+                ...prev,
+                [metric]: { ...currentGoal, target: isNaN(target) ? 0 : target }
+            };
+        });
     };
     
     const handleToggleGoal = (metric: GoalMetric) => {
-        const currentGoal = editableGoals[metric] || { target: 0, enabled: false };
+        const currentGoal = editableGoals[metric] || { target: 0, enabled: false, showOnChart: false };
         setEditableGoals(prev => ({
             ...prev,
             [metric]: { ...currentGoal, enabled: !currentGoal.enabled }
         }));
     };
     
+    const handleToggleShowOnChart = (metric: GoalMetric) => {
+        setEditableGoals(prev => {
+            const currentGoal = prev[metric] || { target: 0, enabled: false, showOnChart: false };
+            return {
+                ...prev,
+                [metric]: { ...currentGoal, showOnChart: !currentGoal.showOnChart }
+            };
+        });
+    };
+
     const handleSave = () => {
         onSaveGoals(editableGoals);
         setIsEditing(false);
@@ -110,7 +123,9 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
             {isEditing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {goalDefinitions.map(({ key, titleKey }) => {
-                        const goal = editableGoals[key] || { enabled: false, target: 0 };
+                        const goal = editableGoals[key] || { enabled: false, target: 0, showOnChart: false };
+                        const canShowOnChart = key === 'netProfit' || key === 'maxDrawdown';
+
                         return (
                             <div key={key} className={`p-4 rounded-xl border ${goal.enabled ? 'bg-[#0c0b1e]/60 border-gray-700' : 'bg-gray-800/30 border-gray-800'}`}>
                                 <div className="flex items-center justify-between mb-3">
@@ -123,14 +138,31 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
                                         className="form-checkbox h-5 w-5 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600 cursor-pointer"
                                     />
                                 </div>
-                                <input
-                                    type="number"
-                                    value={goal.target || ''}
-                                    onChange={(e) => handleGoalChange(key, e.target.value)}
-                                    placeholder={t('goals.target')}
-                                    disabled={!goal.enabled}
-                                    className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition disabled:bg-gray-800/50 disabled:text-gray-500"
-                                />
+                                {goal.enabled && (
+                                    <>
+                                        <input
+                                            type="number"
+                                            value={goal.target || ''}
+                                            onChange={(e) => handleGoalChange(key, e.target.value)}
+                                            placeholder={t('goals.target')}
+                                            className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
+                                        />
+                                        {canShowOnChart && (
+                                            <div className="flex items-center mt-3">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`${key}-showOnChart-toggle`}
+                                                    checked={!!goal.showOnChart}
+                                                    onChange={() => handleToggleShowOnChart(key)}
+                                                    className="form-checkbox h-4 w-4 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600 cursor-pointer"
+                                                />
+                                                <label htmlFor={`${key}-showOnChart-toggle`} className="ml-2 text-sm text-gray-300 cursor-pointer">
+                                                    {t('goals.show_on_chart')}
+                                                </label>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         );
                     })}

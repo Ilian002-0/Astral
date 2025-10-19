@@ -215,6 +215,9 @@
     "not_set": "Not Set",
     "enable_goal": "Enable Goal",
     "goal_met": "Goal Met!",
-    "less_is_better": "lower is better"
+    "less_is_better": "lower is better",
+    "show_on_chart": "Show on chart",
+    "profit_target_label": "Profit Target",
+    "drawdown_target_label": "Drawdown Limit"
   }
 }

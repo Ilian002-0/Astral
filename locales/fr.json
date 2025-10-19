@@ -215,6 +215,9 @@
     "not_set": "Non défini",
     "enable_goal": "Activer l'objectif",
     "goal_met": "Objectif atteint !",
-    "less_is_better": "plus bas c'est mieux"
+    "less_is_better": "plus bas c'est mieux",
+    "show_on_chart": "Afficher sur le graphique",
+    "profit_target_label": "Objectif de Profit",
+    "drawdown_target_label": "Limite de Drawdown"
   }
 }
