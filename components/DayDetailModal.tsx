@@ -81,9 +81,9 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
     const formattedDate = date.toLocaleDateString(language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-50" onClick={onClose}>
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 animate-fade-in-fast" onClick={onClose}>
             <div 
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] sm:w-full max-w-2xl p-4 sm:p-6 bg-[#16152c] border border-gray-700/50 rounded-2xl shadow-2xl animate-fade-in max-h-[90vh] flex flex-col" 
+                className="w-full max-w-2xl p-4 sm:p-6 bg-[#16152c] border border-gray-700/50 rounded-2xl shadow-2xl animate-fade-in-scale-up max-h-[90vh] flex flex-col" 
                 onClick={e => e.stopPropagation()}
             >
                 <header className="flex justify-between items-center mb-4 pb-4 border-b border-gray-700">
@@ -132,7 +132,7 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
                 <div className="mt-6 text-center">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105"
+                        className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105"
                     >
                         {t('common.close')}
                     </button>

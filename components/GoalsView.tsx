@@ -96,6 +96,10 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
             default: return 0;
         }
     };
+
+    const enabledGoals = goalDefinitions
+        .map(def => ({ ...def, goal: accountGoals[def.key] }))
+        .filter(item => item.goal && item.goal.enabled);
     
     return (
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
@@ -169,42 +173,27 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {goalDefinitions.map(({ key, titleKey, isLessBetter, isPercent }) => {
-                        const goal = accountGoals[key];
-                        if (!goal || !goal.enabled) return null;
-
-                        return (
-                            <GoalCard
-                                key={key}
-                                title={t(titleKey)}
-                                currentValue={getMetricValue(key)}
-                                targetValue={goal.target}
-                                formatValue={formatValue}
-                                isLessBetter={isLessBetter}
-                                isPercent={isPercent}
-                            />
-                        );
-                    }).filter(Boolean).length === 0 ? (
+                    {enabledGoals.length === 0 ? (
                         <div className="col-span-full text-center py-10 text-gray-500">
                             <p>No goals set. Click 'Edit Goals' to get started.</p>
                         </div>
                     ) : (
-                        goalDefinitions.map(({ key, titleKey, isLessBetter, isPercent }) => {
-                        const goal = accountGoals[key];
-                        if (!goal || !goal.enabled) return null;
-
-                        return (
-                            <GoalCard
-                                key={key}
-                                title={t(titleKey)}
-                                currentValue={getMetricValue(key)}
-                                targetValue={goal.target}
-                                formatValue={formatValue}
-                                isLessBetter={isLessBetter}
-                                isPercent={isPercent}
-                            />
-                        );
-                    })
+                        enabledGoals.map(({ key, titleKey, isLessBetter, isPercent, goal }, index) => (
+                             <div 
+                                key={key} 
+                                className="animate-fade-in-up" 
+                                style={{ animationDelay: `${index * 100}ms`, opacity: 0 }}
+                            >
+                                <GoalCard
+                                    title={t(titleKey)}
+                                    currentValue={getMetricValue(key)}
+                                    targetValue={goal.target}
+                                    formatValue={formatValue}
+                                    isLessBetter={isLessBetter}
+                                    isPercent={isPercent}
+                                />
+                            </div>
+                        ))
                     )}
                 </div>
             )}

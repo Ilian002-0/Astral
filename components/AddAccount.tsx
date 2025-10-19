@@ -38,7 +38,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
         setSourceType('file');
         setDataUrl('');
     };
-
+    
     useEffect(() => {
         if (isOpen) {
             if (mode === 'update' && accountToUpdate) {
@@ -50,144 +50,177 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
                     setDataUrl(accountToUpdate.dataUrl);
                 } else {
                     setSourceType('file');
+                    setDataUrl('');
                 }
+            } else {
+                resetState();
             }
-        } else {
-            setTimeout(resetState, 300);
         }
     }, [isOpen, mode, accountToUpdate]);
-
-    const handleFileProcessed = (data: Trade[], name: string) => {
-        setAllTradesFromFile(data);
+    
+    const handleFileProcessed = (trades: Trade[], name: string) => {
+        setAllTradesFromFile(trades);
         setFileName(name);
         setError(null);
+
         if (mode === 'update' && accountToUpdate) {
-            const existingTradesMap = new Map(accountToUpdate.trades.map(t => [t.ticket, t]));
-            let newCount = 0;
-            let updatedCount = 0;
-
-            for (const tradeFromFile of data) {
-                const existingTrade = existingTradesMap.get(tradeFromFile.ticket);
-                if (existingTrade) {
-                    // FIX: Cast `existingTrade` to `Trade` to resolve type inference issues where it was being inferred as `unknown`.
-                    const typedExistingTrade = existingTrade as Trade;
-                    // A trade is considered updated if its status changes (e.g., from open to closed)
-                    // or if its profit/cost details are modified.
-                    if (typedExistingTrade.closePrice !== tradeFromFile.closePrice ||
-                        typedExistingTrade.profit !== tradeFromFile.profit ||
-                        typedExistingTrade.commission !== tradeFromFile.commission ||
-                        typedExistingTrade.swap !== tradeFromFile.swap) {
-                        updatedCount++;
-                    }
-                } else {
-                    newCount++;
-                }
-            }
-            setNewTradesCount(newCount);
-            setUpdatedTradesCount(updatedCount);
-        }
-    };
-
-    const handleFileError = (errorMessage: string) => {
-        setAllTradesFromFile(null);
-        setFileName('');
-        setError(errorMessage);
-    };
-
-    const handleSave = () => {
-        const isUrlMode = sourceType === 'url';
-        if (accountName.trim() && initialBalance && (isUrlMode ? dataUrl.trim() : allTradesFromFile)) {
-            onSaveAccount({
-                name: accountName.trim(),
-                trades: allTradesFromFile || [], // Pass empty if URL mode, it will be fetched later
-                initialBalance: parseFloat(initialBalance),
-                currency: currency,
-                dataUrl: isUrlMode ? dataUrl.trim() : undefined,
-            }, mode);
+            const existingTickets = new Set(accountToUpdate.trades.map(t => t.ticket));
+            const newTrades = trades.filter(t => !existingTickets.has(t.ticket));
+            const updatedTrades = trades.filter(t => existingTickets.has(t.ticket));
+            setNewTradesCount(newTrades.length);
+            setUpdatedTradesCount(updatedTrades.length);
         }
     };
     
-    const isSaveDisabled = !accountName.trim() || !initialBalance || parseFloat(initialBalance) < 0 || (sourceType === 'file' && !allTradesFromFile) || (sourceType === 'url' && !dataUrl.trim());
+    const handleClearFile = () => {
+        setAllTradesFromFile(null);
+        setFileName('');
+        setNewTradesCount(null);
+        setUpdatedTradesCount(null);
+    };
+    
+    const handleSave = () => {
+        const balance = parseFloat(initialBalance);
+        if (!accountName.trim()) {
+            setError("Account name is required.");
+            return;
+        }
+        if (isNaN(balance) || balance < 0) {
+            setError("Initial balance must be a valid positive number.");
+            return;
+        }
+        if (sourceType === 'file' && !allTradesFromFile) {
+            setError("Please upload a CSV file with your trade history.");
+            return;
+        }
+         if (sourceType === 'url' && !dataUrl.trim()) {
+            setError("Please provide a valid URL for the CSV file.");
+            return;
+        }
+
+        onSaveAccount({
+            name: accountName,
+            trades: allTradesFromFile || [],
+            initialBalance: balance,
+            currency: currency,
+            dataUrl: sourceType === 'url' ? dataUrl.trim() : undefined,
+        }, mode);
+    };
+
+    const handleClose = () => {
+        resetState();
+        onClose();
+    };
 
     if (!isOpen) return null;
 
-    const isUpdateMode = mode === 'update';
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-50" onClick={onClose}>
-            <div 
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] sm:w-full max-w-2xl p-6 sm:p-8 bg-[#16152c] border border-gray-700/50 rounded-2xl shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto" 
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 animate-fade-in-fast" onClick={handleClose}>
+            <div
+                className="w-full max-w-lg p-4 sm:p-6 bg-[#16152c] border border-gray-700/50 rounded-2xl shadow-2xl animate-fade-in-scale-up max-h-[90vh] flex flex-col"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-white">{t(isUpdateMode ? 'add_account_modal.title_update' : 'add_account_modal.title')}</h2>
-                    <p className="text-gray-400 mt-2">{t(isUpdateMode ? 'add_account_modal.subtitle_update' : 'add_account_modal.subtitle')}</p>
-                </div>
+                <header className="flex justify-between items-center pb-4 border-b border-gray-700">
+                    <div>
+                        <h2 className="text-modal-title font-bold text-white">
+                            {mode === 'add' ? t('add_account_modal.title') : t('add_account_modal.title_update')}
+                        </h2>
+                        <p className="text-sm text-gray-400 mt-1">
+                            {mode === 'add' ? t('add_account_modal.subtitle') : t('add_account_modal.subtitle_update')}
+                        </p>
+                    </div>
+                    <button onClick={handleClose} className="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+                </header>
 
-                <div className="space-y-6">
+                <div className="overflow-y-auto flex-grow my-6 pr-2 space-y-6">
+                    {error && <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-center text-sm">{error}</div>}
+
                     <div>
                         <label htmlFor="accountName" className="block text-sm font-medium text-gray-300 mb-2">{t('add_account_modal.account_name')}</label>
-                        <input type="text" id="accountName" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder={t('add_account_modal.account_name_placeholder')} className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition disabled:bg-gray-800 disabled:text-gray-400" disabled={isUpdateMode}/>
+                        <input
+                            type="text"
+                            id="accountName"
+                            value={accountName}
+                            onChange={(e) => setAccountName(e.target.value)}
+                            placeholder={t('add_account_modal.account_name_placeholder')}
+                            className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
+                            disabled={mode === 'update'}
+                        />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="initialBalance" className="block text-sm font-medium text-gray-300 mb-2">{t('add_account_modal.initial_balance', { currency: currency === 'USD' ? '$' : '€' })}</label>
-                            <input type="number" id="initialBalance" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} placeholder={t('add_account_modal.initial_balance_placeholder')} className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"/>
+                            <label htmlFor="initialBalance" className="block text-sm font-medium text-gray-300 mb-2">{t('add_account_modal.initial_balance', { currency })}</label>
+                            <input
+                                type="number"
+                                id="initialBalance"
+                                value={initialBalance}
+                                onChange={(e) => setInitialBalance(e.target.value)}
+                                placeholder={t('add_account_modal.initial_balance_placeholder')}
+                                className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
+                            />
                         </div>
-                        <div>
+                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Currency</label>
-                             <div className="flex rounded-lg bg-[#0c0b1e] border border-gray-600 p-1">
-                                <button onClick={() => setCurrency('USD')} className={`w-1/2 py-2 text-sm font-semibold rounded-md transition ${currency === 'USD' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>USD ($)</button>
-                                <button onClick={() => setCurrency('EUR')} className={`w-1/2 py-2 text-sm font-semibold rounded-md transition ${currency === 'EUR' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>EUR (€)</button>
+                             <div className="flex h-[42px]">
+                                <button onClick={() => setCurrency('USD')} className={`flex-1 rounded-l-lg ${currency === 'USD' ? 'bg-cyan-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>USD</button>
+                                <button onClick={() => setCurrency('EUR')} className={`flex-1 rounded-r-lg ${currency === 'EUR' ? 'bg-cyan-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>EUR</button>
                             </div>
                         </div>
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">{t('add_account_modal.data_source')}</label>
-                        <div className="flex rounded-lg bg-[#0c0b1e] border border-gray-600 p-1">
-                            <button onClick={() => setSourceType('file')} className={`w-1/2 py-2 text-sm font-semibold rounded-md transition ${sourceType === 'file' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>{t('add_account_modal.file_upload')}</button>
-                            <button onClick={() => setSourceType('url')} className={`w-1/2 py-2 text-sm font-semibold rounded-md transition ${sourceType === 'url' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>{t('add_account_modal.live_url')}</button>
+                        <div className="flex bg-gray-700 rounded-lg p-1">
+                            <button onClick={() => setSourceType('file')} className={`flex-1 py-1 rounded-md text-sm transition-colors ${sourceType === 'file' ? 'bg-cyan-600 text-white' : 'hover:bg-gray-600'}`}>{t('add_account_modal.file_upload')}</button>
+                            <button onClick={() => setSourceType('url')} className={`flex-1 py-1 rounded-md text-sm transition-colors ${sourceType === 'url' ? 'bg-cyan-600 text-white' : 'hover:bg-gray-600'}`}>{t('add_account_modal.live_url')}</button>
                         </div>
                     </div>
-                    
+
                     {sourceType === 'file' ? (
-                        fileName ? (
-                            <div className="p-4 bg-[#0c0b1e]/50 rounded-lg border border-gray-700 text-center">
-                                <p className="text-gray-300">{t('add_account_modal.file_loaded')}</p>
-                                <p className="font-semibold text-cyan-400">{fileName}</p>
-                                {isUpdateMode ? (
-                                    <div className="mt-1">
-                                        <p className="text-sm text-gray-400">{t('add_account_modal.trades_updated', { count: updatedTradesCount ?? 0 })}</p>
-                                        <p className="text-sm text-gray-400">{t('add_account_modal.trades_to_add', { count: newTradesCount ?? 0 })}</p>
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-gray-400 mt-1">{t('add_account_modal.trades_found', { count: allTradesFromFile?.length || 0 })}</p>
-                                )}
-                                <button onClick={() => { setAllTradesFromFile(null); setFileName(''); setNewTradesCount(null); setUpdatedTradesCount(null); }} className="text-xs text-red-400 hover:text-red-300 mt-2">{t('add_account_modal.clear_file')}</button>
-                            </div>
-                        ) : (
-                            <FileUpload onFileProcessed={handleFileProcessed} onError={handleFileError} />
-                        )
+                         <>
+                            {!allTradesFromFile && <FileUpload onFileProcessed={handleFileProcessed} onError={setError} />}
+                            {allTradesFromFile && (
+                                <div className="text-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                                    <p className="font-semibold text-white">{t('add_account_modal.file_loaded')}</p>
+                                    <p className="text-cyan-400">{fileName}</p>
+                                    <p className="text-gray-300 mt-2">{t('add_account_modal.trades_found', { count: allTradesFromFile.length })}</p>
+                                    {mode === 'update' && newTradesCount !== null && updatedTradesCount !== null && (
+                                        <>
+                                            <p className="text-sm text-green-400">{t('add_account_modal.trades_to_add', { count: newTradesCount })}</p>
+                                            <p className="text-sm text-yellow-400">{t('add_account_modal.trades_updated', { count: updatedTradesCount })}</p>
+                                        </>
+                                    )}
+                                    <button onClick={handleClearFile} className="mt-4 text-sm text-red-400 hover:text-red-300">{t('add_account_modal.clear_file')}</button>
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div>
                             <label htmlFor="dataUrl" className="block text-sm font-medium text-gray-300 mb-2">{t('add_account_modal.csv_url')}</label>
-                            <input type="url" id="dataUrl" value={dataUrl} onChange={(e) => setDataUrl(e.target.value)} placeholder={t('add_account_modal.csv_url_placeholder')} className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"/>
+                            <input
+                                type="url"
+                                id="dataUrl"
+                                value={dataUrl}
+                                onChange={(e) => setDataUrl(e.target.value)}
+                                placeholder={t('add_account_modal.csv_url_placeholder')}
+                                className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
+                            />
                             <p className="text-xs text-gray-500 mt-2">{t('add_account_modal.url_helper_text')}</p>
                         </div>
                     )}
+                </div>
 
-                    {error && (
-                        <div className="p-3 bg-red-900/50 border border-red-700 text-red-200 rounded-lg text-center text-sm">
-                            <strong>{t('common.error')}:</strong> {error}
-                        </div>
-                    )}
-                </div>
-                
-                <div className="flex justify-center items-center space-x-4 mt-8">
-                    <button onClick={onClose} className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105">{t('common.cancel')}</button>
-                    <button onClick={handleSave} disabled={isSaveDisabled} className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed disabled:transform-none">{t(isUpdateMode ? 'add_account_modal.save_button_update' : 'add_account_modal.save_button')}</button>
-                </div>
+                <footer className="pt-4 border-t border-gray-700">
+                    <div className="flex justify-end gap-4">
+                        <button onClick={handleClose} className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105">
+                            {t('common.cancel')}
+                        </button>
+                        <button onClick={handleSave} className="px-8 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105">
+                            {mode === 'add' ? t('add_account_modal.save_button') : t('add_account_modal.save_button_update')}
+                        </button>
+                    </div>
+                </footer>
             </div>
         </div>
     );

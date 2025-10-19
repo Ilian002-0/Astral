@@ -34,7 +34,14 @@ const CalendarHeader: React.FC<{
     );
 };
 
-const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void; formatCurrency: (value: number) => string; }> = ({ day, onClick, formatCurrency }) => {
+interface CalendarDayCellProps {
+    day: CalendarDay;
+    onClick: () => void;
+    formatCurrency: (value: number) => string;
+    index: number;
+}
+
+const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatCurrency, index }) => {
     const isToday = day.isToday && day.isCurrentMonth;
     const hasTrades = day.tradeCount > 0 && day.isCurrentMonth;
 
@@ -61,6 +68,7 @@ const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void; formatC
         ${tradeDayClasses}
         ${isToday ? '!bg-slate-800 border !border-slate-600' : ''}
         ${!day.isCurrentMonth ? 'text-gray-600' : ''}
+        animate-fade-in
     `;
 
     const formattedProfit = formatCurrency(day.profit);
@@ -79,7 +87,11 @@ const CalendarDayCell: React.FC<{ day: CalendarDay; onClick: () => void; formatC
     );
 
     return (
-        <div className={cellClasses} onClick={day.tradeCount > 0 ? onClick : undefined}>
+        <div 
+            className={cellClasses} 
+            onClick={day.tradeCount > 0 ? onClick : undefined}
+            style={{ animationDelay: `${index * 15}ms`, opacity: 0 }}
+        >
             <div className={`text-xs sm:text-sm ${isToday ? 'font-bold' : 'font-semibold'} ${!day.isCurrentMonth ? 'text-gray-600' : 'text-white'}`}>
                 {day.date.getDate()}
             </div>
@@ -138,8 +150,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                     </div>
                     
                     <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                        {calendarDays.map((day) => (
-                            <CalendarDayCell key={day.date.toISOString()} day={day} onClick={() => onDayClick(day.date)} formatCurrency={formatDayProfit} />
+                        {calendarDays.map((day, index) => (
+                            <CalendarDayCell 
+                                key={day.date.toISOString()} 
+                                day={day} 
+                                onClick={() => onDayClick(day.date)} 
+                                formatCurrency={formatDayProfit}
+                                index={index} 
+                            />
                         ))}
                     </div>
                 </div>

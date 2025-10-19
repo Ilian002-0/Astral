@@ -1,7 +1,7 @@
 import React from 'react';
 
 const StatCard: React.FC<{ title: string; value: string; colorClass?: string; tooltip?: string }> = ({ title, value, colorClass = 'text-white', tooltip }) => (
-  <div className="bg-gray-800/50 p-4 rounded-xl shadow-lg border border-gray-700/50 transform transition-transform hover:scale-105 hover:bg-gray-800 group relative">
+  <div className="bg-gray-800/50 p-4 rounded-xl shadow-lg border border-gray-700/50 transform transition-all duration-300 hover:scale-105 hover:bg-gray-800 group relative">
     <div className="flex justify-between items-center space-x-4">
         <h3 className="text-sm font-medium text-gray-400 truncate">{title}</h3>
         <p className={`text-stat-value-md md:text-stat-value font-bold whitespace-nowrap ${colorClass}`}>{value}</p>

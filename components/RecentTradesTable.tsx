@@ -44,11 +44,15 @@ const RecentTradesTable: React.FC<RecentTradesTableProps> = ({ trades, currency 
                         </tr>
                     </thead>
                     <tbody>
-                        {trades.map((trade) => {
+                        {trades.map((trade, index) => {
                             const isBuy = trade.type.toLowerCase() === 'buy';
                             const isProfit = trade.profit >= 0;
                             return (
-                                <tr key={trade.ticket} className="border-b border-gray-800 text-xs align-top">
+                                <tr 
+                                    key={trade.ticket} 
+                                    className="border-b border-gray-800 text-xs align-top animate-fade-in-up"
+                                    style={{ animationDelay: `${index * 50}ms`, opacity: 0 }}
+                                >
                                     <td className="px-2 sm:px-4 py-3 text-white">{trade.symbol}</td>
                                     <td className="px-2 sm:px-4 py-3 text-white leading-tight">
                                         <div className="sm:hidden">

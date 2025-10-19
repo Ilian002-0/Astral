@@ -135,8 +135,12 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredTrades.map((trade) => (
-                            <tr key={trade.ticket} className="border-b border-gray-800 text-xs hover:bg-gray-800/50">
+                        {filteredTrades.map((trade, index) => (
+                            <tr 
+                                key={trade.ticket} 
+                                className="border-b border-gray-800 text-xs hover:bg-gray-800/50 animate-fade-in-up"
+                                style={{ animationDelay: `${index * 20}ms`, opacity: 0 }}
+                            >
                                {activeColumns.map(col => {
                                     const isBuy = trade.type.toLowerCase() === 'buy';
                                     const isProfit = trade.profit >= 0;

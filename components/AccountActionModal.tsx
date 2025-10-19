@@ -19,9 +19,9 @@ const AccountActionModal: React.FC<AccountActionModalProps> = ({ isOpen, onClose
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-50" onClick={onClose}>
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 animate-fade-in-fast" onClick={onClose}>
             <div 
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] sm:w-full max-w-sm p-6 sm:p-8 bg-[#16152c] border border-gray-700/50 rounded-2xl shadow-2xl animate-fade-in" 
+                className="w-full max-w-sm p-6 sm:p-8 bg-[#16152c] border border-gray-700/50 rounded-2xl shadow-2xl animate-fade-in-scale-up" 
                 onClick={e => e.stopPropagation()}
             >
                 <div className="text-center mb-8">
@@ -32,21 +32,21 @@ const AccountActionModal: React.FC<AccountActionModalProps> = ({ isOpen, onClose
                 <div className="space-y-4">
                     <button
                         onClick={onAddAccount}
-                        className="w-full flex items-center justify-center px-6 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105"
+                        className="w-full flex items-center justify-center px-6 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105"
                     >
                         {t('account_action_modal.add_new')}
                     </button>
                     <button
                         onClick={onUpdateAccount}
                         disabled={!canUpdate}
-                        className="w-full flex items-center justify-center px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed disabled:transform-none"
+                        className="w-full flex items-center justify-center px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed disabled:transform-none"
                     >
                          {t('account_action_modal.update_current')}
                     </button>
                     <button
                         onClick={onDeleteAccount}
                         disabled={!canDelete}
-                        className="w-full flex items-center justify-center px-6 py-4 bg-red-800 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed disabled:transform-none"
+                        className="w-full flex items-center justify-center px-6 py-4 bg-red-800 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed disabled:transform-none"
                     >
                          {t('account_action_modal.delete_current')}
                     </button>
