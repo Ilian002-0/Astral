@@ -1,11 +1,5 @@
 import { Trade, Account, ProcessedData, DashboardMetrics, ChartDataPoint, DailySummary, MaxDrawdown } from '../types';
-
-// Helper to get start of day to avoid timezones issues
-const getStartOfDay = (date: Date): Date => {
-  const d = new Date(date);
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
-};
+import { getDayIdentifier } from './calendar';
 
 
 export const processAccountData = (account: Account | null): ProcessedData | null => {
@@ -90,8 +84,8 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
         grossLoss += trade.profit;
     }
 
-    // Group Trades by Day
-    const day = trade.closeTime.toISOString().split('T')[0];
+    // Group Trades by Day using local time
+    const day = getDayIdentifier(trade.closeTime);
     if (!tradesByDay[day]) {
       tradesByDay[day] = [];
     }
@@ -124,10 +118,15 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
   
   let daysAgo = 0;
   if (lastTradeDayKey) {
-    const lastTradeDayStart = getStartOfDay(new Date(lastTradeDayKey + 'T00:00:00Z'));
-    const todayStart = getStartOfDay(new Date());
+    const [year, month, day] = lastTradeDayKey.split('-').map(Number);
+    // This creates a date at midnight in the local timezone
+    const lastTradeDayStart = new Date(year, month - 1, day);
+    
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0); // Midnight in the local timezone
+
     const diffTime = todayStart.getTime() - lastTradeDayStart.getTime();
-    daysAgo = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    daysAgo = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   }
   
   const netProfit = grossProfit + grossLoss + totalCommission + totalSwap;
