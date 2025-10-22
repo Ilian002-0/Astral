@@ -158,11 +158,28 @@ const App: React.FC = () => {
             setAccounts(prevAccounts => {
                 return prevAccounts.map(acc => {
                     if (acc.name === currentAccount.name) {
-                        const existingTicketIds = new Set(acc.trades.map(t => t.ticket));
-                        const uniqueNewTrades = newTrades.filter(t => !existingTicketIds.has(t.ticket));
+                        const existingTrades = acc.trades;
+    
+                        // Create a map of all trades, prioritizing the new file's data for updates.
+                        const allTradesMap = new Map<number, Trade>();
+        
+                        // First, add all existing trades to the map. This preserves trades
+                        // that might not be in a partial (e.g., last month's) CSV export.
+                        for (const trade of existingTrades) {
+                            allTradesMap.set(trade.ticket, trade);
+                        }
+        
+                        // Then, add/overwrite with trades from the new file. This updates
+                        // existing trades (like closing an open one) and adds new ones.
+                        for (const trade of newTrades) {
+                            allTradesMap.set(trade.ticket, trade);
+                        }
+                        
+                        const mergedTrades = Array.from(allTradesMap.values());
+                        
                         return {
                             ...acc,
-                            trades: [...acc.trades, ...uniqueNewTrades],
+                            trades: mergedTrades,
                             lastUpdated: new Date().toISOString(),
                         };
                     }

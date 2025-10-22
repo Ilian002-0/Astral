@@ -148,7 +148,7 @@
     "save_button_update": "Update Account",
     "data_source": "Data Source",
     "file_upload": "File Upload",
-    "live_url": "Live URL",
+    "live_url": "Live Data URL",
     "csv_url": "Live Data URL",
     "csv_url_placeholder": "e.g., Published Google Sheet or direct CSV link",
     "url_helper_text": "For Google Sheets: Go to File > Share > Publish to web, select 'Comma-separated values (.csv)', and copy the generated link."
