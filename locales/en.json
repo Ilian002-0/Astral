@@ -137,7 +137,7 @@
     "subtitle_update": "Update account details and upload new trades.",
     "account_name": "Account Name",
     "account_name_placeholder": "e.g., My Main Account",
-    "initial_balance": "Initial Balance ($)",
+    "initial_balance": "Initial Balance ({{currency}})",
     "initial_balance_placeholder": "e.g., 100000",
     "file_loaded": "File loaded:",
     "trades_found": "{{count}} trades found.",
@@ -149,9 +149,9 @@
     "data_source": "Data Source",
     "file_upload": "File Upload",
     "live_url": "Live URL",
-    "csv_url": "CSV File URL",
-    "csv_url_placeholder": "https://example.com/history.csv",
-    "url_helper_text": "The app will periodically fetch this URL to sync new trades."
+    "csv_url": "Live Data URL",
+    "csv_url_placeholder": "e.g., Published Google Sheet or direct CSV link",
+    "url_helper_text": "For Google Sheets: Go to File > Share > Publish to web, select 'Comma-separated values (.csv)', and copy the generated link."
   },
   "delete_confirmation": {
     "title": "Confirm Deletion",

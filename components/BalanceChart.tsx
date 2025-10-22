@@ -61,16 +61,12 @@ const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
           <p className="font-bold text-lg text-white mb-1">{formatCurrency(balance)}</p>
           <p className="text-gray-400">{new Date(timestamp).toLocaleDateString(language, {month: 'short', day: 'numeric', year: 'numeric'})}</p>
           
-          <div className="mt-2 border-t border-gray-600 pt-2 text-xs space-y-1">
-              <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Trade #{trade.ticket}</span>
+          <div className="mt-2 border-t border-gray-600 pt-2 text-xs">
+              <div className="flex justify-between items-center gap-4">
+                  <span className="text-gray-400">{(trade.type + ' ' + trade.symbol).toLowerCase()}</span>
                   <span className={`font-semibold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {formatCurrency(netProfit, { signDisplay: 'always' })}
                   </span>
-              </div>
-              <div className="flex justify-between items-center">
-                  <span className="text-gray-400">{trade.type.toUpperCase()} {trade.symbol}</span>
-                  <span className="text-white">{trade.size} lots</span>
               </div>
           </div>
         </div>

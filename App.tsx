@@ -133,11 +133,26 @@ const App: React.FC = () => {
         setIsSyncing(true);
         setError(null);
         try {
-            const response = await fetch(currentAccount.dataUrl);
+            // Create a new URL object to safely add a cache-busting parameter.
+            // This prevents issues if the original URL already has query params.
+            const url = new URL(currentAccount.dataUrl);
+            url.searchParams.set('_cache_bust', new Date().getTime().toString());
+
+            const response = await fetch(url.toString(), {
+                method: 'GET',
+                cache: 'no-cache', // Force fetching a fresh version
+                redirect: 'follow' // Explicitly follow redirects
+            });
+            
             if (!response.ok) {
-                throw new Error(`Failed to fetch data: ${response.statusText}`);
+                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
             }
             const csvText = await response.text();
+            
+            if (!csvText || csvText.trim() === '') {
+                throw new Error("Received empty data file from the URL.");
+            }
+
             const newTrades = parseCSV(csvText);
 
             setAccounts(prevAccounts => {
@@ -155,7 +170,16 @@ const App: React.FC = () => {
                 });
             });
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An unknown error occurred during sync.');
+            let errorMessage = 'An unknown error occurred during sync.';
+            if (err instanceof Error) {
+                // Check for a common fetch/CORS failure which often manifests as a TypeError
+                if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+                    errorMessage = "Could not fetch the data. This might be a network issue or a CORS problem. Please ensure the URL is a direct, public link to a CSV file (e.g., from Google Sheets 'Publish to the web').";
+                } else {
+                    errorMessage = err.message;
+                }
+            }
+            setError(errorMessage);
         } finally {
             setIsSyncing(false);
         }

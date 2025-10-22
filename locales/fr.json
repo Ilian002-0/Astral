@@ -137,7 +137,7 @@
     "subtitle_update": "Mettez à jour les détails du compte et téléchargez de nouveaux trades.",
     "account_name": "Nom du compte",
     "account_name_placeholder": "ex: Mon compte principal",
-    "initial_balance": "Solde initial ($)",
+    "initial_balance": "Solde initial ({{currency}})",
     "initial_balance_placeholder": "ex: 100000",
     "file_loaded": "Fichier chargé :",
     "trades_found": "{{count}} trades trouvés.",
@@ -149,9 +149,9 @@
     "data_source": "Source de Données",
     "file_upload": "Fichier Local",
     "live_url": "URL Active",
-    "csv_url": "URL du fichier CSV",
-    "csv_url_placeholder": "https://exemple.com/historique.csv",
-    "url_helper_text": "L'application récupérera périodiquement cette URL pour synchroniser les nouveaux trades."
+    "csv_url": "URL des Données en Direct",
+    "csv_url_placeholder": "ex: Lien Google Sheet publié ou CSV direct",
+    "url_helper_text": "Pour Google Sheets : Allez dans Fichier > Partager > Publier sur le web, sélectionnez 'Valeurs séparées par des virgules (.csv)', et copiez le lien généré."
   },
   "delete_confirmation": {
     "title": "Confirmer la Suppression",

@@ -2,9 +2,12 @@ import { Trade } from '../types';
 
 export const parseCSV = (content: string): Trade[] => {
     const lines = content.split('\n').filter(line => line.trim() !== '');
-    if (lines.length < 2) throw new Error("CSV file must have a header and at least one data row.");
+    if (lines.length < 2) throw new Error("CSV/TSV file must have a header and at least one data row.");
     
-    const header = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+    const headerLine = lines[0];
+    const separator = headerLine.includes('\t') ? '\t' : ',';
+
+    const header = headerLine.split(separator).map(h => h.trim().toLowerCase().replace(/"/g, ''));
     const requiredHeaders = ['order', 'open time', 'type', 'volume', 'symbol', 'open price', 'close time', 'close price', 'commission', 'swap', 'profit'];
     const hasAllHeaders = requiredHeaders.every(reqHeader => header.includes(reqHeader));
 
@@ -27,32 +30,50 @@ export const parseCSV = (content: string): Trade[] => {
       if (h === 'profit') colMap['profit'] = i;
       if (h === 'comment') colMap['comment'] = i;
     });
+    
+    const parseDecimal = (value: string | undefined): number => {
+        if (typeof value !== 'string' || value.trim() === '') {
+            return 0;
+        }
+        // Remove quotes and whitespace, then replace comma with dot for float parsing
+        const cleanedValue = value.replace(/"/g, '').trim().replace(',', '.');
+        return parseFloat(cleanedValue);
+    };
 
     return lines.slice(1).map(line => {
-      const data = line.split(',');
-      const profit = parseFloat(data[colMap['profit']]);
+      // Use a regex for CSV that handles quoted fields containing commas.
+      // For TSV, a simple split is sufficient as it doesn't typically use quoting.
+      const separatorRegex = separator === ',' ? /,(?=(?:(?:[^"]*"){2})*[^"]*$)/ : /\t/;
+      const data = line.split(separatorRegex);
       
+      if (data.length <= Math.max(...Object.values(colMap))) {
+        return null;
+      }
+
+      const profit = parseDecimal(data[colMap['profit']]);
       if (isNaN(profit)) return null;
 
       // MT5 date format is often YYYY.MM.DD HH:MM:SS
       const parseMT5Date = (dateStr: string) => {
         if (!dateStr) return new Date();
-        return new Date(dateStr.replace(/\./g, '-'));
+        return new Date(dateStr.replace(/"/g, '').replace(/\./g, '-').trim());
       };
 
+      const getCleanString = (index: number) => (data[index] || '').trim().replace(/"/g, '');
+
       return {
-        ticket: parseInt(data[colMap['ticket']], 10),
+        ticket: parseInt(getCleanString(colMap['ticket']), 10),
         openTime: parseMT5Date(data[colMap['openTime']]),
-        type: data[colMap['type']],
-        size: parseFloat(data[colMap['size']]),
-        symbol: data[colMap['symbol']],
-        openPrice: parseFloat(data[colMap['openPrice']]),
+        type: getCleanString(colMap['type']),
+        size: parseDecimal(data[colMap['size']]),
+        symbol: getCleanString(colMap['symbol']),
+        openPrice: parseDecimal(data[colMap['openPrice']]),
         closeTime: parseMT5Date(data[colMap['closeTime']]),
-        closePrice: parseFloat(data[colMap['closePrice']]),
-        commission: parseFloat(data[colMap['commission']]) || 0,
-        swap: parseFloat(data[colMap['swap']]) || 0,
+        closePrice: parseDecimal(data[colMap['closePrice']]),
+        commission: parseDecimal(data[colMap['commission']]),
+        swap: parseDecimal(data[colMap['swap']]),
         profit: profit,
-        comment: colMap['comment'] !== undefined ? (data[colMap['comment']] || '').trim().replace(/"/g, '') : ''
+        comment: colMap['comment'] !== undefined ? getCleanString(colMap['comment']) : ''
       };
-    }).filter((trade): trade is Trade => trade !== null && trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime()));
+    }).filter((trade): trade is Trade => trade !== null && !isNaN(trade.ticket) && trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime()));
   };
