@@ -13,7 +13,10 @@ interface HeaderProps {
 
 const SyncIcon: React.FC<{isSyncing?: boolean}> = ({ isSyncing }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isSyncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4l1.5 1.5A9 9 0 0120.5 10M20 20l-1.5-1.5A9 9 0 003.5 14" />
+        <polyline strokeLinecap="round" strokeLinejoin="round" points="23 4 23 10 17 10"></polyline>
+        <polyline strokeLinecap="round" strokeLinejoin="round" points="1 20 1 14 7 14"></polyline>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.49 9A9 9 0 0 0 5.64 5.64"></path>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.51 15A9 9 0 0 0 18.36 18.36"></path>
     </svg>
 )
 
