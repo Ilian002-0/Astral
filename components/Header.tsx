@@ -11,14 +11,38 @@ interface HeaderProps {
     currency: 'USD' | 'EUR';
 }
 
-const SyncIcon: React.FC<{isSyncing?: boolean}> = ({ isSyncing }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isSyncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <polyline strokeLinecap="round" strokeLinejoin="round" points="23 4 23 10 17 10"></polyline>
-        <polyline strokeLinecap="round" strokeLinejoin="round" points="1 20 1 14 7 14"></polyline>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20.49 9A9 9 0 0 0 5.64 5.64"></path>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.51 15A9 9 0 0 0 18.36 18.36"></path>
+const SyncIcon: React.FC<{ isSyncing?: boolean }> = ({ isSyncing }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-5 w-5 ${isSyncing ? 'animate-spin' : ''}`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2.5}
+    >
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4 4v5h5"
+        />
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M20 20v-5h-5"
+        />
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4 9a9 9 0 0114.18-5.31"
+        />
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M20 15a9 9 0 01-14.18 5.31"
+        />
     </svg>
-)
+);
+
 
 const ShareIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -165,9 +189,13 @@ Tracked with Atlas.`,
                 <div className="text-right">
                     {onRefresh ? (
                         <>
-                            <button onClick={onRefresh} disabled={isSyncing} className="flex items-center gap-2 text-sm bg-teal-900/50 hover:bg-teal-900 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-wait">
+                            <button 
+                                onClick={onRefresh} 
+                                disabled={isSyncing} 
+                                className="bg-teal-900/50 hover:bg-teal-900 p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                aria-label={t('header.sync_now')}
+                            >
                                 <SyncIcon isSyncing={isSyncing}/>
-                                <span>{isSyncing ? t('header.syncing') : t('header.sync_now')}</span>
                             </button>
                              <div className="flex items-center justify-end text-xs opacity-70 mt-1.5 gap-2">
                                 <span className="relative flex h-2 w-2">
