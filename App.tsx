@@ -413,45 +413,66 @@ const App: React.FC = () => {
                         onNavigate={setView}
                     />
                 )}
-                <main ref={pullToRefreshRef} className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-                    {error && (
-                        <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-center text-sm mb-4 flex justify-between items-center">
-                            <span><strong>Error:</strong> {error}</span>
-                            <button onClick={() => setError(null)} className="ml-4 font-bold text-xl leading-none">&times;</button>
-                        </div>
-                    )}
-                    
-                    {accounts.length > 0 && (
-                        <div className="flex justify-between items-center mb-6">
-                            {(view === 'dashboard' && !isDesktop) ? (
-                                <div className="flex items-center gap-3">
-                                    <svg viewBox="0 0 128 112" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
-                                        <g>
-                                            <circle cx="64" cy="47" r="18" fill="#404B69"/>
-                                            <path d="M56 38 A 12 12 0 0 1 72 38 M54 49 A 12 12 0 0 0 74 49 M58 60 A 10 10 0 0 1 70 60" stroke="#0c0b1e" strokeWidth="2.5" fill="none"/>
-                                            <path d="M36.8,80 L61.6,0 h11.2 L47.2,80 H36.8 Z" fill="#404B69"/>
-                                            <path d="M91.2,80 L66.4,0 h-11.2 L80.8,80 H91.2 Z" fill="#8B9BBD"/>
-                                            <path d="M24,66 C50,18 90,25 110,32 L116,24 L124,36 L110,32 Z" fill="#8B9BBD"/>
-                                        </g>
-                                        <text x="64" y="100" text-anchor="middle" dominantBaseline="middle" font-family="inherit" font-size="22" font-weight="bold" letter-spacing="5" fill="#8B9BBD">ATLAS</text>
-                                    </svg>
+                <div className="flex-1 flex flex-col w-full">
+                    {/* Mobile-only sticky header */}
+                    {!isDesktop && accounts.length > 0 && (
+                        <header className="sticky top-0 z-10 bg-[#0c0b1e] border-b border-gray-800/50">
+                            <div className="max-w-7xl mx-auto px-4">
+                                <div className="flex justify-between items-center h-16">
+                                    {(view === 'dashboard') ? (
+                                        <div className="flex items-center gap-3">
+                                            <svg viewBox="0 0 128 112" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
+                                                <g>
+                                                    <circle cx="64" cy="47" r="18" fill="#404B69"/>
+                                                    <path d="M56 38 A 12 12 0 0 1 72 38 M54 49 A 12 12 0 0 0 74 49 M58 60 A 10 10 0 0 1 70 60" stroke="#0c0b1e" strokeWidth="2.5" fill="none"/>
+                                                    <path d="M36.8,80 L61.6,0 h11.2 L47.2,80 H36.8 Z" fill="#404B69"/>
+                                                    <path d="M91.2,80 L66.4,0 h-11.2 L80.8,80 H91.2 Z" fill="#8B9BBD"/>
+                                                    <path d="M24,66 C50,18 90,25 110,32 L116,24 L124,36 L110,32 Z" fill="#8B9BBD"/>
+                                                </g>
+                                                <text x="64" y="100" text-anchor="middle" dominantBaseline="middle" font-family="inherit" font-size="22" font-weight="bold" letter-spacing="5" fill="#8B9BBD">ATLAS</text>
+                                            </svg>
+                                        </div>
+                                    ) : <div />}
+                                    <AccountSelector
+                                        accountNames={accounts.map(a => a.name)}
+                                        currentAccount={currentAccount?.name || null}
+                                        onSelectAccount={handleSelectAccount}
+                                        onAddAccount={handleOpenAccountActions}
+                                    />
                                 </div>
-                            ) : <div />}
-                            <AccountSelector
-                                accountNames={accounts.map(a => a.name)}
-                                currentAccount={currentAccount?.name || null}
-                                onSelectAccount={handleSelectAccount}
-                                onAddAccount={handleOpenAccountActions}
-                            />
-                        </div>
+                            </div>
+                        </header>
                     )}
+                    <main ref={pullToRefreshRef} className="flex-1 w-full">
+                         <div className="max-w-7xl mx-auto w-full p-4 md:p-6 lg:p-8">
+                            {error && (
+                                <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-center text-sm mb-4 flex justify-between items-center">
+                                    <span><strong>Error:</strong> {error}</span>
+                                    <button onClick={() => setError(null)} className="ml-4 font-bold text-xl leading-none">&times;</button>
+                                </div>
+                            )}
+                            
+                            {/* Desktop-only header */}
+                            {isDesktop && accounts.length > 0 && (
+                                <div className="flex justify-between items-center mb-6">
+                                    <div /> {/* This is the placeholder to push selector to the right */}
+                                    <AccountSelector
+                                        accountNames={accounts.map(a => a.name)}
+                                        currentAccount={currentAccount?.name || null}
+                                        onSelectAccount={handleSelectAccount}
+                                        onAddAccount={handleOpenAccountActions}
+                                    />
+                                </div>
+                            )}
 
-                    <div className={!isDesktop ? "pb-24" : ""}>
-                        <div key={view} className="animate-fade-in">
-                            {renderCurrentView()}
+                            <div className={!isDesktop ? "pb-24" : ""}>
+                                <div key={view} className="animate-fade-in">
+                                    {renderCurrentView()}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </main>
+                    </main>
+                </div>
             </div>
 
             {!isDesktop && currentAccount && (

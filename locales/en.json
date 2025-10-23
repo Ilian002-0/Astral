@@ -56,7 +56,9 @@
       "week": "Last 7 Days",
       "month": "Last 30 Days",
       "all": "All Time"
-    }
+    },
+    "initial_balance": "Initial Balance",
+    "current_equity": "Current Equity"
   },
   "metrics": {
     "total_profit": "Net Profit (Closed)",

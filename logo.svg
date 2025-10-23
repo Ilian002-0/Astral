@@ -1,9 +1,19 @@
-<svg viewBox="0 0 128 88" xmlns="http://www.w3.org/2000/svg">
-    <g fill-rule="evenodd">
-        <circle cx="64" cy="51" r="18" fill="#404B69"/>
-        <path d="M56 42a12 12 0 0 1 16 0m-18 11a12 12 0 0 0 20 0m-18 11a10 10 0 0 1 12 0" stroke="#0c0b1e" stroke-width="2.5" fill="none"/>
-        <path d="m36.8 88 24.8-80h11.2L47.2 88z" fill="#404B69"/>
-        <path d="m91.2 88-24.8-80h-11.2L80.8 88z" fill="#8B9BBD"/>
-        <path d="M24 72c26-48 66-41 86-34l6-8 8 12-14-4z" fill="#8B9BBD"/>
+  <svg viewBox="0 0 128 88" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="logoTitle" preserveAspectRatio="xMidYMid meet">
+    <title id="logoTitle">Logo stylisé</title>
+    <g fill-rule="evenodd" stroke-linejoin="round">
+      <!-- Cercle central -->
+      <circle cx="64" cy="51" r="18" fill="#404B69" />
+
+      <!-- Ondes / courbes au-dessus et en dessous du cercle -->
+      <path d="M56 42a12 12 0 0 1 16 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M38 53a12 12 0 0 0 20 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M46 64a10 10 0 0 1 12 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Panneaux latéraux (formes triangulaires inclinées) -->
+      <path d="m36.8 88 24.8-80h11.2L47.2 88z" fill="#404B69"/>
+      <path d="m91.2 88-24.8-80h-11.2L80.8 88z" fill="#8B9BBD"/>
+
+      <!-- Élément supérieur/arrière pour donner de la profondeur -->
+      <path d="M24 72c26-48 66-41 86-34l6-8 8 12-14-4z" fill="#8B9BBD"/>
     </g>
-</svg>
+  </svg>

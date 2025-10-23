@@ -79,6 +79,11 @@ const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
 const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onBackToDashboard, currency }) => {
     const { t, language } = useLanguage();
     const isDesktop = useMediaQuery('(min-width: 768px)');
+    const isMobile = !isDesktop;
+    
+    // State for mobile tooltip control
+    const [tooltipActive, setTooltipActive] = useState(false);
+    const [tooltipPayload, setTooltipPayload] = useState<any[] | null>(null);
 
     const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
     const [selectedComments, setSelectedComments] = useState<string[]>([]);
@@ -89,6 +94,21 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         return `${selectedSymbols.join(',')}-${selectedComments.join(',')}-${startDate}-${endDate}`;
     }, [selectedSymbols, selectedComments, startDate, endDate]);
     
+    // Handlers for mobile chart interaction
+    const handleTouch = (e: any) => {
+        if (isMobile && e && e.activePayload && e.activePayload.length > 0) {
+            setTooltipPayload(e.activePayload);
+            setTooltipActive(true);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (isMobile) {
+            setTooltipActive(false);
+            setTooltipPayload(null);
+        }
+    };
+
     const uniqueSymbols = useMemo(() => [...new Set(trades.map(t => t.symbol))].sort(), [trades]);
     const uniqueComments = useMemo(() => [...new Set(trades.map(t => t.comment).filter(c => !!c))].sort(), [trades]);
 
@@ -118,6 +138,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     }, [filteredTrades]);
 
     const { chartData, baseBalanceForChart } = useMemo(() => {
+        const sortedAllTrades = [...trades].sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
         const sortedFilteredTrades = [...filteredTrades].sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
 
         if (sortedFilteredTrades.length === 0) {
@@ -132,9 +153,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         }
 
         const firstFilteredTrade = sortedFilteredTrades[0];
-        const firstFilteredTradeOriginalIndex = trades.findIndex(t => t.ticket === firstFilteredTrade.ticket);
+        const firstFilteredTradeOriginalIndex = sortedAllTrades.findIndex(t => t.ticket === firstFilteredTrade.ticket);
         
-        const tradesBefore = firstFilteredTradeOriginalIndex > 0 ? trades.slice(0, firstFilteredTradeOriginalIndex) : [];
+        const tradesBefore = firstFilteredTradeOriginalIndex > 0 ? sortedAllTrades.slice(0, firstFilteredTradeOriginalIndex) : [];
         const balanceBefore = initialBalance + tradesBefore.reduce((sum, t) => sum + (t.profit + t.commission + t.swap), 0);
         
         let currentBalance = balanceBefore;
@@ -265,7 +286,14 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 <div style={{ width: '100%', height: 400 }}>
                     {hasEnoughData ? (
                         <ResponsiveContainer key={animationKey}>
-                            <AreaChart data={chartData} margin={{ top: 5, right: !isDesktop ? 5 : 20, left: !isDesktop ? -10 : -30, bottom: 5 }}>
+                            <AreaChart 
+                                data={chartData} 
+                                margin={{ top: 5, right: !isDesktop ? 5 : 20, left: !isDesktop ? -10 : -30, bottom: 5 }}
+                                onTouchStart={handleTouch}
+                                onTouchMove={handleTouch}
+                                onTouchEnd={handleTouchEnd}
+                                onMouseLeave={handleTouchEnd}
+                            >
                                 <defs>
                                     <linearGradient id="analysisProfitFill" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/>
@@ -279,7 +307,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                                 <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} type="number" domain={['dataMin', 'dataMax']} allowDecimals={false} />
                                 <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} domain={[domainMin, domainMax]} tickLine={false} axisLine={false} allowDataOverflow />
-                                <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                                <Tooltip 
+                                    active={isMobile ? tooltipActive : undefined}
+                                    payload={isMobile ? tooltipPayload ?? undefined : undefined}
+                                    content={<CustomTooltip currency={currency} />} 
+                                    cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}
+                                />
                                 
                                 <Area
                                     isAnimationActive={true}

@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import useMediaQuery from '../hooks/useMediaQuery';
 
 const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   
   const formatCurrency = (value: number, options?: Intl.NumberFormatOptions) => {
     const symbol = currency === 'USD' ? '$' : '€';
@@ -37,7 +37,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
     if (isEquityPoint) {
        return (
         <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
-          <p className="font-bold text-lg text-white mb-1">Current Equity</p>
+          <p className="font-bold text-lg text-white mb-1">{t('dashboard.current_equity')}</p>
           <p className="text-gray-400 text-base font-semibold">{formatCurrency(balance)}</p>
           {floatingPnl !== undefined && (
               <div className="mt-2 border-t border-gray-600 pt-2 text-xs space-y-1">
@@ -76,7 +76,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
     // Fallback for initial balance point
     return (
       <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
-          <p className="font-bold text-lg text-white mb-1">Initial Balance</p>
+          <p className="font-bold text-lg text-white mb-1">{t('dashboard.initial_balance')}</p>
           <p className="text-gray-400">{formatCurrency(balance)}</p>
       </div>
     );
@@ -101,6 +101,9 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
+  // State for mobile tooltip control
+  const [tooltipActive, setTooltipActive] = useState(false);
+  const [tooltipPayload, setTooltipPayload] = useState<any[] | null>(null);
 
   const profitGoal = goals?.netProfit;
   const drawdownGoal = goals?.maxDrawdown;
@@ -114,6 +117,21 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Handlers for mobile chart interaction
+  const handleTouch = (e: any) => {
+    if (isMobile && e && e.activePayload && e.activePayload.length > 0) {
+      setTooltipPayload(e.activePayload);
+      setTooltipActive(true);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (isMobile) {
+      setTooltipActive(false);
+      setTooltipPayload(null);
+    }
+  };
 
   const yAxisTickFormatter = (value: number) => {
     const thousands = value / 1000;
@@ -289,6 +307,10 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
             <AreaChart
               data={filteredData}
               margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? -10 : -30, bottom: 5 }}
+              onTouchStart={handleTouch}
+              onTouchMove={handleTouch}
+              onTouchEnd={handleTouchEnd}
+              onMouseLeave={handleTouchEnd}
             >
               <defs>
                  <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1">
@@ -320,7 +342,12 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 axisLine={false}
                 allowDataOverflow
               />
-              <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+              <Tooltip 
+                active={isMobile ? tooltipActive : undefined}
+                payload={isMobile ? tooltipPayload ?? undefined : undefined}
+                content={<CustomTooltip currency={currency} />} 
+                cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}
+              />
               
               <Area
                   isAnimationActive={true}
