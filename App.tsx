@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import useLocalStorage from './hooks/useLocalStorage';
 import { Account, AppView, ProcessedData, Trade, Goals } from './types';
@@ -141,7 +142,13 @@ const App: React.FC = () => {
 
             const response = await fetch(url.toString(), {
                 method: 'GET',
-                cache: 'no-cache', // Force fetching a fresh version
+                // Use the most aggressive cache-bypassing settings
+                cache: 'no-store', 
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                },
                 redirect: 'follow' // Explicitly follow redirects
             });
             
