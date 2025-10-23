@@ -7,6 +7,7 @@ import { parseCSV } from './utils/csvParser';
 import usePullToRefresh from './hooks/usePullToRefresh';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
+import { useLanguage } from './contexts/LanguageContext';
 
 // Components
 import Header from './components/Header';
@@ -56,7 +57,7 @@ const App: React.FC = () => {
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
 
     const isDesktop = useMediaQuery('(min-width: 768px)');
-    const syncedAccountsRef = useRef<Set<string>>(new Set());
+    const { t } = useLanguage();
     
     // PWA Install prompt handler
     useEffect(() => {
@@ -86,424 +87,299 @@ const App: React.FC = () => {
         const accountExists = accounts.some(acc => acc.name === currentAccountName);
         
         if (!currentAccountName && accounts.length > 0) {
-            // If no account is selected, default to the first one.
             setCurrentAccountName(accounts[0].name);
         } else if (currentAccountName && !accountExists && accounts.length > 0) {
-            // If the selected account was deleted, switch to the first one.
             setCurrentAccountName(accounts[0].name);
         } else if (accounts.length === 0) {
-            // If there are no accounts, clear the selection.
             setCurrentAccountName(null);
         }
     }, [accounts, currentAccountName, setCurrentAccountName]);
 
     const currentAccount = useMemo(() => {
-        // This memo now only performs the calculation without side effects.
         return accounts.find(acc => acc.name === currentAccountName) || null;
     }, [accounts, currentAccountName]);
 
-    const processedData: ProcessedData | null = useMemo(() => processAccountData(currentAccount), [currentAccount]);
-
-    // Data for DayDetailModal
-    const tradesForSelectedDay = useMemo(() => {
-        if (!selectedCalendarDate || !processedData) return [];
-        const selectedId = getDayIdentifier(selectedCalendarDate);
-        return processedData.closedTrades.filter(trade => getDayIdentifier(trade.closeTime) === selectedId);
-    }, [selectedCalendarDate, processedData]);
-
-    const startOfDayBalance = useMemo(() => {
-        if (!selectedCalendarDate || !processedData || !currentAccount) return 0;
+    const processedData: ProcessedData | null = useMemo(() => {
+        if (!currentAccount) return null;
+        try {
+            return processAccountData(currentAccount);
+        } catch (e) {
+            console.error(e);
+            setError("Error processing account data.");
+            return null;
+        }
+    }, [currentAccount]);
     
-        const startOfSelectedDay = new Date(selectedCalendarDate);
-        startOfSelectedDay.setHours(0, 0, 0, 0);
-    
-        const tradesBeforeSelectedDay = processedData.closedTrades.filter(
-            trade => trade.closeTime.getTime() < startOfSelectedDay.getTime()
-        );
-        
-        const profitBeforeSelectedDay = tradesBeforeSelectedDay.reduce(
-            (sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0
-        );
-    
-        return currentAccount.initialBalance + profitBeforeSelectedDay;
-    }, [selectedCalendarDate, processedData, currentAccount]);
+    const updateAccountTrades = useCallback((accountName: string, newTrades: Trade[]) => {
+        setAccounts(prevAccounts => {
+            return prevAccounts.map(acc => {
+                if (acc.name === accountName) {
+                    const existingTradesByTicket = new Map(acc.trades.map(t => [t.ticket, t]));
+                    newTrades.forEach(newTrade => {
+                        existingTradesByTicket.set(newTrade.ticket, newTrade);
+                    });
+                    
+                    const updatedTrades = Array.from(existingTradesByTicket.values())
+                        // FIX: Explicitly type sort parameters to resolve TypeScript error.
+                        .sort((a: Trade, b: Trade) => a.openTime.getTime() - b.openTime.getTime());
 
+                    return { ...acc, trades: updatedTrades, lastUpdated: new Date().toISOString() };
+                }
+                return acc;
+            });
+        });
+    }, [setAccounts]);
 
-    const refreshData = useCallback(async () => {
-        if (!currentAccount || !currentAccount.dataUrl || isSyncingRef.current) return;
+    const refreshData = useCallback(async (accountToSync: Account) => {
+        if (!accountToSync.dataUrl) return;
+        if (isSyncingRef.current) return;
 
         setIsSyncing(true);
         setError(null);
         try {
-            // Create a new URL object to safely add a cache-busting parameter.
-            // This prevents issues if the original URL already has query params.
-            const url = new URL(currentAccount.dataUrl);
-            url.searchParams.set('_cache_bust', new Date().getTime().toString());
-
-            const response = await fetch(url.toString(), {
-                method: 'GET',
-                // Use the most aggressive cache-bypassing settings
-                cache: 'no-store', 
-                headers: {
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
-                },
-                redirect: 'follow' // Explicitly follow redirects
-            });
+            // Use cache-busting via request header instead of query param.
+            // This is more robust and less likely to be rejected by servers like Google Docs.
+            const response = await fetch(accountToSync.dataUrl, { cache: 'reload' });
             
             if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                // Try to provide a more specific error message if possible
+                if (response.status === 404) {
+                     setError(`Error: The URL was not found (404). Please check the link.`);
+                } else {
+                     setError(t('errors.fetch_failed'));
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             const csvText = await response.text();
-            
-            if (!csvText || csvText.trim() === '') {
-                throw new Error("Received empty data file from the URL.");
-            }
-
             const newTrades = parseCSV(csvText);
+            
+            updateAccountTrades(accountToSync.name, newTrades);
 
-            setAccounts(prevAccounts => {
+        } catch (err) {
+            console.error("Failed to fetch or process data:", err);
+            // Ensure error is set even if it was already partially set
+            setError(prev => prev || t('errors.fetch_failed'));
+        } finally {
+            setIsSyncing(false);
+        }
+    }, [t, updateAccountTrades]);
+
+    const hasRunInitialSync = useRef(false);
+    useEffect(() => {
+        if (hasRunInitialSync.current || accounts.length === 0) {
+            return;
+        }
+
+        const syncAll = async () => {
+            const accountsToSync = accounts.filter(acc => acc.dataUrl);
+            if (accountsToSync.length > 0) {
+                console.log("Performing initial account sync...");
+                await Promise.all(accountsToSync.map(acc => refreshData(acc)));
+                console.log("Initial sync complete.");
+            }
+        };
+
+        syncAll();
+        hasRunInitialSync.current = true;
+        
+    }, [accounts, refreshData]);
+
+    const saveAccount = useCallback((
+        accountData: { name: string; trades: Trade[]; initialBalance: number; currency: 'USD' | 'EUR', dataUrl?: string }, 
+        mode: 'add' | 'update'
+    ) => {
+        setError(null);
+        setAccounts(prevAccounts => {
+            if (mode === 'add') {
+                if (prevAccounts.some(acc => acc.name === accountData.name)) {
+                    setError(`An account with the name "${accountData.name}" already exists.`);
+                    return prevAccounts;
+                }
+                const newAccount: Account = {
+                    ...accountData,
+                    goals: {},
+                    lastUpdated: new Date().toISOString(),
+                };
+                const newAccounts = [...prevAccounts, newAccount];
+                setCurrentAccountName(newAccount.name); // Switch to the new account
+                return newAccounts;
+            } else { // mode === 'update'
                 return prevAccounts.map(acc => {
-                    if (acc.name === currentAccount.name) {
-                        const existingTrades = acc.trades || [];
-    
-                        const allTradesMap = new Map<number, Trade>();
-        
-                        for (const trade of existingTrades) {
-                             if (trade && typeof trade.ticket === 'number') {
-                                allTradesMap.set(trade.ticket, trade);
-                            }
-                        }
-        
-                        for (const trade of newTrades) {
-                            allTradesMap.set(trade.ticket, trade);
-                        }
-                        
-                        const mergedTrades = Array.from(allTradesMap.values());
-                        
+                    if (acc.name === accountData.name) {
+                        const existingTrades = acc.trades;
+                        const newTrades = accountData.trades;
+                        const tradesMap = new Map(existingTrades.map(t => [t.ticket, t]));
+                        newTrades.forEach(t => tradesMap.set(t.ticket, t));
+                        // FIX: Explicitly type sort parameters to resolve TypeScript error.
+                        const allTrades = Array.from(tradesMap.values()).sort((a: Trade, b: Trade) => a.openTime.getTime() - b.openTime.getTime());
+
                         return {
                             ...acc,
-                            trades: mergedTrades,
+                            initialBalance: accountData.initialBalance,
+                            currency: accountData.currency,
+                            dataUrl: accountData.dataUrl,
+                            trades: accountData.dataUrl ? acc.trades : allTrades, // If URL, don't update trades from file.
                             lastUpdated: new Date().toISOString(),
                         };
                     }
                     return acc;
                 });
-            });
-        } catch (err) {
-            let errorMessage = 'An unknown error occurred during sync.';
-            if (err instanceof Error) {
-                // Check for a common fetch/CORS failure which often manifests as a TypeError
-                if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-                    errorMessage = "Could not fetch the data. This might be a network issue or a CORS problem. Please ensure the URL is a direct, public link to a CSV file (e.g., from Google Sheets 'Publish to the web').";
-                } else {
-                    errorMessage = err.message;
-                }
             }
-            setError(errorMessage);
-        } finally {
-            setIsSyncing(false);
-        }
-    }, [currentAccount, setAccounts]);
-    
-    const { pullToRefreshRef, isRefreshing } = usePullToRefresh(refreshData);
-
-    useEffect(() => {
-        // Automatically refresh data on mobile, but only once per account per session.
-        if (!isDesktop && currentAccount?.dataUrl && !syncedAccountsRef.current.has(currentAccount.name)) {
-            refreshData();
-            syncedAccountsRef.current.add(currentAccount.name);
-        }
-    }, [currentAccount, isDesktop, refreshData]);
-
-    const handleOpenAccountActions = () => {
-        setAccountActionModalOpen(true);
-    };
-
-    const handleInitiateAdd = () => {
-        setModalMode('add');
-        setAccountActionModalOpen(false);
-        setAddAccountModalOpen(true);
-    };
-    
-    const handleInitiateUpdate = () => {
-        if (currentAccount) {
-            setModalMode('update');
-            setAccountActionModalOpen(false);
-            setAddAccountModalOpen(true);
-        }
-    };
-
-    const handleInitiateDelete = () => {
-        if (currentAccount) {
-            setAccountActionModalOpen(false);
-            setDeleteConfirmModalOpen(true);
-        }
-    };
-
-    const handleDeleteAccount = () => {
-        if (!currentAccount) return;
-        setAccounts(accounts.filter(acc => acc.name !== currentAccount.name));
-        setDeleteConfirmModalOpen(false);
-    };
-
-    const handleSaveAccount = (accountData: { name: string, trades: Trade[], initialBalance: number, currency: 'USD' | 'EUR', dataUrl?: string }, mode: 'add' | 'update') => {
-        if (mode === 'add') {
-            if (accounts.some(acc => acc.name.toLowerCase() === accountData.name.toLowerCase())) {
-                setError(`An account with the name "${accountData.name}" already exists.`);
-                setAddAccountModalOpen(true); // Keep modal open to show error
-                return;
-            }
-            const newAccount: Account = {
-                name: accountData.name,
-                trades: accountData.trades,
-                initialBalance: accountData.initialBalance,
-                currency: accountData.currency,
-                goals: {},
-                dataUrl: accountData.dataUrl,
-                lastUpdated: new Date().toISOString(),
-            };
-            const newAccounts = [...accounts, newAccount];
-            setAccounts(newAccounts);
-            if (!currentAccountName || accounts.length === 0) {
-                setCurrentAccountName(newAccount.name);
-            }
-        } else { // update mode
-            if (!currentAccount) return;
-    
-            setAccounts(accounts.map(acc => {
-                if (acc.name === currentAccount.name) {
-                    const newTradesFromFile = accountData.trades;
-                    const existingTrades = acc.trades || [];
-    
-                    const allTradesMap = new Map<number, Trade>();
-    
-                    for (const trade of existingTrades) {
-                        if (trade && typeof trade.ticket === 'number') {
-                            allTradesMap.set(trade.ticket, trade);
-                        }
-                    }
-    
-                    for (const trade of newTradesFromFile) {
-                        allTradesMap.set(trade.ticket, trade);
-                    }
-                    
-                    const mergedTrades = Array.from(allTradesMap.values());
-                    
-                    return {
-                        ...acc,
-                        initialBalance: accountData.initialBalance,
-                        currency: accountData.currency,
-                        trades: mergedTrades,
-                        dataUrl: accountData.dataUrl,
-                        lastUpdated: new Date().toISOString(),
-                    };
-                }
-                return acc;
-            }));
-        }
+        });
         setAddAccountModalOpen(false);
-        setError(null);
-    };
 
-    const handleSelectAccount = (accountName: string) => {
-        setCurrentAccountName(accountName);
-        setView('dashboard'); // Switch to dashboard on account change
-    };
+        if (accountData.dataUrl) {
+            const accountToSync = accounts.find(acc => acc.name === accountData.name) || { ...accountData, trades: [], goals: {} };
+            refreshData(accountToSync);
+        }
+    }, [setAccounts, setCurrentAccountName, refreshData, accounts]);
     
-    const handleSaveGoals = (newGoals: Goals) => {
-        if (!currentAccount) return;
-    
-        setAccounts(accounts.map(acc => {
-            if (acc.name === currentAccount.name) {
-                return { ...acc, goals: newGoals };
-            }
-            return acc;
-        }));
-    };
+    const deleteAccount = useCallback(() => {
+        if (!currentAccountName) return;
+        setAccounts(prev => prev.filter(acc => acc.name !== currentAccountName));
+        setDeleteConfirmModalOpen(false);
+    }, [currentAccountName, setAccounts]);
 
-    const renderDashboard = () => {
-        if (!processedData || !currentAccount) return null;
-        const currency = currentAccount.currency || 'USD';
-        return (
-            <div className="space-y-6">
-                <div className="animate-fade-in-up">
-                    <Header 
-                      metrics={processedData.metrics} 
-                      accountName={currentAccount?.name}
-                      lastUpdated={currentAccount.lastUpdated}
-                      onRefresh={currentAccount.dataUrl ? refreshData : undefined}
-                      isSyncing={isSyncing || isRefreshing}
-                      currency={currency}
-                    />
-                </div>
-                <div className="animate-fade-in-up animation-delay-100">
-                    <MemoizedDashboard metrics={processedData.metrics} currency={currency} />
-                </div>
-                <div className="animate-fade-in-up animation-delay-200">
-                    <BalanceChart 
-                        data={processedData.chartData} 
-                        onAdvancedAnalysisClick={() => setView('analysis')} 
-                        initialBalance={currentAccount.initialBalance}
-                        currency={currency}
-                        goals={currentAccount.goals || {}}
-                    />
-                </div>
-                <div className="animate-fade-in-up animation-delay-300">
-                    <DashboardMetricsBottom metrics={processedData.metrics} currency={currency} />
-                </div>
-                 {processedData.openTrades.length > 0 && (
-                    <div className="animate-fade-in-up animation-delay-400">
-                        <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} currency={currency} />
-                    </div>
-                )}
-                <div className="animate-fade-in-up animation-delay-500">
-                    <RecentTradesTable trades={processedData.recentTrades} currency={currency} />
-                </div>
-            </div>
-        );
-    }
+    const handleRefresh = useCallback(() => {
+        if (currentAccount && currentAccount.dataUrl) {
+            refreshData(currentAccount);
+        }
+    }, [currentAccount, refreshData]);
+
+    const { pullToRefreshRef } = usePullToRefresh(handleRefresh);
+
+    const handleOpenAccountActions = () => setAccountActionModalOpen(true);
+    const handleAddClick = () => { setModalMode('add'); setAddAccountModalOpen(true); setAccountActionModalOpen(false); };
+    const handleUpdateClick = () => { setModalMode('update'); setAddAccountModalOpen(true); setAccountActionModalOpen(false); };
+    const handleDeleteClick = () => { setDeleteConfirmModalOpen(true); setAccountActionModalOpen(false); };
     
-    const renderCurrentView = () => {
-        if (!processedData || !currentAccount) {
-             return (
-                <div className="flex flex-col items-center justify-center text-center h-full pt-16">
-                    <h1 className="text-3xl font-bold text-white mb-4">Welcome to Atlas</h1>
-                    <p className="text-gray-400 mb-8 max-w-md">
-                        Get started by adding your first trading account. Upload your MT4/MT5 CSV report to analyze your performance.
-                    </p>
-                    <button
-                        onClick={handleInitiateAdd}
-                        className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105"
-                    >
-                        Add Your First Account
+    const saveGoals = useCallback((goals: Goals) => {
+        if (!currentAccountName) return;
+        setAccounts(prev => prev.map(acc => acc.name === currentAccountName ? { ...acc, goals } : acc));
+    }, [currentAccountName, setAccounts]);
+    
+    const dayDetailModalData = useMemo(() => {
+        if (!selectedCalendarDate || !processedData) return null;
+        
+        const dateKey = getDayIdentifier(selectedCalendarDate);
+        const dailyTrades = processedData.closedTrades.filter(t => getDayIdentifier(t.closeTime) === dateKey);
+
+        if (dailyTrades.length === 0) return null;
+        
+        const firstTradeOfDay = dailyTrades[0];
+        const tradesBefore = processedData.closedTrades.filter(t => t.closeTime.getTime() < firstTradeOfDay.closeTime.getTime());
+        const startOfDayBalance = (currentAccount?.initialBalance ?? 0) + tradesBefore.reduce((sum, t) => sum + (t.profit + t.commission + t.swap), 0);
+
+        return { trades: dailyTrades, date: selectedCalendarDate, startOfDayBalance };
+    }, [selectedCalendarDate, processedData, currentAccount?.initialBalance]);
+
+    const renderView = () => {
+        if (!currentAccount || !processedData) {
+            return (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                    <h1 className="text-3xl font-bold text-white mb-4">{t('app.welcome')}</h1>
+                    <p className="text-gray-400 mb-8">{t('app.add_account_prompt')}</p>
+                    <button onClick={handleAddClick} className="px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                        {t('app.add_first_account_button')}
                     </button>
                 </div>
             );
         }
-    
-        const currency = currentAccount?.currency || 'USD';
 
-        switch (view) {
+        switch(view) {
             case 'dashboard':
-                return renderDashboard();
-            case 'trades':
-                return <MemoizedTradesList trades={processedData.closedTrades} currency={currency} />;
-            case 'calendar':
-                return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} currency={currency} />;
-            case 'analysis':
-                return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} currency={currency} onBackToDashboard={() => setView('dashboard')} />;
-            case 'goals':
-                return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={handleSaveGoals} currency={currency} />;
-            case 'profile':
-                return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} />;
-            default:
-                return renderDashboard();
-        }
-    }
-
-
-    return (
-        <div className="bg-[#0c0b1e] text-gray-300 min-h-screen font-sans">
-            <div className={`flex min-h-screen ${!isDesktop ? 'flex-col' : ''}`}>
-                {isDesktop && currentAccount && (
-                    <Sidebar 
-                        currentView={view}
-                        onNavigate={setView}
-                    />
-                )}
-                
-                {/* Wrapper for Header and Main content */}
-                <div className="flex-1 flex flex-col w-full min-w-0">
-                    {/* Header: Sticky on mobile, static on desktop */}
-                    <header className={`${!isDesktop ? 'sticky top-0 z-20 bg-[#0c0b1e] p-4' : 'px-4 md:px-6 lg:px-8 pt-8'}`}>
-                         {accounts.length > 0 && (
-                            <div className="flex justify-between items-center max-w-7xl mx-auto">
-                                {(view === 'dashboard' && !isDesktop) ? (
-                                    <div className="flex items-center gap-3">
-                                        <svg viewBox="0 0 128 112" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
-                                            <g>
-                                                <circle cx="64" cy="47" r="18" fill="#404B69"/>
-                                                <path d="M56 38 A 12 12 0 0 1 72 38 M54 49 A 12 12 0 0 0 74 49 M58 60 A 10 10 0 0 1 70 60" stroke="#0c0b1e" strokeWidth="2.5" fill="none"/>
-                                                <path d="M36.8,80 L61.6,0 h11.2 L47.2,80 H36.8 Z" fill="#404B69"/>
-                                                <path d="M91.2,80 L66.4,0 h-11.2 L80.8,80 H91.2 Z" fill="#8B9BBD"/>
-                                                <path d="M24,66 C50,18 90,25 110,32 L116,24 L124,36 L110,32 Z" fill="#8B9BBD"/>
-                                            </g>
-                                            <text x="64" y="100" text-anchor="middle" dominantBaseline="middle" fontFamily="inherit" fontSize="22" fontWeight="bold" letter-spacing="5" fill="#8B9BBD">ATLAS</text>
-                                        </svg>
-                                    </div>
-                                ) : (isDesktop ? null : <div />)}
-                                <AccountSelector
-                                    accountNames={accounts.map(a => a.name)}
-                                    currentAccount={currentAccount?.name || null}
-                                    onSelectAccount={handleSelectAccount}
-                                    onAddAccount={handleOpenAccountActions}
-                                />
-                            </div>
-                         )}
-                    </header>
-
-                    <main ref={pullToRefreshRef} className={`flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full ${isDesktop ? 'pt-6' : 'pt-4'}`}>
-                        {error && (
-                            <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-center text-sm mb-4 flex justify-between items-center">
-                                <span><strong>Error:</strong> {error}</span>
-                                <button onClick={() => setError(null)} className="ml-4 font-bold text-xl leading-none">&times;</button>
+                return (
+                     <div className="space-y-6">
+                        <div className="animate-fade-in-up">
+                            <Header metrics={processedData.metrics} accountName={currentAccount.name} lastUpdated={currentAccount.lastUpdated} onRefresh={handleRefresh} isSyncing={isSyncing} currency={currentAccount.currency || 'USD'} />
+                        </div>
+                        <div className="animate-fade-in-up animation-delay-200">
+                           <BalanceChart data={processedData.chartData} onAdvancedAnalysisClick={() => setView('analysis')} initialBalance={currentAccount.initialBalance} currency={currentAccount.currency || 'USD'} goals={currentAccount.goals || {}} />
+                        </div>
+                         {processedData.openTrades.length > 0 && (
+                            <div className="animate-fade-in-up animation-delay-400">
+                                <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} currency={currentAccount.currency || 'USD'} />
                             </div>
                         )}
-                        
-                        <div className={!isDesktop ? "pb-24" : ""}>
-                            <div key={view} className="animate-fade-in">
-                                {renderCurrentView()}
-                            </div>
+                        <div className="animate-fade-in-up animation-delay-500">
+                            <MemoizedDashboard metrics={processedData.metrics} currency={currentAccount.currency || 'USD'} />
                         </div>
-                    </main>
-                </div>
+                        <div className="animate-fade-in-up animation-delay-600">
+                            <RecentTradesTable trades={processedData.recentTrades} currency={currentAccount.currency || 'USD'}/>
+                        </div>
+                        <div className="animate-fade-in-up animation-delay-700">
+                           <DashboardMetricsBottom metrics={processedData.metrics} currency={currentAccount.currency || 'USD'}/>
+                        </div>
+                    </div>
+                );
+            case 'trades': return <MemoizedTradesList trades={processedData.closedTrades} currency={currentAccount.currency || 'USD'} />;
+            case 'calendar': return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} currency={currentAccount.currency || 'USD'} />;
+            case 'analysis': return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} currency={currentAccount.currency || 'USD'} />;
+            case 'goals': return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} currency={currentAccount.currency || 'USD'} />;
+            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} />;
+            default: return null;
+        }
+    };
+    
+    return (
+        <>
+            <div className="flex min-h-screen">
+                {isDesktop && <Sidebar currentView={view} onNavigate={setView} />}
+                <main ref={pullToRefreshRef as React.RefObject<HTMLDivElement>} className="flex-1 p-4 md:p-6 pb-24 md:pb-6">
+                     <div className="max-w-4xl mx-auto">
+                        <div className="flex justify-between items-center mb-6">
+                             {!isDesktop && (
+                                <svg viewBox="0 0 128 88" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
+                                    <g><circle cx="64" cy="51" r="18" fill="#404B69"/><path d="M56 42a12 12 0 0 1 16 0 M38 53a12 12 0 0 0 20 0 M46 64a10 10 0 0 1 12 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="m36.8 88 24.8-80h11.2L47.2 88z" fill="#404B69"/><path d="m91.2 88-24.8-80h-11.2L80.8 88z" fill="#8B9BBD"/><path d="M24 72c26-48 66-41 86-34l6-8 8 12-14-4z" fill="#8B9BBD"/></g>
+                                </svg>
+                            )}
+                            {accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
+                        </div>
+                         {error && (
+                            <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm mb-4 flex justify-between items-center animate-fade-in">
+                                <span>{error}</span>
+                                <button onClick={() => setError(null)} className="font-bold text-xl">&times;</button>
+                            </div>
+                        )}
+                        {renderView()}
+                     </div>
+                </main>
             </div>
+            {!isDesktop && <BottomNav currentView={view} onNavigate={setView} />}
 
-            {!isDesktop && currentAccount && (
-                <BottomNav 
-                    currentView={view}
-                    onNavigate={setView}
-                />
-            )}
-            
-            <AccountActionModal
-                isOpen={isAccountActionModalOpen}
-                onClose={() => setAccountActionModalOpen(false)}
-                onAddAccount={handleInitiateAdd}
-                onUpdateAccount={handleInitiateUpdate}
-                onDeleteAccount={handleInitiateDelete}
-                canUpdate={!!currentAccount}
-                canDelete={!!currentAccount}
-            />
-
-            <AddAccountModal
-                isOpen={isAddAccountModalOpen || (accounts.length === 0 && !currentAccountName && !isAccountActionModalOpen)}
+            <AddAccountModal 
+                isOpen={isAddAccountModalOpen} 
                 onClose={() => setAddAccountModalOpen(false)}
-                onSaveAccount={handleSaveAccount}
+                onSaveAccount={saveAccount}
                 mode={modalMode}
                 accountToUpdate={currentAccount}
             />
-
+            <AccountActionModal
+                isOpen={isAccountActionModalOpen}
+                onClose={() => setAccountActionModalOpen(false)}
+                onAddAccount={handleAddClick}
+                onUpdateAccount={handleUpdateClick}
+                onDeleteAccount={handleDeleteClick}
+                canUpdate={!!currentAccount}
+                canDelete={!!currentAccount}
+            />
             <DeleteConfirmationModal
                 isOpen={isDeleteConfirmModalOpen}
                 onClose={() => setDeleteConfirmModalOpen(false)}
-                onConfirm={handleDeleteAccount}
+                onConfirm={deleteAccount}
                 accountName={currentAccount?.name || ''}
             />
-            
-            {processedData && (
+            {dayDetailModalData && (
                 <DayDetailModal
                     isOpen={!!selectedCalendarDate}
                     onClose={() => setSelectedCalendarDate(null)}
-                    date={selectedCalendarDate || new Date()}
-                    trades={tradesForSelectedDay}
-                    startOfDayBalance={startOfDayBalance}
+                    trades={dayDetailModalData.trades}
+                    date={dayDetailModalData.date}
+                    startOfDayBalance={dayDetailModalData.startOfDayBalance}
                     currency={currentAccount?.currency || 'USD'}
                 />
             )}
-        </div>
+        </>
     );
 };
 
