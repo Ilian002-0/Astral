@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect, useCallback } from 'react';
 
 const PULL_THRESHOLD = 80; // Pixels to pull down before refresh is triggered
@@ -9,7 +10,8 @@ const usePullToRefresh = (onRefresh: () => void) => {
     const [pullDistance, setPullDistance] = useState(0);
 
     const handleTouchStart = useCallback((e: TouchEvent) => {
-        if (window.scrollY === 0) {
+        const element = pullToRefreshRef.current;
+        if (element && element.scrollTop === 0) {
             setPullStart(e.touches[0].clientY);
         }
     }, []);
@@ -19,8 +21,9 @@ const usePullToRefresh = (onRefresh: () => void) => {
 
         const touchY = e.touches[0].clientY;
         const distance = touchY - pullStart;
+        const element = pullToRefreshRef.current;
 
-        if (distance > 0 && window.scrollY === 0) {
+        if (element && distance > 0 && element.scrollTop === 0) {
             e.preventDefault();
             setPullDistance(distance);
         }

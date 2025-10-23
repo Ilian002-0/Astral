@@ -323,27 +323,37 @@ const App: React.FC = () => {
     
     return (
         <>
-            <div className="flex min-h-screen">
+            <div className="flex h-screen overflow-hidden">
                 {isDesktop && <Sidebar currentView={view} onNavigate={setView} />}
-                <main ref={pullToRefreshRef as React.RefObject<HTMLDivElement>} className="flex-1 p-4 md:p-6 pb-24 md:pb-6">
-                     <div className="max-w-4xl mx-auto">
-                        <div className="flex justify-between items-center mb-6">
-                             {!isDesktop && (
-                                <svg viewBox="0 0 128 88" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
-                                    <g><circle cx="64" cy="51" r="18" fill="#404B69"/><path d="M56 42a12 12 0 0 1 16 0 M38 53a12 12 0 0 0 20 0 M46 64a10 10 0 0 1 12 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="m36.8 88 24.8-80h11.2L47.2 88z" fill="#404B69"/><path d="m91.2 88-24.8-80h-11.2L80.8 88z" fill="#8B9BBD"/><path d="M24 72c26-48 66-41 86-34l6-8 8 12-14-4z" fill="#8B9BBD"/></g>
-                                </svg>
-                            )}
-                            {accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
-                        </div>
-                         {error && (
-                            <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm mb-4 flex justify-between items-center animate-fade-in">
-                                <span>{error}</span>
-                                <button onClick={() => setError(null)} className="font-bold text-xl">&times;</button>
+                <div className="flex-1 flex flex-col w-full">
+                    <header className="flex-shrink-0 z-10 bg-[#0c0b1e] shadow-lg shadow-black/30">
+                        <div className="max-w-4xl mx-auto px-4 md:px-6">
+                            <div className={`flex ${!isDesktop ? 'justify-between' : 'justify-end'} items-center h-20`}>
+                                {!isDesktop && (
+                                    <div className="flex items-center gap-2">
+                                        <svg viewBox="0 0 128 88" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
+                                            <g><circle cx="64" cy="51" r="18" fill="#404B69"/><path d="M56 42a12 12 0 0 1 16 0 M38 53a12 12 0 0 0 20 0 M46 64a10 10 0 0 1 12 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="m36.8 88 24.8-80h11.2L47.2 88z" fill="#404B69"/><path d="m91.2 88-24.8-80h-11.2L80.8 88z" fill="#8B9BBD"/><path d="M24 72c26-48 66-41 86-34l6-8 8 12-14-4z" fill="#8B9BBD"/></g>
+                                        </svg>
+                                        <span className="text-xl font-bold tracking-widest text-[#8B9BBD]">ATLAS</span>
+                                    </div>
+                                )}
+                                {accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
                             </div>
-                        )}
-                        {renderView()}
-                     </div>
-                </main>
+                        </div>
+                    </header>
+
+                    <main ref={pullToRefreshRef as React.RefObject<HTMLDivElement>} className="flex-1 overflow-y-auto">
+                         <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-24 md:pb-6">
+                             {error && (
+                                <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm mb-4 flex justify-between items-center animate-fade-in">
+                                    <span>{error}</span>
+                                    <button onClick={() => setError(null)} className="font-bold text-xl">&times;</button>
+                                </div>
+                            )}
+                            {renderView()}
+                         </div>
+                    </main>
+                </div>
             </div>
             {!isDesktop && <BottomNav currentView={view} onNavigate={setView} />}
 
