@@ -14,9 +14,9 @@ interface DayDetailModalProps {
 
 const StatCard: React.FC<{ title: string; value: string; colorClass?: string; }> = ({ title, value, colorClass = 'text-white' }) => {
     return (
-        <div className="bg-[#0c0b1e]/60 p-2 sm:p-4 rounded-lg text-center">
+        <div className="bg-[#0c0b1e]/60 p-3 rounded-lg text-center flex flex-col justify-center overflow-hidden">
             <h4 className="text-sm font-medium text-gray-400 truncate">{title}</h4>
-            <p className={`text-stat-value-sm sm:text-stat-value-md lg:text-stat-value font-bold mt-1 ${colorClass}`}>{value}</p>
+            <p className={`text-lg sm:text-xl font-bold mt-1 ${colorClass}`}>{value}</p>
         </div>
     );
 };
@@ -78,7 +78,7 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
     if (!isOpen) return null;
 
     const netProfitColor = dailyStats.netProfit >= 0 ? 'text-green-400' : 'text-red-400';
-    const formattedDate = date.toLocaleDateString(language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const formattedDate = date.toLocaleString(language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 animate-fade-in-fast" onClick={onClose}>
@@ -101,7 +101,7 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
                 </div>
 
                 {/* Trades Table */}
-                <div className="overflow-y-auto flex-grow">
+                <div className="overflow-y-auto flex-grow overflow-x-hidden overscroll-x-none">
                     <table className="w-full text-sm text-left">
                         <thead className="text-xs text-gray-400 uppercase bg-[#0c0b1e] sticky top-0">
                             <tr>

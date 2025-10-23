@@ -1,4 +1,5 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+// FIX: Re-implemented the entire LanguageContext to resolve malformed file and missing exports issue.
+import React, { createContext, useContext, ReactNode, useState } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 
 // Define a type for our translation dictionary
@@ -38,58 +39,70 @@ const frTranslations: Translations = {
   "open_trades": { "title": "Trades Ouverts", "total_floating_pnl": "P/L Flottant Total" },
   "trades_list": { "title": "Tous les Trades Clôturés ({{count}})", "search_placeholder": "Rechercher des trades...", "customize_columns": "Personnaliser les colonnes", "no_trades_found": "Aucun trade trouvé.", "col_id": "ID", "col_open_time": "Heure d'ouverture", "col_type": "Type", "col_size": "Taille", "col_symbol": "Symbole", "col_open_price": "Prix d'ouverture", "col_close_time": "Heure de fermeture", "col_close_price": "Prix de fermeture", "col_commission": "Commission", "col_swap": "Swap", "col_profit": "Profit", "col_comment": "Commentaire" },
   "calendar": { "title": "Résumé journalier", "weekly_summary": "Résumé hebdomadaire", "week": "Semaine {{number}}", "pnl": "PnL: {{value}}", "no_trades": "Aucun trade", "mon": "Lu", "tue": "Ma", "wed": "Me", "thu": "Je", "fri": "Ve", "sat": "Sa", "sun": "Di", "trade": "trade", "trades": "trades", "day": "jour", "days": "jours", "monthly_total": "Total Mensuel" },
-  "day_modal": { "title": "Trades pour le {{date}}", "net_profit": "Profit Net", "total_lot_size": "Taille de lot totale", "daily_return": "Retour Quotidien %", "symbol": "Symbole", "type": "Type", "size": "Taille", "profit": "Profit" },
+  "day_modal": { "title": "Trades pour le {{date}}", "net_profit": "Profit Net", "total_lot_size": "Taille Totale du Lot", "daily_return": "Rendement Journalier %", "symbol": "Symbole", "type": "Type", "size": "Taille", "profit": "Profit" },
   "account_action_modal": { "title": "Actions de Compte", "subtitle": "Que souhaitez-vous faire ?", "add_new": "Ajouter un nouveau compte", "update_current": "Mettre à jour le compte actuel", "delete_current": "Supprimer le Compte Actuel" },
   "add_account_modal": { "title": "Ajouter un nouveau compte", "title_update": "Mettre à jour le Compte", "subtitle": "Fournissez les détails du compte et téléchargez le CSV de l'historique des trades.", "subtitle_update": "Mettez à jour les détails du compte et téléchargez de nouveaux trades.", "account_name": "Nom du compte", "account_name_placeholder": "ex: Mon compte principal", "initial_balance": "Solde initial ({{currency}})", "initial_balance_placeholder": "ex: 100000", "file_loaded": "Fichier chargé :", "trades_found": "{{count}} trades trouvés.", "trades_to_add": "{{count}} nouveaux trades seront ajoutés.", "trades_updated": "{{count}} trades existants seront mis à jour.", "clear_file": "Retirer le fichier", "save_button": "Enregistrer le compte", "save_button_update": "Mettre à jour le Compte", "data_source": "Source de Données", "file_upload": "Fichier Local", "live_url": "URL Active", "csv_url": "URL des Données en Direct", "csv_url_placeholder": "ex: Lien Google Sheet publié ou CSV direct", "url_helper_text": "Pour Google Sheets : Allez dans Fichier > Partager > Publier sur le web, sélectionnez 'Valeurs séparées par des virgules (.csv)', et copiez le lien généré." },
   "delete_confirmation": { "title": "Confirmer la Suppression", "message": "Êtes-vous sûr de vouloir supprimer le compte '{{accountName}}' ? Cette action est irréversible.", "confirm_button": "Oui, Supprimer" },
   "file_upload": { "title": "Téléchargez votre historique de trading MT5", "subtitle": "Glissez-déposez votre fichier CSV ici, ou cliquez pour sélectionner un fichier.", "drop_prompt": "Lâchez-le ici !", "click_prompt": "Cliquez ou glissez un fichier ici" },
   "profile": { "title": "Profil & Paramètres", "language": "Langue", "english": "Anglais", "french": "Français", "backup_title": "Sauvegarde des Données", "backup_description": "Connectez votre compte Google pour sauvegarder tous vos comptes, trades et paramètres sur Google Drive.", "connect_google": "Connecter le Compte Google", "backup_button": "Sauvegarder sur Google Drive", "backup_loading": "Sauvegarde en cours...", "backup_success": "Sauvegarde Réussie !", "backup_retry": "Réessayer la Sauvegarde", "backup_no_client_id": "L'ID client Google n'est pas configuré. La sauvegarde est indisponible.", "feature_coming_soon": "Fonctionnalité à venir.", "free_to_use": "Atlas est gratuit.", "data_privacy": "Vos données sont stockées localement sur votre appareil.", "update_title": "Mise à jour de l'application", "update_description": "Forcer l'application à rechercher la dernière version.", "update_button": "Vérifier les mises à jour" },
   "analysis": { "title": "Analyse Avancée", "filter_symbols_title": "Filtrer par Symbole", "filter_symbols_placeholder": "Tous les symboles", "filter_comments_title": "Filtrer par Commentaire", "filter_comments_placeholder": "Tous les commentaires", "select_all": "Tout sélectionner", "clear_all": "Tout effacer", "filtered_trades_title": "Trades Filtrés", "filtered_profit_title": "Profit Net Filtré", "back_to_dashboard": "Retour au Tableau de Bord", "item_name_symbols": "symboles", "item_name_comments": "commentaires", "start_date": "Date de début", "end_date": "Date de fin" },
-    "goals": { "title": "Objectifs de Trading", "subtitle": "Définissez vos cibles et suivez vos progrès.", "edit_goals": "Modifier les Objectifs", "save_goals": "Enregistrer les Objectifs", "cancel": "Annuler", "metric_netProfit": "Profit Net ($)", "metric_winRate": "Taux de Réussite (%)", "metric_profitFactor": "Facteur de Profit", "metric_maxDrawdown": "Drawdown Max (%)", "current": "Actuel", "target": "Cible", "not_set": "Non défini", "enable_goal": "Activer l'objectif", "goal_met": "Objectif atteint !", "less_is_better": "plus bas c'est mieux", "show_on_chart": "Afficher sur le graphique", "profit_target_label": "Objectif de Profit", "drawdown_target_label": "Limite de Drawdown" }
-};
-
-const allTranslations: { [key in Language]: Translations } = {
-  en: enTranslations,
-  fr: frTranslations,
+  "goals": { "title": "Objectifs de Trading", "subtitle": "Définissez vos cibles et suivez vos progrès.", "edit_goals": "Modifier les Objectifs", "save_goals": "Sauvegarder les Objectifs", "cancel": "Annuler", "metric_netProfit": "Profit Net ($)", "metric_winRate": "Taux de Réussite (%)", "metric_profitFactor": "Facteur de Profit", "metric_maxDrawdown": "Drawdown Max (%)", "current": "Actuel", "target": "Cible", "not_set": "Non défini", "enable_goal": "Activer l'Objectif", "goal_met": "Objectif Atteint !", "less_is_better": "plus bas c'est mieux", "show_on_chart": "Afficher sur le graphique", "profit_target_label": "Objectif de Profit", "drawdown_target_label": "Limite de Drawdown" }
 };
 
 interface LanguageContextType {
   language: Language;
-  setLanguage: (language: Language) => void;
+  setLanguage: (language: Language | 'en' | 'fr') => void;
   t: (key: string, options?: { [key: string]: string | number }) => string;
 }
+
+const translations: Record<Language, Translations> = {
+    en: enTranslations,
+    fr: frTranslations,
+};
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useLocalStorage<Language>('app_language', 'en');
-  
-  const t = (key: string, options?: { [key: string]: string | number }): string => {
-    const translations = allTranslations[language] || allTranslations.en;
-    // Navigate through the nested JSON object using the key (e.g., "nav.dashboard")
-    let text = key.split('.').reduce((obj, k) => obj && obj[k], translations);
+  const [language, setLanguage] = useLocalStorage<Language>('language', 'en');
+
+  const t = (key: string, options?: { [key: string]: string | number }) => {
+    const keyParts = key.split('.');
+    let translation: any = translations[language] || translations['en'];
+
+    for (const part of keyParts) {
+      if (translation && typeof translation === 'object' && translation[part] !== undefined) {
+        translation = translation[part];
+      } else {
+        // Fallback to English if key not found in current language
+        let fallbackTranslation = translations['en'];
+        let found = true;
+        for (const enPart of keyParts) {
+            if (fallbackTranslation && typeof fallbackTranslation === 'object' && fallbackTranslation[enPart] !== undefined) {
+                fallbackTranslation = fallbackTranslation[enPart];
+            } else {
+                found = false;
+                break;
+            }
+        }
+        if (found) {
+            translation = fallbackTranslation;
+        } else {
+            return key; // Return key if not found in English either
+        }
+        break;
+      }
+    }
+
+    if (typeof translation === 'string' && options) {
+      return Object.entries(options).reduce((str, [optKey, optValue]) => {
+        return str.replace(new RegExp(`{{${optKey}}}`, 'g'), String(optValue));
+      }, translation);
+    }
     
-    if (typeof text !== 'string') {
-      // If the key is not found, return the key itself.
-      return key;
-    }
-
-    // Replace placeholders like {{count}} with values from the options object
-    if (options) {
-      Object.keys(options).forEach(k => {
-        const regex = new RegExp(`{{${k}}}`, 'g');
-        text = text.replace(regex, String(options[k]));
-      });
-    }
-
-    return text;
+    return typeof translation === 'string' ? translation : key;
   };
 
-  const value = {
-    language,
-    setLanguage: (lang: Language) => setLanguage(lang),
-    t,
-  };
+  const value = { language, setLanguage, t };
 
   return (
     <LanguageContext.Provider value={value}>
