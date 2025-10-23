@@ -106,7 +106,6 @@ Tracked with Atlas.`,
         if (isSyncing) {
             return {
                 color: 'bg-blue-500',
-                text: t('header.syncing'),
                 isPulsing: true,
             };
         }
@@ -114,7 +113,6 @@ Tracked with Atlas.`,
         if (!lastUpdated) {
              return {
                 color: 'bg-gray-500',
-                text: 'Never updated',
                 isPulsing: false,
             };
         }
@@ -123,19 +121,17 @@ Tracked with Atlas.`,
         const lastUpdateDate = new Date(lastUpdated);
         const minutesAgo = (now.getTime() - lastUpdateDate.getTime()) / (1000 * 60);
         
-        const STALE_THRESHOLD_MINUTES = 15;
+        const STALE_THRESHOLD_MINUTES = 5;
 
         if (minutesAgo > STALE_THRESHOLD_MINUTES) {
             return {
                 color: 'bg-yellow-500',
-                text: formatRelativeTime(lastUpdated),
                 isPulsing: false,
             };
         }
 
         return {
             color: 'bg-green-500',
-            text: formatRelativeTime(lastUpdated),
             isPulsing: false,
         };
     };
@@ -188,8 +184,12 @@ Tracked with Atlas.`,
                     )}
                 </div>
                 <div className="text-right">
-                    {onRefresh ? (
-                        <>
+                    {onRefresh && (
+                        <div className="flex items-center justify-end gap-3">
+                            <span className="relative flex h-3 w-3" title={`Last update: ${formatRelativeTime(lastUpdated)}`}>
+                                {syncStatus.isPulsing && <span className={`absolute inline-flex h-full w-full rounded-full ${syncStatus.color} animate-ping opacity-75`}></span>}
+                                <span className={`relative inline-flex rounded-full h-3 w-3 ${syncStatus.color}`}></span>
+                            </span>
                             <button 
                                 onClick={onRefresh} 
                                 disabled={isSyncing} 
@@ -198,16 +198,7 @@ Tracked with Atlas.`,
                             >
                                 <SyncIcon isSyncing={isSyncing}/>
                             </button>
-                             <div className="flex items-center justify-end text-xs opacity-70 mt-1.5 gap-2">
-                                <span className="relative flex h-2 w-2">
-                                    {syncStatus.isPulsing && <span className={`absolute inline-flex h-full w-full rounded-full ${syncStatus.color} animate-ping opacity-75`}></span>}
-                                    <span className={`relative inline-flex rounded-full h-2 w-2 ${syncStatus.color}`}></span>
-                                </span>
-                                <span>{t('header.last_update')}: {syncStatus.text}</span>
-                            </div>
-                        </>
-                    ) : (
-                        <p className="text-xs opacity-70 mt-1">{t('header.last_update')}: {formatRelativeTime(lastUpdated)}</p>
+                        </div>
                     )}
                 </div>
             </div>

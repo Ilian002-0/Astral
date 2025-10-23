@@ -54,7 +54,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     };
 
     const formatDate = (date: Date) => {
-        return date.toLocaleString(language, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        return date.toLocaleString(language, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
     const formatValue = (trade: Trade, key: TradeKeys) => {
@@ -95,8 +95,8 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     const activeColumns = COLUMN_DEFINITIONS.filter(col => visibleColumns[col.key]);
 
     return (
-        <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+        <div className="bg-[#16152c] rounded-2xl shadow-lg border border-gray-700/50">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4 px-4 sm:px-6 pt-4 sm:pt-6">
                 <h2 className="text-xl font-bold text-white">{t('trades_list.title', { count: filteredTrades.length })}</h2>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <input
@@ -125,12 +125,12 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
+            <div className="w-full overflow-x-auto">
+                <table className="min-w-full text-sm text-left">
                     <thead className="text-xs text-gray-400 uppercase border-b-2 border-gray-700">
                         <tr>
                             {activeColumns.map(col => (
-                                <th key={col.key} scope="col" className="px-4 py-3 whitespace-nowrap">{col.label}</th>
+                                <th key={col.key} scope="col" className="px-2 sm:px-4 py-3 whitespace-nowrap">{col.label}</th>
                             ))}
                         </tr>
                     </thead>
@@ -138,7 +138,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                         {filteredTrades.map((trade, index) => (
                             <tr 
                                 key={trade.ticket} 
-                                className="border-b border-gray-800 text-xs hover:bg-gray-800/50 animate-fade-in-up"
+                                className="border-b border-gray-800 text-xs hover:bg-gray-800/50 animate-fade-in-up align-top"
                                 style={{ animationDelay: `${index * 20}ms`, opacity: 0 }}
                             >
                                {activeColumns.map(col => {
@@ -149,11 +149,25 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                                     if(col.key === 'profit' || col.key === 'commission' || col.key === 'swap') cellClass = `font-bold ${trade[col.key] >= 0 ? 'text-green-400' : 'text-red-400'}`;
                                     
                                     const isComment = col.key === 'comment';
+                                    const isDateColumn = col.key === 'openTime' || col.key === 'closeTime';
+                                    
+                                    if (isDateColumn) {
+                                        const dateValue = trade[col.key] as Date;
+                                        return (
+                                            <td key={col.key} className="px-2 sm:px-4 py-3 text-white leading-tight">
+                                                <div className="sm:hidden">
+                                                    <div>{dateValue.toLocaleDateString(language, { month: 'short', day: 'numeric', year: '2-digit' })}</div>
+                                                    <div className="text-gray-500">{dateValue.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+                                                </div>
+                                                <span className="hidden sm:inline whitespace-nowrap">{formatDate(dateValue)}</span>
+                                            </td>
+                                        );
+                                    }
 
                                     return (
                                         <td 
                                             key={col.key} 
-                                            className={`px-4 py-3 whitespace-nowrap ${cellClass} ${isComment ? 'max-w-xs truncate' : ''}`}
+                                            className={`px-2 sm:px-4 py-3 whitespace-nowrap ${cellClass} ${isComment ? 'max-w-xs truncate' : ''}`}
                                             title={isComment ? trade.comment : undefined}
                                         >
                                             {formatValue(trade, col.key)}
@@ -166,7 +180,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                 </table>
             </div>
             {filteredTrades.length === 0 && (
-                <div className="text-center py-10 text-gray-500">
+                <div className="text-center py-10 px-4 sm:px-6 text-gray-500">
                     <p>{t('trades_list.no_trades_found')}</p>
                 </div>
             )}
