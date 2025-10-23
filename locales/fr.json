@@ -56,9 +56,7 @@
       "week": "7 derniers jours",
       "month": "30 derniers jours",
       "all": "Toute la période"
-    },
-    "initial_balance": "Solde Initial",
-    "current_equity": "Capitaux Propres Actuels"
+    }
   },
   "metrics": {
     "total_profit": "Profit Net (Clôturé)",

@@ -57,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({ metrics, accountName, lastUpdated, onRe
     const formatCurrency = (value: number) => {
         const symbol = currency === 'USD' ? '$' : '€';
         const sign = value >= 0 ? '+' : '-';
-        const numberPart = new Intl.NumberFormat(language, { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.abs(value));
+        const numberPart = new Intl.NumberFormat(language, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(value));
         if (language === 'fr') {
             return `${sign}${numberPart}${symbol}`;
         }
