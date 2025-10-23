@@ -55,6 +55,7 @@ const App: React.FC = () => {
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
 
     const isDesktop = useMediaQuery('(min-width: 768px)');
+    const syncedAccountsRef = useRef<Set<string>>(new Set());
     
     // PWA Install prompt handler
     useEffect(() => {
@@ -205,21 +206,12 @@ const App: React.FC = () => {
     const { pullToRefreshRef, isRefreshing } = usePullToRefresh(refreshData);
 
     useEffect(() => {
-        // Automatically refresh data on mobile when an account with a dataUrl is first loaded or selected.
-        if (!isDesktop && currentAccount?.dataUrl) {
+        // Automatically refresh data on mobile, but only once per account per session.
+        if (!isDesktop && currentAccount?.dataUrl && !syncedAccountsRef.current.has(currentAccount.name)) {
             refreshData();
+            syncedAccountsRef.current.add(currentAccount.name);
         }
     }, [currentAccount, isDesktop, refreshData]);
-
-    useEffect(() => {
-        if (currentAccount?.dataUrl) {
-            const interval = setInterval(() => {
-                refreshData();
-            }, 5 * 60 * 1000); // Auto-refresh every 5 minutes
-
-            return () => clearInterval(interval);
-        }
-    }, [currentAccount, refreshData]);
 
     const handleOpenAccountActions = () => {
         setAccountActionModalOpen(true);
