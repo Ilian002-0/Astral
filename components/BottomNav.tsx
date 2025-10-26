@@ -44,7 +44,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate }) => {
                     <NavButton isActive={currentView === 'dashboard'} onClick={() => onNavigate('dashboard')} label={t('nav.dashboard')}>
                         <DashboardIcon />
                     </NavButton>
-                    <NavButton isActive={currentView === 'trades'} onClick={() => onNavigate('trades')} label={t('nav.trades')}>
+                    <NavButton isActive={currentView === 'trades'} onClick={() => onNavigate('trades')} label={t('nav.trades_short')}>
                         <ListIcon />
                     </NavButton>
                     <NavButton isActive={currentView === 'calendar'} onClick={() => onNavigate('calendar')} label={t('nav.calendar')}>

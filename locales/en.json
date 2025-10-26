@@ -1,6 +1,7 @@
 {
   "nav": {
     "trades": "List of Trades",
+    "trades_short": "Trades",
     "calendar": "Calendar",
     "dashboard": "Dashboard",
     "profile": "Profile",

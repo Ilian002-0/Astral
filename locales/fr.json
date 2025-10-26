@@ -1,8 +1,9 @@
 {
   "nav": {
     "trades": "Liste des Trades",
+    "trades_short": "Trades",
     "calendar": "Calendrier",
-    "dashboard": "Tableau de bord",
+    "dashboard": "Dashboard",
     "profile": "Profil",
     "analysis": "Analyse",
     "goals": "Objectifs"
@@ -91,7 +92,7 @@
     "col_size": "Taille",
     "col_symbol": "Symbole",
     "col_open_price": "Prix d'ouverture",
-    "col_close_time": "Heure de fermeture",
+    "col_close_time": "Clôture",
     "col_close_price": "Prix de fermeture",
     "col_commission": "Commission",
     "col_swap": "Swap",
