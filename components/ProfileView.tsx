@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleDriveBackup from './GoogleDriveBackup';
 import { NotificationSettings, NotificationItem } from '../types';
+import Toggle from './Toggle';
 
 interface ProfileViewProps {
     canInstall: boolean;
@@ -11,15 +12,6 @@ interface ProfileViewProps {
     notificationHistory: NotificationItem[];
     onClearNotifications: () => void;
 }
-
-const Toggle: React.FC<{ enabled: boolean; onChange: (enabled: boolean) => void }> = ({ enabled, onChange }) => (
-    <button
-        onClick={() => onChange(!enabled)}
-        className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${enabled ? 'bg-cyan-500' : 'bg-gray-600'}`}
-    >
-        <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-    </button>
-);
 
 const NotificationCenter: React.FC<{ history: NotificationItem[]; onClear: () => void }> = ({ history, onClear }) => {
     const { t, language } = useLanguage();

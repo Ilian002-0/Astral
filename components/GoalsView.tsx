@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DashboardMetrics, Goals, Goal, GoalMetric } from '../types';
 import GoalCard from './GoalCard';
 import { useLanguage } from '../contexts/LanguageContext';
+import Toggle from './Toggle';
 
 interface GoalsViewProps {
   metrics: DashboardMetrics;
@@ -37,20 +38,20 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
         });
     };
     
-    const handleToggleGoal = (metric: GoalMetric) => {
+    const handleToggleGoal = (metric: GoalMetric, enabled: boolean) => {
         const currentGoal = editableGoals[metric] || { target: 0, enabled: false, showOnChart: false };
         setEditableGoals(prev => ({
             ...prev,
-            [metric]: { ...currentGoal, enabled: !currentGoal.enabled }
+            [metric]: { ...currentGoal, enabled }
         }));
     };
     
-    const handleToggleShowOnChart = (metric: GoalMetric) => {
+    const handleToggleShowOnChart = (metric: GoalMetric, show: boolean) => {
         setEditableGoals(prev => {
             const currentGoal = prev[metric] || { target: 0, enabled: false, showOnChart: false };
             return {
                 ...prev,
-                [metric]: { ...currentGoal, showOnChart: !currentGoal.showOnChart }
+                [metric]: { ...currentGoal, showOnChart: show }
             };
         });
     };
@@ -133,17 +134,11 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
                         return (
                             <div key={key} className={`p-4 rounded-xl border ${goal.enabled ? 'bg-[#0c0b1e]/60 border-gray-700' : 'bg-gray-800/30 border-gray-800'}`}>
                                 <div className="flex items-center justify-between mb-3">
-                                    <label htmlFor={`${key}-toggle`} className="text-lg font-semibold text-white">{t(titleKey)}</label>
-                                    <input
-                                        type="checkbox"
-                                        id={`${key}-toggle`}
-                                        checked={goal.enabled}
-                                        onChange={() => handleToggleGoal(key)}
-                                        className="form-checkbox h-5 w-5 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600 cursor-pointer"
-                                    />
+                                    <label className="text-lg font-semibold text-white">{t(titleKey)}</label>
+                                    <Toggle enabled={goal.enabled} onChange={(val) => handleToggleGoal(key, val)} />
                                 </div>
                                 {goal.enabled && (
-                                    <>
+                                    <div className="space-y-3 animate-fade-in">
                                         <input
                                             type="number"
                                             value={goal.target || ''}
@@ -152,20 +147,14 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
                                             className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
                                         />
                                         {canShowOnChart && (
-                                            <div className="flex items-center mt-3">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`${key}-showOnChart-toggle`}
-                                                    checked={!!goal.showOnChart}
-                                                    onChange={() => handleToggleShowOnChart(key)}
-                                                    className="form-checkbox h-4 w-4 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600 cursor-pointer"
-                                                />
-                                                <label htmlFor={`${key}-showOnChart-toggle`} className="ml-2 text-sm text-gray-300 cursor-pointer">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-sm text-gray-300">
                                                     {t('goals.show_on_chart')}
                                                 </label>
+                                                <Toggle enabled={!!goal.showOnChart} onChange={(val) => handleToggleShowOnChart(key, val)} />
                                             </div>
                                         )}
-                                    </>
+                                    </div>
                                 )}
                             </div>
                         );
