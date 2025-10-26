@@ -315,7 +315,7 @@ const App: React.FC = () => {
                             </div>
                         )}
                         <div className="animate-fade-in-up animation-delay-600">
-                            <RecentTradesTable trades={processedData.recentTrades} currency={currentAccount.currency || 'USD'}/>
+                            <RecentTradesTable trades={processedData.recentTrades} currency={currentAccount.currency || 'USD'} />
                         </div>
                         <div className="animate-fade-in-up animation-delay-700">
                            <DashboardMetricsBottom metrics={processedData.metrics} currency={currentAccount.currency || 'USD'}/>

@@ -24,7 +24,7 @@ const RecentTradesTable: React.FC<RecentTradesTableProps> = ({ trades, currency 
         }
         return `${sign}${symbol}${absNumberPart}`;
     };
-
+    
     const formatDate = (date: Date) => {
         return date.toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
     };
