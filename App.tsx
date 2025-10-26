@@ -56,15 +56,8 @@ const App: React.FC = () => {
     const [installPrompt, setInstallPrompt] = useState<any>(null);
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
 
-    const [logoUrl, setLogoUrl] = useLocalStorage<string | null>('logo_url_v1', null);
-    const [logoError, setLogoError] = useState(false);
-
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { t } = useLanguage();
-
-    useEffect(() => {
-        setLogoError(false);
-    }, [logoUrl]);
     
     // PWA Install prompt handler
     useEffect(() => {
@@ -329,7 +322,7 @@ const App: React.FC = () => {
             case 'calendar': return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} currency={currentAccount.currency || 'USD'} />;
             case 'analysis': return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} currency={currentAccount.currency || 'USD'} />;
             case 'goals': return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} currency={currentAccount.currency || 'USD'} />;
-            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} logoUrl={logoUrl} setLogoUrl={setLogoUrl} />;
+            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} />;
             default: return null;
         }
     };
@@ -337,18 +330,14 @@ const App: React.FC = () => {
     return (
         <>
             <div className="flex h-screen overflow-hidden">
-                {isDesktop && <Sidebar currentView={view} onNavigate={setView} logoUrl={logoUrl} />}
+                {isDesktop && <Sidebar currentView={view} onNavigate={setView} />}
                 <div className="flex-1 flex flex-col w-full">
                     <header className="flex-shrink-0 z-10 bg-[#0c0b1e] shadow-lg shadow-black/30">
                         <div className="max-w-4xl mx-auto px-4 md:px-6">
                             <div className={`flex ${!isDesktop ? 'justify-between' : 'justify-end'} items-center h-20`}>
                                 {!isDesktop && (
                                     <div className="flex items-center gap-2">
-                                        {(logoUrl && !logoError) ? (
-                                            <img src={logoUrl} alt="Atlas Logo" className="h-10 w-auto object-contain" onError={() => setLogoError(true)} />
-                                        ) : (
-                                            <img src="https://i.imgur.com/CGGyy54.png" alt="Atlas Logo" className="h-10 w-auto object-contain" />
-                                        )}
+                                        <img src="https://i.imgur.com/TN8saNO.png" alt="Atlas Logo" className="h-10 w-auto object-contain" />
                                         <span className="text-xl font-bold tracking-widest text-[#8B9BBD]">ATLAS</span>
                                     </div>
                                 )}

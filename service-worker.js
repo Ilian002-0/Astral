@@ -1,10 +1,10 @@
-const CACHE_NAME = 'atlas-cache-v5'; // Incremented cache version
+const CACHE_NAME = 'atlas-cache-v6'; // Incremented cache version
 const urlsToCache = [
   '/',
   '/index.html',
   '/index.tsx',
   '/App.tsx',
-  '/logo.svg',
+  '/logo-with-bg.svg',
   '/manifest.json',
   '/locales/en.json',
   '/locales/fr.json',

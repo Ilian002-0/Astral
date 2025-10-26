@@ -164,9 +164,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
 
                 <div className="mt-6 lg:mt-0 lg:w-56 lg:flex-shrink-0">
                     <h3 className="text-lg font-bold text-white mb-4 text-center lg:text-left">{t('calendar.weekly_summary')}</h3>
-                    <div className="space-y-3">
-                        {weeklySummaries.map((week) => (
-                            <div key={week.weekLabel} className="bg-gray-800/50 p-3 rounded-lg flex justify-between items-center">
+                    <div className="space-y-1 sm:space-y-2">
+                        {weeklySummaries.map((week, index) => (
+                            <div key={`${week.weekLabel}-${index}`} className="bg-gray-800/50 p-3 rounded-lg flex justify-between items-center h-16 sm:h-20">
                                 <div>
                                     <p className="font-semibold text-white">{week.weekLabel}</p>
                                     <p className="text-xs text-gray-400">{week.tradingDays} {week.tradingDays === 1 ? t('calendar.day') : t('calendar.days')}</p>
@@ -176,17 +176,17 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                                 </p>
                             </div>
                         ))}
-                         <div className="pt-3 border-t border-gray-700">
-                             <div className="flex justify-between items-center">
-                                 <p className="font-semibold text-white">{t('calendar.monthly_total')}</p>
-                                 <p className={`text-xl font-bold ${monthlyProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                     {formatCurrency(monthlyProfit)}
-                                 </p>
-                             </div>
-                         </div>
                     </div>
                 </div>
             </div>
+             <div className="pt-3 mt-4 border-t border-gray-700">
+                 <div className="flex justify-between items-center">
+                     <p className="font-semibold text-white">{t('calendar.monthly_total')}</p>
+                     <p className={`text-xl font-bold ${monthlyProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                         {formatCurrency(monthlyProfit)}
+                     </p>
+                 </div>
+             </div>
         </div>
     );
 };

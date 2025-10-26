@@ -59,43 +59,31 @@ export const generateCalendarData = (trades: Trade[], displayDate: Date, languag
         }
     }
 
-    const weeklySummaries: WeeklySummary[] = [];
-    const monthWeeks: CalendarDay[][] = [];
-    
-    // Group all calendar days into weeks
-    let currentWeek: CalendarDay[] = [];
-    calendarDays.forEach(day => {
-        currentWeek.push(day);
-        if (day.date.getDay() === 0) { // Sunday
-            monthWeeks.push(currentWeek);
-            currentWeek = [];
+    const calendarWeeks: CalendarDay[][] = [];
+    for (let i = 0; i < calendarDays.length; i += 7) {
+        calendarWeeks.push(calendarDays.slice(i, i + 7));
+    }
+
+    const relevantWeekIndexes: number[] = [];
+    calendarWeeks.forEach((week, index) => {
+        if (week.some(day => day.isCurrentMonth)) {
+            relevantWeekIndexes.push(index);
         }
     });
-    if (currentWeek.length > 0) {
-        monthWeeks.push(currentWeek);
-    }
-    
-    // Filter to get only weeks that contain at least one day from the display month
-    const relevantWeeks = monthWeeks.filter(week => week.some(day => day.isCurrentMonth));
 
-    relevantWeeks.forEach((weekDays, index) => {
+    const weeklySummaries: WeeklySummary[] = calendarWeeks.map((weekDays, index) => {
         const tradeDaysInWeek = weekDays.filter(d => d.tradeCount > 0 && d.isCurrentMonth);
         const pnl = tradeDaysInWeek.reduce((sum, day) => sum + day.profit, 0);
         const tradingDays = tradeDaysInWeek.length;
         
-        const startDate = weekDays[0].date;
-        const endDate = weekDays[weekDays.length - 1].date;
+        const relevantWeekNumber = relevantWeekIndexes.indexOf(index);
 
-        const formatOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-        const startDateStr = startDate.toLocaleDateString(language, formatOptions);
-        const endDateStr = endDate.toLocaleDateString(language, formatOptions);
-        
-        weeklySummaries.push({
-            weekLabel: `Week ${index + 1}`,
-            dateRange: `${startDateStr} - ${endDateStr}`,
+        return {
+            weekLabel: relevantWeekNumber !== -1 ? `Week ${relevantWeekNumber + 1}` : ' ',
+            dateRange: '', // Not used in UI card, keep for type compatibility
             pnl,
             tradingDays
-        });
+        };
     });
 
     const monthlyProfit = calendarDays
