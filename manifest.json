@@ -37,28 +37,28 @@
       "name": "Dashboard",
       "url": "/?view=dashboard",
       "icons": [
-        { "src": "https://i.imgur.com/TN8saNO.png", "sizes": "192x192", "type": "image/png" }
+        { "src": "/dashboard-icon.svg", "sizes": "any", "type": "image/svg+xml" }
       ]
     },
     {
       "name": "List of Trades",
       "url": "/?view=trades",
       "icons": [
-        { "src": "https://i.imgur.com/TN8saNO.png", "sizes": "192x192", "type": "image/png" }
+        { "src": "/list-icon.svg", "sizes": "any", "type": "image/svg+xml" }
       ]
     },
     {
       "name": "Calendar",
       "url": "/?view=calendar",
       "icons": [
-        { "src": "https://i.imgur.com/TN8saNO.png", "sizes": "192x192", "type": "image/png" }
+        { "src": "/calendar-icon.svg", "sizes": "any", "type": "image/svg+xml" }
       ]
     },
     {
       "name": "Goals",
       "url": "/?view=goals",
       "icons": [
-        { "src": "https://i.imgur.com/TN8saNO.png", "sizes": "192x192", "type": "image/png" }
+        { "src": "/goals-icon.svg", "sizes": "any", "type": "image/svg+xml" }
       ]
     }
   ],

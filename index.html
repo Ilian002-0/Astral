@@ -7,7 +7,7 @@
     <title>Atlas</title>
     <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="theme-color" content="#0c0b1e" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,6 +20,7 @@
         -moz-user-select: none; /* Firefox */
         -ms-user-select: none; /* Internet Explorer/Edge */
         user-select: none; /* Standard */
+        overscroll-behavior-y: contain; /* Disable browser's native pull-to-refresh */
       }
       /* Re-enable text selection for input fields */
       input, textarea {

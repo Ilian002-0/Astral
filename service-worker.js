@@ -1,4 +1,4 @@
-const CACHE_NAME = 'atlas-cache-v7';
+const CACHE_NAME = 'atlas-cache-v9';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -8,6 +8,10 @@ const urlsToCache = [
   '/manifest.json',
   '/locales/en.json',
   '/locales/fr.json',
+  '/dashboard-icon.svg',
+  '/list-icon.svg',
+  '/calendar-icon.svg',
+  '/goals-icon.svg'
 ];
 
 // --- IndexedDB Helpers (Duplicated from hooks/useDBStorage for standalone worker access) ---

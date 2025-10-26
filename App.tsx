@@ -5,6 +5,7 @@ import { processAccountData, calculateBenchmarkPerformance } from './utils/calcu
 import { parseCSV } from './utils/csvParser';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
+import usePullToRefresh from './hooks/usePullToRefresh';
 import { useLanguage } from './contexts/LanguageContext';
 
 // Components
@@ -36,6 +37,38 @@ const MemoizedAnalysisView = React.memo(AnalysisView);
 const MemoizedGoalsView = React.memo(GoalsView);
 const MemoizedProfileView = React.memo(ProfileView);
 
+const SyncIcon: React.FC<{ isSyncing?: boolean }> = ({ isSyncing }) => (
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  className={`h-6 w-6 text-gray-300 ${isSyncing ? 'animate-spin' : ''}`}
+  fill="none"
+  viewBox="0 0 24 24"
+  stroke="currentColor"
+  strokeWidth={2}
+>
+  <path
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    d="M3 11.9998C3 7.02919 7.02944 2.99976 12 2.99976C14.8273 2.99976 17.35 4.30342 19 6.34242"
+  />
+  <path
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    d="M19.5 2.99976L19.5 6.99976L15.5 6.99976"
+  />
+  <path
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    d="M21 11.9998C21 16.9703 16.9706 20.9998 12 20.9998C9.17273 20.9998 6.64996 19.6961 5 17.6571"
+  />
+  <path
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    d="M4.5 20.9998L4.5 16.9998L8.5 16.9998"
+  />
+</svg>
+);
+
 
 const App: React.FC = () => {
     const { data: accounts, setData: setAccounts, isLoading: isLoadingAccounts } = useDBStorage<Account[]>('trading_accounts_v1', []);
@@ -60,6 +93,48 @@ const App: React.FC = () => {
 
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { t } = useLanguage();
+    
+    // FIX: Moved `isLoading`, `currentAccount`, and `refreshData` before `handleRefresh` to fix declaration order.
+    const isLoading = isLoadingAccounts || isLoadingCurrentAccount;
+
+    const currentAccount = useMemo(() => {
+        if (isLoading) return null;
+        return accounts.find(acc => acc.name === currentAccountName) || null;
+    }, [accounts, currentAccountName, isLoading]);
+
+    const refreshData = useCallback(async (accountToSync: Account) => {
+        if (!accountToSync.dataUrl || isSyncingRef.current) return;
+        setIsSyncing(true);
+        setError(null);
+        try {
+            const response = await fetch(accountToSync.dataUrl, { cache: 'reload' });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const csvText = await response.text();
+            const newTrades = parseCSV(csvText);
+            setAccounts(prevAccounts => 
+                prevAccounts.map(acc => {
+                    if (acc.name === accountToSync.name) {
+                        const sortedTrades = newTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+                        return { ...acc, trades: sortedTrades, lastUpdated: new Date().toISOString() };
+                    }
+                    return acc;
+                })
+            );
+        } catch (err) {
+            if (!navigator.onLine) setError(t('errors.offline'));
+            else setError(t('errors.fetch_failed'));
+        } finally {
+            setIsSyncing(false);
+        }
+    }, [t, setAccounts]);
+
+    const handleRefresh = useCallback(() => {
+        if (currentAccount && currentAccount.dataUrl) refreshData(currentAccount);
+    }, [currentAccount, refreshData]);
+
+    const { pullToRefreshRef, isRefreshing, pullDistance } = usePullToRefresh(handleRefresh);
+    const PULL_THRESHOLD = 80;
+
 
     // --- PWA & NOTIFICATIONS SETUP ---
     useEffect(() => {
@@ -114,8 +189,6 @@ const App: React.FC = () => {
         return () => window.removeEventListener('beforeinstallprompt', handler);
     }, []);
     
-    const isLoading = isLoadingAccounts || isLoadingCurrentAccount;
-
     const handleInstallClick = () => {
         if (!installPrompt) return;
         installPrompt.prompt();
@@ -136,11 +209,6 @@ const App: React.FC = () => {
         }
     }, [accounts, currentAccountName, setCurrentAccountName, isLoading]);
 
-    const currentAccount = useMemo(() => {
-        if (isLoading) return null;
-        return accounts.find(acc => acc.name === currentAccountName) || null;
-    }, [accounts, currentAccountName, isLoading]);
-
     const processedData: ProcessedData | null = useMemo(() => {
         if (!currentAccount) return null;
         try {
@@ -159,32 +227,6 @@ const App: React.FC = () => {
         return calculateBenchmarkPerformance(firstTradeDate, lastTradeDate);
     }, [processedData]);
     
-    const refreshData = useCallback(async (accountToSync: Account) => {
-        if (!accountToSync.dataUrl || isSyncingRef.current) return;
-        setIsSyncing(true);
-        setError(null);
-        try {
-            const response = await fetch(accountToSync.dataUrl, { cache: 'reload' });
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const csvText = await response.text();
-            const newTrades = parseCSV(csvText);
-            setAccounts(prevAccounts => 
-                prevAccounts.map(acc => {
-                    if (acc.name === accountToSync.name) {
-                        const sortedTrades = newTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-                        return { ...acc, trades: sortedTrades, lastUpdated: new Date().toISOString() };
-                    }
-                    return acc;
-                })
-            );
-        } catch (err) {
-            if (!navigator.onLine) setError(t('errors.offline'));
-            else setError(t('errors.fetch_failed'));
-        } finally {
-            setIsSyncing(false);
-        }
-    }, [t, setAccounts]);
-
     const hasRunInitialSync = useRef(false);
     useEffect(() => {
         if (isLoading || hasRunInitialSync.current || accounts.length === 0) return;
@@ -245,10 +287,6 @@ const App: React.FC = () => {
         setAccounts(prev => prev.filter(acc => acc.name !== currentAccountName));
         setDeleteConfirmModalOpen(false);
     }, [currentAccountName, setAccounts]);
-
-    const handleRefresh = useCallback(() => {
-        if (currentAccount && currentAccount.dataUrl) refreshData(currentAccount);
-    }, [currentAccount, refreshData]);
 
     const handleOpenAccountActions = () => setAccountActionModalOpen(true);
     const handleAddClick = () => { setModalMode('add'); setAddAccountModalOpen(true); setAccountActionModalOpen(false); };
@@ -351,18 +389,50 @@ const App: React.FC = () => {
                             </div>
                         </div>
                     </header>
-
-                    <main className="flex-1 overflow-y-auto">
-                         <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-24 md:pb-6">
-                             {error && (
-                                <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm mb-4 flex justify-between items-center animate-fade-in">
-                                    <span>{error}</span>
-                                    <button onClick={() => setError(null)} className="font-bold text-xl">&times;</button>
+                    
+                    <div className="flex-1 relative overflow-y-hidden">
+                        {/* Custom Pull-to-Refresh Indicator */}
+                        {!isDesktop && (
+                            <div
+                                className="absolute top-0 left-0 right-0 flex justify-center items-center z-0 pointer-events-none"
+                                style={{
+                                    height: '50px',
+                                    transform: `translateY(${isRefreshing ? 0 : pullDistance - 50}px)`,
+                                    transition: pullDistance === 0 && !isRefreshing ? 'transform 0.3s' : 'none',
+                                    opacity: isRefreshing ? 1 : Math.min(pullDistance / PULL_THRESHOLD, 1),
+                                }}
+                            >
+                                <div 
+                                    className="p-3 bg-gray-800 rounded-full shadow-lg"
+                                    style={{ 
+                                        transform: `rotate(${pullDistance * 2}deg) scale(${isRefreshing ? 1 : Math.min(pullDistance / PULL_THRESHOLD, 1)})`,
+                                        transition: 'transform 0.3s'
+                                    }}
+                                >
+                                    <SyncIcon isSyncing={isRefreshing} />
                                 </div>
-                            )}
-                            {renderView()}
-                         </div>
-                    </main>
+                            </div>
+                        )}
+
+                        <main
+                            ref={pullToRefreshRef}
+                            className="flex-1 overflow-y-auto h-full"
+                            style={{
+                                transform: `translateY(${isRefreshing ? 50 : pullDistance}px)`,
+                                transition: pullDistance === 0 && !isRefreshing ? 'transform 0.3s' : 'none',
+                            }}
+                        >
+                             <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-24 md:pb-6">
+                                 {error && (
+                                    <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm mb-4 flex justify-between items-center animate-fade-in">
+                                        <span>{error}</span>
+                                        <button onClick={() => setError(null)} className="font-bold text-xl">&times;</button>
+                                    </div>
+                                )}
+                                {renderView()}
+                             </div>
+                        </main>
+                    </div>
                 </div>
             </div>
             {!isDesktop && <BottomNav currentView={view} onNavigate={setView} />}
