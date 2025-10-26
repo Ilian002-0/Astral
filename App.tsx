@@ -56,8 +56,15 @@ const App: React.FC = () => {
     const [installPrompt, setInstallPrompt] = useState<any>(null);
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
 
+    const [logoUrl, setLogoUrl] = useLocalStorage<string | null>('logo_url_v1', null);
+    const [logoError, setLogoError] = useState(false);
+
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { t } = useLanguage();
+
+    useEffect(() => {
+        setLogoError(false);
+    }, [logoUrl]);
     
     // PWA Install prompt handler
     useEffect(() => {
@@ -322,7 +329,7 @@ const App: React.FC = () => {
             case 'calendar': return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} currency={currentAccount.currency || 'USD'} />;
             case 'analysis': return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} currency={currentAccount.currency || 'USD'} />;
             case 'goals': return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} currency={currentAccount.currency || 'USD'} />;
-            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} />;
+            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} logoUrl={logoUrl} setLogoUrl={setLogoUrl} />;
             default: return null;
         }
     };
@@ -330,16 +337,20 @@ const App: React.FC = () => {
     return (
         <>
             <div className="flex h-screen overflow-hidden">
-                {isDesktop && <Sidebar currentView={view} onNavigate={setView} />}
+                {isDesktop && <Sidebar currentView={view} onNavigate={setView} logoUrl={logoUrl} />}
                 <div className="flex-1 flex flex-col w-full">
                     <header className="flex-shrink-0 z-10 bg-[#0c0b1e] shadow-lg shadow-black/30">
                         <div className="max-w-4xl mx-auto px-4 md:px-6">
                             <div className={`flex ${!isDesktop ? 'justify-between' : 'justify-end'} items-center h-20`}>
                                 {!isDesktop && (
                                     <div className="flex items-center gap-2">
-                                        <svg viewBox="0 0 128 88" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
-                                            <g><circle cx="64" cy="51" r="18" fill="#404B69"/><path d="M56 42a12 12 0 0 1 16 0 M38 53a12 12 0 0 0 20 0 M46 64a10 10 0 0 1 12 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="m36.8 88 24.8-80h11.2L47.2 88z" fill="#404B69"/><path d="m91.2 88-24.8-80h-11.2L80.8 88z" fill="#8B9BBD"/><path d="M24 72c26-48 66-41 86-34l6-8 8 12-14-4z" fill="#8B9BBD"/></g>
-                                        </svg>
+                                        {(logoUrl && !logoError) ? (
+                                            <img src={logoUrl} alt="Atlas Logo" className="h-10 w-auto object-contain" onError={() => setLogoError(true)} />
+                                        ) : (
+                                            <svg viewBox="0 0 128 88" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
+                                                <g><circle cx="64" cy="51" r="18" fill="#404B69"/><path d="M56 42a12 12 0 0 1 16 0 M38 53a12 12 0 0 0 20 0 M46 64a10 10 0 0 1 12 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="m36.8 88 24.8-80h11.2L47.2 88z" fill="#404B69"/><path d="m91.2 88-24.8-80h-11.2L80.8 88z" fill="#8B9BBD"/><path d="M24 72c26-48 66-41 86-34l6-8 8 12-14-4z" fill="#8B9BBD"/></g>
+                                            </svg>
+                                        )}
                                         <span className="text-xl font-bold tracking-widest text-[#8B9BBD]">ATLAS</span>
                                     </div>
                                 )}
