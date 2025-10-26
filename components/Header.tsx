@@ -96,12 +96,6 @@ Tracked with Atlas.`,
         }
     };
 
-    const getDynamicDayLabel = (daysAgo: number): string => {
-        if (daysAgo === 0) return t('header.profit_today');
-        if (daysAgo === 1) return t('header.profit_yesterday');
-        return t('header.profit_x_days_ago', { count: daysAgo });
-    };
-
     const getSyncStatus = () => {
         if (isSyncing) {
             return {
@@ -138,38 +132,15 @@ Tracked with Atlas.`,
 
     const syncStatus = getSyncStatus();
     
-    // New logic for dynamic header display
-    const { lastDayProfit, lastDayProfitDaysAgo, floatingPnl, totalBalance } = metrics;
-    const hadActivityToday = lastDayProfitDaysAgo === 0;
-    const hasOpenTrades = floatingPnl !== 0;
+    // New logic for today's profit display
+    const { lastDayProfit, lastDayProfitDaysAgo, todaysFloatingPnl, startOfDayBalance } = metrics;
 
-    let displayValue: number;
-    let displayLabel: string;
+    const profitFromTradesClosedToday = lastDayProfitDaysAgo === 0 ? lastDayProfit : 0;
+    
+    const displayValue = profitFromTradesClosedToday + (todaysFloatingPnl || 0);
+    const displayLabel = t('header.profit_today');
 
-    if (hadActivityToday) {
-        if (hasOpenTrades) {
-            // Case: Closed trades today + open positions
-            displayValue = lastDayProfit + floatingPnl;
-            displayLabel = t('header.today_total_pnl');
-        } else {
-            // Case: Only closed trades today
-            displayValue = lastDayProfit;
-            displayLabel = t('header.profit_today');
-        }
-    } else { // No closed trades today
-        if (hasOpenTrades) {
-            // Case: Only open positions
-            displayValue = floatingPnl;
-            displayLabel = t('header.floating_pnl');
-        } else {
-            // Case: No activity today, no open positions -> fallback to last active day
-            displayValue = lastDayProfit;
-            displayLabel = getDynamicDayLabel(lastDayProfitDaysAgo);
-        }
-    }
-
-    const balanceBeforeChange = totalBalance - displayValue;
-    const percent = balanceBeforeChange > 0 ? (displayValue / balanceBeforeChange) * 100 : 0;
+    const percent = startOfDayBalance > 0 ? (displayValue / startOfDayBalance) * 100 : 0;
     const displayColor = displayValue >= 0 ? 'text-green-400' : 'text-red-400';
     
     return (

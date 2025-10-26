@@ -19,6 +19,10 @@
     "today": "Today",
     "share": "Share"
   },
+  "errors": {
+    "fetch_failed": "Could not fetch the data. This might be a network issue or a CORS problem. Please ensure the URL is a direct, public link to a CSV file (e.g., from Google Sheets 'Publish to the web').",
+    "offline": "You are not connected to the network. The data shown may not be up to date."
+  },
   "app": {
     "welcome": "Welcome!",
     "add_account_prompt": "Please add an account to visualize your trading data.",
@@ -219,5 +223,13 @@
     "show_on_chart": "Show on chart",
     "profit_target_label": "Profit Target",
     "drawdown_target_label": "Drawdown Limit"
+  },
+  "benchmark": {
+    "title": "Performance vs. Benchmark (SPY)",
+    "your_return": "Your Return",
+    "spy_return": "SPY Return",
+    "outperformance": "Outperformance",
+    "your_performance": "Your Performance",
+    "spy_performance": "SPY Performance"
   }
 }

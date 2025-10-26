@@ -19,6 +19,10 @@
     "today": "Aujourd'hui",
     "share": "Partager"
   },
+  "errors": {
+    "fetch_failed": "Impossible de récupérer les données. Il peut s'agir d'un problème de réseau ou de CORS. Veuillez vous assurer que l'URL est un lien public direct vers un fichier CSV (par exemple, depuis Google Sheets 'Publier sur le web').",
+    "offline": "Vous n'êtes pas connecté au réseau. Les données affichées peuvent ne pas être à jour."
+  },
   "app": {
     "welcome": "Bienvenue !",
     "add_account_prompt": "Veuillez ajouter un compte pour visualiser vos données de trading.",
@@ -219,5 +223,13 @@
     "show_on_chart": "Afficher sur le graphique",
     "profit_target_label": "Objectif de Profit",
     "drawdown_target_label": "Limite de Drawdown"
+  },
+  "benchmark": {
+    "title": "Performance vs. Indice (SPY)",
+    "your_return": "Votre Rendement",
+    "spy_return": "Rendement SPY",
+    "outperformance": "Surperformance",
+    "your_performance": "Votre Performance",
+    "spy_performance": "Performance SPY"
   }
 }

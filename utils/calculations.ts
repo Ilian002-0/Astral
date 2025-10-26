@@ -1,5 +1,69 @@
 import { Trade, Account, ProcessedData, DashboardMetrics, ChartDataPoint, DailySummary, MaxDrawdown } from '../types';
 import { getDayIdentifier } from './calendar';
+import { spyData, BenchmarkDataPoint } from './benchmarkData';
+
+
+// Helper function for linear interpolation of benchmark data
+const getInterpolatedPrice = (targetDate: Date, data: BenchmarkDataPoint[]): number | null => {
+    const targetTime = targetDate.getTime();
+
+    // Find the points before and after the target date
+    let beforePoint: BenchmarkDataPoint | null = null;
+    let afterPoint: BenchmarkDataPoint | null = null;
+
+    // Data is assumed to be sorted by date
+    for (const point of data) {
+        const pointTime = new Date(point.date).getTime();
+        if (pointTime <= targetTime) {
+            beforePoint = point;
+        }
+        if (pointTime >= targetTime) {
+            afterPoint = point;
+            break; 
+        }
+    }
+
+    if (!beforePoint && !afterPoint) return null; // No data
+    if (!afterPoint) return beforePoint!.price; // Date is after all data points
+    if (!beforePoint) return afterPoint.price; // Date is before all data points
+
+    const beforeTime = new Date(beforePoint.date).getTime();
+    const afterTime = new Date(afterPoint.date).getTime();
+
+    if (beforeTime === afterTime) {
+        return beforePoint.price; // Exact match
+    }
+
+    const timeDiff = afterTime - beforeTime;
+    const priceDiff = afterPoint.price - beforePoint.price;
+    const targetDiff = targetTime - beforeTime;
+    
+    // Avoid division by zero if timeDiff is somehow 0
+    if (timeDiff === 0) {
+        return beforePoint.price;
+    }
+
+    const interpolatedPrice = beforePoint.price + (priceDiff * (targetDiff / timeDiff));
+    return interpolatedPrice;
+};
+
+
+export const calculateBenchmarkPerformance = (startDate: Date, endDate: Date): number | null => {
+  if (!spyData || spyData.length === 0) return null;
+
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return null;
+
+  // Assuming spyData is pre-sorted by date.
+  const startPrice = getInterpolatedPrice(startDate, spyData);
+  const endPrice = getInterpolatedPrice(endDate, spyData);
+
+  if (startPrice === null || endPrice === null || startPrice === 0) {
+    return null;
+  }
+
+  const returnPercent = ((endPrice - startPrice) / startPrice) * 100;
+  return returnPercent;
+};
 
 
 export const processAccountData = (account: Account | null): ProcessedData | null => {
@@ -92,6 +156,11 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     tradesByDay[day].push(trade);
   });
   
+  // Calculate P/L from trades opened today that are still open
+  const todayKey = getDayIdentifier(new Date());
+  const todaysOpenTrades = openTrades.filter(t => getDayIdentifier(t.openTime) === todayKey);
+  const todaysFloatingPnl = todaysOpenTrades.reduce((sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0);
+
   // Calculate daily summaries with return percentage
   const sortedDayKeys = Object.keys(tradesByDay).sort((a, b) => a.localeCompare(b));
   let balanceAtStartOfDay = initialBalance;
@@ -130,7 +199,9 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
   }
   
   const netProfit = grossProfit + grossLoss + totalCommission + totalSwap;
+  const totalReturnPercent = initialBalance > 0 ? (netProfit / initialBalance) * 100 : 0;
   const closedTradesBalance = initialBalance + netProfit;
+  const startOfDayBalance = closedTradesBalance - (daysAgo === 0 ? lastDayProfit : 0);
 
   const floatingPnl = openTrades.reduce((sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0);
   const equity = closedTradesBalance + floatingPnl;
@@ -153,6 +224,8 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
   const metrics: DashboardMetrics = {
     totalBalance: equity,
     floatingPnl,
+    todaysFloatingPnl,
+    startOfDayBalance,
     netProfit,
     winRate: sortedClosedTrades.length > 0 ? (winningTradesCount / sortedClosedTrades.length) * 100 : 0,
     totalOrders: sortedClosedTrades.length,
@@ -170,6 +243,7 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     totalSwap,
     grossProfit,
     grossLoss,
+    totalReturnPercent,
   };
 
   const recentTrades = sortedClosedTrades.slice(-6).reverse();

@@ -68,6 +68,8 @@ export interface MaxDrawdown {
 export interface DashboardMetrics {
   totalBalance: number; // Represents Equity (Closed Balance + Floating P/L)
   floatingPnl: number;
+  todaysFloatingPnl: number;
+  startOfDayBalance: number;
   netProfit: number; // Represents realized P/L from closed trades
   winRate: number;
   totalOrders: number;
@@ -85,6 +87,7 @@ export interface DashboardMetrics {
   totalSwap: number;
   grossProfit: number;
   grossLoss: number;
+  totalReturnPercent: number;
 }
 
 export interface CalendarDay {

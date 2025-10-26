@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import useLocalStorage from './hooks/useLocalStorage';
 import { Account, AppView, ProcessedData, Trade, Goals } from './types';
-import { processAccountData } from './utils/calculations';
+import { processAccountData, calculateBenchmarkPerformance } from './utils/calculations';
 import { parseCSV } from './utils/csvParser';
 import usePullToRefresh from './hooks/usePullToRefresh';
 import { getDayIdentifier } from './utils/calendar';
@@ -28,6 +27,7 @@ import DashboardMetricsBottom from './components/DashboardMetricsBottom';
 import GoalsView from './components/GoalsView';
 import DayDetailModal from './components/DayDetailModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
+import BenchmarkComparison from './components/BenchmarkComparison';
 
 // Memoize components to prevent unnecessary re-renders
 const MemoizedDashboard = React.memo(Dashboard);
@@ -109,27 +109,14 @@ const App: React.FC = () => {
             return null;
         }
     }, [currentAccount]);
+
+    const benchmarkReturn = useMemo(() => {
+        if (!processedData || processedData.closedTrades.length < 2) return null;
+        const firstTradeDate = processedData.closedTrades[0].openTime;
+        const lastTradeDate = processedData.closedTrades[processedData.closedTrades.length - 1].closeTime;
+        return calculateBenchmarkPerformance(firstTradeDate, lastTradeDate);
+    }, [processedData]);
     
-    const updateAccountTrades = useCallback((accountName: string, newTrades: Trade[]) => {
-        setAccounts(prevAccounts => {
-            return prevAccounts.map(acc => {
-                if (acc.name === accountName) {
-                    const existingTradesByTicket = new Map(acc.trades.map(t => [t.ticket, t]));
-                    newTrades.forEach(newTrade => {
-                        existingTradesByTicket.set(newTrade.ticket, newTrade);
-                    });
-                    
-                    const updatedTrades = Array.from(existingTradesByTicket.values())
-                        // FIX: Explicitly type sort parameters to resolve TypeScript error.
-                        .sort((a: Trade, b: Trade) => a.openTime.getTime() - b.openTime.getTime());
-
-                    return { ...acc, trades: updatedTrades, lastUpdated: new Date().toISOString() };
-                }
-                return acc;
-            });
-        });
-    }, [setAccounts]);
-
     const refreshData = useCallback(async (accountToSync: Account) => {
         if (!accountToSync.dataUrl) return;
         if (isSyncingRef.current) return;
@@ -137,12 +124,9 @@ const App: React.FC = () => {
         setIsSyncing(true);
         setError(null);
         try {
-            // Use cache-busting via request header instead of query param.
-            // This is more robust and less likely to be rejected by servers like Google Docs.
             const response = await fetch(accountToSync.dataUrl, { cache: 'reload' });
             
             if (!response.ok) {
-                // Try to provide a more specific error message if possible
                 if (response.status === 404) {
                      setError(`Error: The URL was not found (404). Please check the link.`);
                 } else {
@@ -153,16 +137,30 @@ const App: React.FC = () => {
             const csvText = await response.text();
             const newTrades = parseCSV(csvText);
             
-            updateAccountTrades(accountToSync.name, newTrades);
+            // Replace trades instead of merging for live URL sources
+            setAccounts(prevAccounts => 
+                prevAccounts.map(acc => {
+                    if (acc.name === accountToSync.name) {
+                        const sortedTrades = newTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+                        return { ...acc, trades: sortedTrades, lastUpdated: new Date().toISOString() };
+                    }
+                    return acc;
+                })
+            );
 
         } catch (err) {
             console.error("Failed to fetch or process data:", err);
-            // Ensure error is set even if it was already partially set
-            setError(prev => prev || t('errors.fetch_failed'));
+            // Check for offline status
+            if (!navigator.onLine) {
+                setError(t('errors.offline'));
+            } else {
+                setError(prev => prev || t('errors.fetch_failed'));
+            }
         } finally {
             setIsSyncing(false);
         }
-    }, [t, updateAccountTrades]);
+    }, [t, setAccounts]);
+
 
     const hasRunInitialSync = useRef(false);
     useEffect(() => {
@@ -294,16 +292,24 @@ const App: React.FC = () => {
                             <Header metrics={processedData.metrics} accountName={currentAccount.name} lastUpdated={currentAccount.lastUpdated} onRefresh={handleRefresh} isSyncing={isSyncing} currency={currentAccount.currency || 'USD'} />
                         </div>
                         <div className="animate-fade-in-up animation-delay-200">
+                            <MemoizedDashboard metrics={processedData.metrics} currency={currentAccount.currency || 'USD'} />
+                        </div>
+                        <div className="animate-fade-in-up animation-delay-300">
                            <BalanceChart data={processedData.chartData} onAdvancedAnalysisClick={() => setView('analysis')} initialBalance={currentAccount.initialBalance} currency={currentAccount.currency || 'USD'} goals={currentAccount.goals || {}} />
                         </div>
-                         {processedData.openTrades.length > 0 && (
+                        {benchmarkReturn !== null && (
                             <div className="animate-fade-in-up animation-delay-400">
+                                <BenchmarkComparison
+                                    userReturn={processedData.metrics.totalReturnPercent}
+                                    benchmarkReturn={benchmarkReturn}
+                                />
+                            </div>
+                        )}
+                         {processedData.openTrades.length > 0 && (
+                            <div className="animate-fade-in-up animation-delay-500">
                                 <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} currency={currentAccount.currency || 'USD'} />
                             </div>
                         )}
-                        <div className="animate-fade-in-up animation-delay-500">
-                            <MemoizedDashboard metrics={processedData.metrics} currency={currentAccount.currency || 'USD'} />
-                        </div>
                         <div className="animate-fade-in-up animation-delay-600">
                             <RecentTradesTable trades={processedData.recentTrades} currency={currentAccount.currency || 'USD'}/>
                         </div>
