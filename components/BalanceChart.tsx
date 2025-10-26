@@ -103,7 +103,6 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const chartRef = useRef<HTMLDivElement>(null);
-  const [showTooltip, setShowTooltip] = useState(true);
 
   const profitGoal = goals?.netProfit;
   const drawdownGoal = goals?.maxDrawdown;
@@ -122,10 +121,17 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
     const node = chartRef.current;
     if (node && isMobile) {
         const handleTouchEnd = () => {
-            // When touch ends on mobile, quickly remove and re-add the tooltip component
-            // to force its state to reset and hide it.
-            setShowTooltip(false);
-            setTimeout(() => setShowTooltip(true), 50);
+            // Programmatically dispatch a mouseleave event to trick Recharts into hiding the tooltip.
+            // This is the most reliable way to reset the chart's internal tooltip state on mobile.
+            const mouseLeaveEvent = new MouseEvent('mouseleave', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+            });
+            const surface = node.querySelector('.recharts-surface');
+            if (surface) {
+                surface.dispatchEvent(mouseLeaveEvent);
+            }
         };
         node.addEventListener('touchend', handleTouchEnd);
         return () => {
@@ -339,7 +345,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 axisLine={false}
                 allowDataOverflow
               />
-              {showTooltip && <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>}
+              <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
               
               <Area
                   isAnimationActive={true}

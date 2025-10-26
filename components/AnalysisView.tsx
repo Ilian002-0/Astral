@@ -81,7 +81,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     const isDesktop = useMediaQuery('(min-width: 768px)');
 
     const chartRef = useRef<HTMLDivElement>(null);
-    const [showTooltip, setShowTooltip] = useState(true);
 
     const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
     const [selectedComments, setSelectedComments] = useState<string[]>([]);
@@ -96,8 +95,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         const node = chartRef.current;
         if (node && !isDesktop) {
             const handleTouchEnd = () => {
-                setShowTooltip(false);
-                setTimeout(() => setShowTooltip(true), 50);
+                const mouseLeaveEvent = new MouseEvent('mouseleave', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                });
+                const surface = node.querySelector('.recharts-surface');
+                if (surface) {
+                    surface.dispatchEvent(mouseLeaveEvent);
+                }
             };
             node.addEventListener('touchend', handleTouchEnd);
             return () => {
@@ -296,7 +302,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                                 <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} type="number" domain={['dataMin', 'dataMax']} allowDecimals={false} />
                                 <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} domain={[domainMin, domainMax]} tickLine={false} axisLine={false} allowDataOverflow />
-                                {showTooltip && <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>}
+                                <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
                                 
                                 <Area
                                     isAnimationActive={true}
