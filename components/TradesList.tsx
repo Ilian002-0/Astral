@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Trade } from '../types';
-import useLocalStorage from '../hooks/useLocalStorage';
+import useDBStorage from '../hooks/useLocalStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface TradesListProps {
@@ -33,7 +33,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
         return acc;
     }, {} as Record<TradeKeys, boolean>), [COLUMN_DEFINITIONS]);
 
-    const [visibleColumns, setVisibleColumns] = useLocalStorage('trades_list_columns_v1', initialVisibility);
+    const { data: visibleColumns, setData: setVisibleColumns, isLoading } = useDBStorage('trades_list_columns_v1', initialVisibility);
     const [isDropdownOpen, setDropdownOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -93,6 +93,10 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
             );
         });
     }, [reversedTrades, searchTerm]);
+
+    if (isLoading) {
+        return <div className="text-center p-8">Loading...</div>;
+    }
 
     const activeColumns = COLUMN_DEFINITIONS.filter(col => visibleColumns[col.key]);
 

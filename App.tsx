@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import useLocalStorage from './hooks/useLocalStorage';
-import { Account, AppView, ProcessedData, Trade, Goals } from './types';
+import useDBStorage from './hooks/useLocalStorage';
+import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, NotificationItem } from './types';
 import { processAccountData, calculateBenchmarkPerformance } from './utils/calculations';
 import { parseCSV } from './utils/csvParser';
 import usePullToRefresh from './hooks/usePullToRefresh';
@@ -39,8 +39,10 @@ const MemoizedProfileView = React.memo(ProfileView);
 
 
 const App: React.FC = () => {
-    const [accounts, setAccounts] = useLocalStorage<Account[]>('trading_accounts_v1', []);
-    const [currentAccountName, setCurrentAccountName] = useLocalStorage<string | null>('current_account_v1', null);
+    const { data: accounts, setData: setAccounts, isLoading: isLoadingAccounts } = useDBStorage<Account[]>('trading_accounts_v1', []);
+    const { data: currentAccountName, setData: setCurrentAccountName, isLoading: isLoadingCurrentAccount } = useDBStorage<string | null>('current_account_v1', null);
+    const { data: notificationSettings, setData: setNotificationSettings } = useDBStorage<NotificationSettings>('notification_settings', { tradeClosed: true, weeklySummary: true });
+    const { data: notificationHistory, setData: setNotificationHistory } = useDBStorage<NotificationItem[]>('notification_history', []);
     
     const [isAddAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [isAccountActionModalOpen, setAccountActionModalOpen] = useState(false);
@@ -59,22 +61,37 @@ const App: React.FC = () => {
 
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { t } = useLanguage();
-    
-    // PWA: Handle view navigation from shortcuts
+
+    // --- PWA & NOTIFICATIONS SETUP ---
     useEffect(() => {
+        const registerPeriodicSync = async () => {
+            const registration = await navigator.serviceWorker.ready;
+            try {
+                // @ts-ignore
+                await registration.periodicSync.register('account-sync', {
+                    minInterval: 6 * 60 * 1000, // 6 minutes
+                });
+                console.log('Periodic sync registered!');
+            } catch (e) {
+                console.error('Periodic background sync could not be registered.', e);
+            }
+        };
+
+        if ('serviceWorker' in navigator && 'PeriodicSyncManager' in window) {
+            registerPeriodicSync();
+        }
+
+        // Handle view navigation from shortcuts
         const params = new URLSearchParams(window.location.search);
         const viewParam = params.get('view') as AppView;
         if (viewParam && ['dashboard', 'trades', 'calendar', 'goals', 'profile'].includes(viewParam)) {
             setView(viewParam);
         }
-    }, []);
 
-    // PWA: Handle file open events
-    useEffect(() => {
+        // Handle file open events
         if ('launchQueue' in window) {
             (window as any).launchQueue.setConsumer(async (launchParams: { files: any[] }) => {
                 if (!launchParams.files || launchParams.files.length === 0) return;
-                
                 try {
                     const fileHandle = launchParams.files[0];
                     const file = await fileHandle.getFile();
@@ -88,10 +105,8 @@ const App: React.FC = () => {
                 }
             });
         }
-    }, []);
 
-    // PWA Install prompt handler
-    useEffect(() => {
+        // PWA Install prompt handler
         const handler = (e: Event) => {
             e.preventDefault();
             setInstallPrompt(e);
@@ -99,24 +114,20 @@ const App: React.FC = () => {
         window.addEventListener('beforeinstallprompt', handler);
         return () => window.removeEventListener('beforeinstallprompt', handler);
     }, []);
+    
+    const isLoading = isLoadingAccounts || isLoadingCurrentAccount;
 
     const handleInstallClick = () => {
         if (!installPrompt) return;
         installPrompt.prompt();
         installPrompt.userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed' }) => {
-            if (choiceResult.outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            } else {
-                console.log('User dismissed the install prompt');
-            }
             setInstallPrompt(null);
         });
     };
     
-    // This effect handles the logic of selecting the current account safely after render.
     useEffect(() => {
+        if (isLoading) return;
         const accountExists = accounts.some(acc => acc.name === currentAccountName);
-        
         if (!currentAccountName && accounts.length > 0) {
             setCurrentAccountName(accounts[0].name);
         } else if (currentAccountName && !accountExists && accounts.length > 0) {
@@ -124,11 +135,12 @@ const App: React.FC = () => {
         } else if (accounts.length === 0) {
             setCurrentAccountName(null);
         }
-    }, [accounts, currentAccountName, setCurrentAccountName]);
+    }, [accounts, currentAccountName, setCurrentAccountName, isLoading]);
 
     const currentAccount = useMemo(() => {
+        if (isLoading) return null;
         return accounts.find(acc => acc.name === currentAccountName) || null;
-    }, [accounts, currentAccountName]);
+    }, [accounts, currentAccountName, isLoading]);
 
     const processedData: ProcessedData | null = useMemo(() => {
         if (!currentAccount) return null;
@@ -149,26 +161,14 @@ const App: React.FC = () => {
     }, [processedData]);
     
     const refreshData = useCallback(async (accountToSync: Account) => {
-        if (!accountToSync.dataUrl) return;
-        if (isSyncingRef.current) return;
-
+        if (!accountToSync.dataUrl || isSyncingRef.current) return;
         setIsSyncing(true);
         setError(null);
         try {
             const response = await fetch(accountToSync.dataUrl, { cache: 'reload' });
-            
-            if (!response.ok) {
-                if (response.status === 404) {
-                     setError(`Error: The URL was not found (404). Please check the link.`);
-                } else {
-                     setError(t('errors.fetch_failed'));
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const csvText = await response.text();
             const newTrades = parseCSV(csvText);
-            
-            // Replace trades instead of merging for live URL sources
             setAccounts(prevAccounts => 
                 prevAccounts.map(acc => {
                     if (acc.name === accountToSync.name) {
@@ -178,40 +178,26 @@ const App: React.FC = () => {
                     return acc;
                 })
             );
-
         } catch (err) {
-            console.error("Failed to fetch or process data:", err);
-            // Check for offline status
-            if (!navigator.onLine) {
-                setError(t('errors.offline'));
-            } else {
-                setError(prev => prev || t('errors.fetch_failed'));
-            }
+            if (!navigator.onLine) setError(t('errors.offline'));
+            else setError(t('errors.fetch_failed'));
         } finally {
             setIsSyncing(false);
         }
     }, [t, setAccounts]);
 
-
     const hasRunInitialSync = useRef(false);
     useEffect(() => {
-        if (hasRunInitialSync.current || accounts.length === 0) {
-            return;
-        }
-
+        if (isLoading || hasRunInitialSync.current || accounts.length === 0) return;
         const syncAll = async () => {
             const accountsToSync = accounts.filter(acc => acc.dataUrl);
             if (accountsToSync.length > 0) {
-                console.log("Performing initial account sync...");
                 await Promise.all(accountsToSync.map(acc => refreshData(acc)));
-                console.log("Initial sync complete.");
             }
         };
-
         syncAll();
         hasRunInitialSync.current = true;
-        
-    }, [accounts, refreshData]);
+    }, [accounts, refreshData, isLoading]);
 
     const saveAccount = useCallback((
         accountData: { name: string; trades: Trade[]; initialBalance: number; currency: 'USD' | 'EUR', dataUrl?: string }, 
@@ -224,44 +210,28 @@ const App: React.FC = () => {
                     setError(`An account with the name "${accountData.name}" already exists.`);
                     return prevAccounts;
                 }
-                const newAccount: Account = {
-                    ...accountData,
-                    goals: {},
-                    lastUpdated: new Date().toISOString(),
-                };
+                const newAccount: Account = { ...accountData, goals: {}, lastUpdated: new Date().toISOString() };
                 const newAccounts = [...prevAccounts, newAccount];
-                setCurrentAccountName(newAccount.name); // Switch to the new account
+                setCurrentAccountName(newAccount.name);
                 return newAccounts;
-            } else { // mode === 'update'
+            } else {
                 return prevAccounts.map(acc => {
                     if (acc.name === accountData.name) {
-                        const existingTrades = acc.trades;
-                        const newTrades = accountData.trades;
-                        const tradesMap = new Map(existingTrades.map(t => [t.ticket, t]));
-                        newTrades.forEach(t => tradesMap.set(t.ticket, t));
-                        // FIX: Explicitly type sort parameters to resolve TypeScript error.
+                        const tradesMap = new Map(acc.trades.map(t => [t.ticket, t]));
+                        accountData.trades.forEach(t => tradesMap.set(t.ticket, t));
                         const allTrades = Array.from(tradesMap.values()).sort((a: Trade, b: Trade) => a.openTime.getTime() - b.openTime.getTime());
-
-                        return {
-                            ...acc,
-                            initialBalance: accountData.initialBalance,
-                            currency: accountData.currency,
-                            dataUrl: accountData.dataUrl,
-                            trades: accountData.dataUrl ? acc.trades : allTrades, // If URL, don't update trades from file.
-                            lastUpdated: new Date().toISOString(),
-                        };
+                        return { ...acc, ...accountData, trades: accountData.dataUrl ? acc.trades : allTrades, lastUpdated: new Date().toISOString() };
                     }
                     return acc;
                 });
             }
         });
         setAddAccountModalOpen(false);
-
         if (accountData.dataUrl) {
-            const accountToSync = accounts.find(acc => acc.name === accountData.name) || { ...accountData, trades: [], goals: {} };
+            const accountToSync = { ...accountData, trades: [], goals: {} };
             refreshData(accountToSync);
         }
-    }, [setAccounts, setCurrentAccountName, refreshData, accounts]);
+    }, [setAccounts, setCurrentAccountName, refreshData]);
     
     const deleteAccount = useCallback(() => {
         if (!currentAccountName) return;
@@ -270,9 +240,7 @@ const App: React.FC = () => {
     }, [currentAccountName, setAccounts]);
 
     const handleRefresh = useCallback(() => {
-        if (currentAccount && currentAccount.dataUrl) {
-            refreshData(currentAccount);
-        }
+        if (currentAccount && currentAccount.dataUrl) refreshData(currentAccount);
     }, [currentAccount, refreshData]);
 
     const { pullToRefreshRef } = usePullToRefresh(handleRefresh);
@@ -289,20 +257,20 @@ const App: React.FC = () => {
     
     const dayDetailModalData = useMemo(() => {
         if (!selectedCalendarDate || !processedData) return null;
-        
         const dateKey = getDayIdentifier(selectedCalendarDate);
         const dailyTrades = processedData.closedTrades.filter(t => getDayIdentifier(t.closeTime) === dateKey);
-
         if (dailyTrades.length === 0) return null;
-        
-        const firstTradeOfDay = dailyTrades[0];
-        const tradesBefore = processedData.closedTrades.filter(t => t.closeTime.getTime() < firstTradeOfDay.closeTime.getTime());
+        const tradesBefore = processedData.closedTrades.filter(t => t.closeTime.getTime() < dailyTrades[0].closeTime.getTime());
         const startOfDayBalance = (currentAccount?.initialBalance ?? 0) + tradesBefore.reduce((sum, t) => sum + (t.profit + t.commission + t.swap), 0);
-
         return { trades: dailyTrades, date: selectedCalendarDate, startOfDayBalance };
     }, [selectedCalendarDate, processedData, currentAccount?.initialBalance]);
 
     const renderView = () => {
+        if (isLoading) {
+            // This is shown while the DB is being read for the first time
+            return <div className="app-loader" style={{ position: 'relative', height: '50vh' }}></div>;
+        }
+
         if (!currentAccount || !processedData) {
             return (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -353,7 +321,7 @@ const App: React.FC = () => {
             case 'calendar': return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} currency={currentAccount.currency || 'USD'} />;
             case 'analysis': return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} currency={currentAccount.currency || 'USD'} />;
             case 'goals': return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} currency={currentAccount.currency || 'USD'} />;
-            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} />;
+            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} notificationSettings={notificationSettings} onNotificationSettingsChange={setNotificationSettings} notificationHistory={notificationHistory} onClearNotifications={() => setNotificationHistory([])}/>;
             default: return null;
         }
     };
@@ -373,7 +341,7 @@ const App: React.FC = () => {
                                     </div>
                                 )}
                                 <div className="app-region-no-drag">
-                                    {accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
+                                    {!isLoading && accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
                                 </div>
                             </div>
                         </div>

@@ -106,3 +106,16 @@ export interface WeeklySummary {
 }
 
 export type AppView = 'dashboard' | 'trades' | 'calendar' | 'profile' | 'analysis' | 'goals';
+
+export interface NotificationSettings {
+  tradeClosed: boolean;
+  weeklySummary: boolean;
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  timestamp: number;
+  read: boolean;
+}

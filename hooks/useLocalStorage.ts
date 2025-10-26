@@ -1,6 +1,50 @@
 import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 
-// Custom reviver for JSON.parse to reconstruct Date objects from ISO strings
+// --- IndexedDB Helpers ---
+const DB_NAME = 'atlas-db';
+const DB_VERSION = 1;
+const STORE_NAME = 'keyval';
+
+let dbPromise: Promise<IDBDatabase> | null = null;
+function getDB(): Promise<IDBDatabase> {
+    if (!dbPromise) {
+        dbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onupgradeneeded = () => {
+                if (!request.result.objectStoreNames.contains(STORE_NAME)) {
+                    request.result.createObjectStore(STORE_NAME);
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+    return dbPromise;
+}
+
+async function getDBItem<T>(key: string): Promise<T | undefined> {
+    const db = await getDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get(key);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function setDBItem<T>(key: string, value: T): Promise<IDBValidKey> {
+    const db = await getDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put(value, key);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// --- Date Reviver for JSON Serialization in IndexedDB ---
 const dateReviver = (key: string, value: any) => {
   const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
   if (typeof value === 'string' && isoDateRegex.test(value)) {
@@ -8,53 +52,63 @@ const dateReviver = (key: string, value: any) => {
   }
   return value;
 };
-
-function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
-  const readValue = useCallback((): T => {
-    if (typeof window === 'undefined') {
-      return initialValue;
+// We need to stringify with a replacer to handle nested dates correctly
+const dateReplacer = (key: string, value: any) => {
+    if (value instanceof Date) {
+        return value.toISOString();
     }
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item, dateReviver) : initialValue;
-    } catch (error) {
-      console.warn(`Error reading localStorage key “${key}”:`, error);
-      window.localStorage.removeItem(key); // Clear corrupted data
-      return initialValue;
-    }
-  }, [initialValue, key]);
+    return value;
+};
+const deepParse = (jsonString: string) => {
+    if (!jsonString) return null;
+    return JSON.parse(jsonString, dateReviver);
+};
+const deepStringify = (obj: any) => {
+    return JSON.stringify(obj, dateReplacer);
+};
 
-  const [storedValue, setStoredValue] = useState<T>(readValue);
-
-  const setValue: Dispatch<SetStateAction<T>> = (value) => {
-    if (typeof window === 'undefined') {
-      console.warn(`Tried setting localStorage key “${key}” in a non-browser environment.`);
-      return;
-    }
-    try {
-      const newValue = value instanceof Function ? value(storedValue) : value;
-      window.localStorage.setItem(key, JSON.stringify(newValue));
-      setStoredValue(newValue);
-    } catch (error) {
-      console.warn(`Error setting localStorage key “${key}”:`, error);
-    }
-  };
-  
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-        if (e.key === key) {
-            setStoredValue(readValue());
-        }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [key, readValue]);
-
-  return [storedValue, setValue];
+interface DBStorage<T> {
+    data: T;
+    setData: (value: T | ((prevState: T) => T)) => void;
+    isLoading: boolean;
 }
 
-export default useLocalStorage;
+function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
+    const [data, setDataState] = useState<T>(initialValue);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+        getDBItem<string>(key).then(storedValue => {
+            if (isMounted) {
+                if (storedValue) {
+                   setDataState(deepParse(storedValue) ?? initialValue);
+                } else {
+                   // If nothing is in the DB, store the initial value.
+                   setDBItem(key, deepStringify(initialValue));
+                   setDataState(initialValue);
+                }
+                setIsLoading(false);
+            }
+        }).catch(err => {
+            console.error(`Error reading IndexedDB key “${key}”:`, err);
+            setIsLoading(false);
+        });
+
+        return () => { isMounted = false; };
+    }, [key]);
+
+    const setData = useCallback((value: T | ((prevState: T) => T)) => {
+        try {
+            const valueToStore = value instanceof Function ? value(data) : value;
+            setDataState(valueToStore);
+            setDBItem(key, deepStringify(valueToStore));
+        } catch (error) {
+            console.error(`Error setting IndexedDB key “${key}”:`, error);
+        }
+    }, [key, data]);
+
+    return { data, setData, isLoading };
+}
+
+export default useDBStorage;
