@@ -1,1 +1,73 @@
-full contents of manifest.json
+{
+  "name": "Atlas - Trading Dashboard",
+  "short_name": "Atlas",
+  "description": "Atlas helps you visualize your trading history. Upload your trade report to see an interactive dashboard.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0b1e",
+  "theme_color": "#0c0b1e",
+  "icons": [
+    {
+      "src": "https://i.imgur.com/gA2QYp9.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://i.imgur.com/pB3S7Lq.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "https://i.imgur.com/s4f3z2g.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View trading dashboard",
+      "url": "/?view=dashboard",
+      "icons": [{ "src": "https://i.imgur.com/rS2Xw9L.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "List of Trades",
+      "short_name": "Trades",
+      "description": "View all trades",
+      "url": "/?view=trades",
+      "icons": [{ "src": "https://i.imgur.com/dK7E8fM.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Calendar",
+      "short_name": "Calendar",
+      "description": "View trades on a calendar",
+      "url": "/?view=calendar",
+      "icons": [{ "src": "https://i.imgur.com/fG3H2jJ.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Goals",
+      "short_name": "Goals",
+      "description": "View trading goals",
+      "url": "/?view=goals",
+      "icons": [{ "src": "https://i.imgur.com/zW6T5bB.png", "sizes": "96x96", "type": "image/png" }]
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/csv": [".csv"]
+      }
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "window_controls_overlay": {
+    "display_override": [
+      "window-controls-overlay"
+    ]
+  }
+}
