@@ -26,7 +26,19 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
     };
 
     const formatDate = (date: Date) => {
-        return date.toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+        return date.toLocaleString(language, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+    };
+
+    const renderDate = (date: Date) => {
+        return (
+            <div className="leading-tight">
+                <div className="sm:hidden">
+                    <div>{date.toLocaleDateString(language, { month: 'short', day: 'numeric', year: '2-digit' })}</div>
+                    <div className="text-gray-400">{date.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+                </div>
+                <span className="hidden sm:inline whitespace-nowrap">{formatDate(date)}</span>
+            </div>
+        );
     };
 
     return (
@@ -36,13 +48,12 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
                 <table className="w-full text-sm text-left">
                     <thead className="text-xs text-gray-400 uppercase border-b border-gray-700 sticky top-0 bg-[#16152c]">
                         <tr>
-                            <th scope="col" className="px-4 py-3">{t('dashboard.id')}</th>
-                            <th scope="col" className="px-4 py-3">{t('dashboard.dates')}</th>
-                            <th scope="col" className="px-4 py-3">{t('dashboard.type')}</th>
-                            <th scope="col" className="px-4 py-3">{t('dashboard.symbol')}</th>
-                            <th scope="col" className="px-4 py-3 text-right">{t('dashboard.size')}</th>
-                            <th scope="col" className="px-4 py-3 text-right">{t('dashboard.result')}</th>
-                            <th scope="col" className="px-4 py-3">{t('trades_list.col_comment')}</th>
+                            <th scope="col" className="px-2 py-3 whitespace-nowrap">{t('dashboard.type')}</th>
+                            <th scope="col" className="px-2 py-3 text-right whitespace-nowrap">{t('dashboard.size')}</th>
+                            <th scope="col" className="px-2 py-3 whitespace-nowrap">{t('dashboard.symbol')}</th>
+                            <th scope="col" className="px-2 py-3 whitespace-nowrap">{t('trades_list.col_close_time')}</th>
+                            <th scope="col" className="px-2 py-3 text-right whitespace-nowrap">{t('dashboard.result')}</th>
+                            <th scope="col" className="px-2 py-3 whitespace-nowrap">{t('trades_list.col_comment')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
@@ -51,13 +62,12 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
                             const isProfit = trade.profit >= 0;
                             return (
                                 <tr key={trade.ticket} className="text-xs hover:bg-gray-800/50">
-                                    <td className="px-4 py-3 font-medium text-gray-400">{trade.ticket}</td>
-                                    <td className="px-4 py-3 text-white">{formatDate(trade.closeTime)}</td>
-                                    <td className={`px-4 py-3 font-bold uppercase ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`}>{trade.type}</td>
-                                    <td className="px-4 py-3 text-white">{trade.symbol}</td>
-                                    <td className="px-4 py-3 text-right text-white">{trade.size}</td>
-                                    <td className={`px-4 py-3 text-right font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(trade.profit)}</td>
-                                    <td className="px-4 py-3 text-gray-400 truncate max-w-xs" title={trade.comment}>{trade.comment}</td>
+                                    <td className={`px-2 py-3 font-bold uppercase ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`}>{trade.type}</td>
+                                    <td className="px-2 py-3 text-right text-white">{trade.size}</td>
+                                    <td className="px-2 py-3 text-white">{trade.symbol}</td>
+                                    <td className="px-2 py-3 text-white">{renderDate(trade.closeTime)}</td>
+                                    <td className={`px-2 py-3 text-right font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(trade.profit)}</td>
+                                    <td className="px-2 py-3 text-gray-400 truncate max-w-[100px] sm:max-w-xs" title={trade.comment}>{trade.comment}</td>
                                 </tr>
                             );
                         })}

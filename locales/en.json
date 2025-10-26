@@ -92,7 +92,7 @@
     "col_size": "Size",
     "col_symbol": "Symbol",
     "col_open_price": "Open Price",
-    "col_close_time": "Close Time",
+    "col_close_time": "Close",
     "col_close_price": "Close Price",
     "col_commission": "Commission",
     "col_swap": "Swap",
