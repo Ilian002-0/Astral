@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="icon" type="image/png" href="https://i.imgur.com/CGGyy54.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Atlas</title>
     <link rel="manifest" href="/manifest.json" />
@@ -139,6 +139,39 @@
       .animation-delay-800 { animation-delay: 800ms; }
       .animation-delay-900 { animation-delay: 900ms; }
       .animation-delay-1000 { animation-delay: 1000ms; }
+      /* Loading Screen Styles */
+      .app-loader {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100%;
+        background-color: #0c0b1e;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 9999;
+      }
+      .app-loader .logo {
+        width: 100px;
+        height: 100px;
+        animation: pulse 1.5s infinite ease-in-out;
+        object-fit: contain;
+      }
+      .app-loader .title {
+        color: #8B9BBD;
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 0.5rem;
+        margin-top: 1rem;
+        text-transform: uppercase;
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.05); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.8; }
+      }
     </style>
     
   <script type="importmap">
@@ -153,7 +186,12 @@
 </script>
 </head>
   <body class="bg-[#0c0b1e] text-gray-300 font-sans">
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-loader">
+        <img src="https://i.imgur.com/CGGyy54.png" class="logo" alt="Atlas Logo" />
+        <div class="title">Atlas</div>
+      </div>
+    </div>
     <script type="module" src="/index.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {

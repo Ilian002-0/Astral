@@ -1,19 +1,15 @@
-  <svg viewBox="0 0 128 88" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="logoTitle" preserveAspectRatio="xMidYMid meet">
-    <title id="logoTitle">Logo stylisé</title>
-    <g fill-rule="evenodd" stroke-linejoin="round">
-      <!-- Cercle central -->
-      <circle cx="64" cy="51" r="18" fill="#404B69" />
-
-      <!-- Ondes / courbes au-dessus et en dessous du cercle -->
-      <path d="M56 42a12 12 0 0 1 16 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <path d="M38 53a12 12 0 0 0 20 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <path d="M46 64a10 10 0 0 1 12 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-
-      <!-- Panneaux latéraux (formes triangulaires inclinées) -->
-      <path d="m36.8 88 24.8-80h11.2L47.2 88z" fill="#404B69"/>
-      <path d="m91.2 88-24.8-80h-11.2L80.8 88z" fill="#8B9BBD"/>
-
-      <!-- Élément supérieur/arrière pour donner de la profondeur -->
-      <path d="M24 72c26-48 66-41 86-34l6-8 8 12-14-4z" fill="#8B9BBD"/>
-    </g>
-  </svg>
+<svg role="img" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-labelledby="logoTitle" preserveAspectRatio="xMidYMid meet">
+  <title id="logoTitle">Atlas App Logo</title>
+  <defs>
+    <linearGradient id="peakGradient" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#8B9BBD" />
+      <stop offset="100%" stop-color="#404B69" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#2dd4bf" />
+    </linearGradient>
+  </defs>
+  <path d="M50 10 L10 90 H35 L50 60 L65 90 H90 Z" fill="url(#peakGradient)" />
+  <path d="M50 10 L65 90 H50 Z" fill="url(#accentGradient)" />
+</svg>

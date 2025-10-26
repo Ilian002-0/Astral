@@ -347,9 +347,7 @@ const App: React.FC = () => {
                                         {(logoUrl && !logoError) ? (
                                             <img src={logoUrl} alt="Atlas Logo" className="h-10 w-auto object-contain" onError={() => setLogoError(true)} />
                                         ) : (
-                                            <svg viewBox="0 0 128 88" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
-                                                <g><circle cx="64" cy="51" r="18" fill="#404B69"/><path d="M56 42a12 12 0 0 1 16 0 M38 53a12 12 0 0 0 20 0 M46 64a10 10 0 0 1 12 0" stroke="#0c0b1e" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="m36.8 88 24.8-80h11.2L47.2 88z" fill="#404B69"/><path d="m91.2 88-24.8-80h-11.2L80.8 88z" fill="#8B9BBD"/><path d="M24 72c26-48 66-41 86-34l6-8 8 12-14-4z" fill="#8B9BBD"/></g>
-                                            </svg>
+                                            <img src="https://i.imgur.com/CGGyy54.png" alt="Atlas Logo" className="h-10 w-auto object-contain" />
                                         )}
                                         <span className="text-xl font-bold tracking-widest text-[#8B9BBD]">ATLAS</span>
                                     </div>

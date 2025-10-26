@@ -67,24 +67,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, logoUrl }) =
                         <span className="mt-2 text-xl font-bold tracking-[5px] text-[#8B9BBD]">ATLAS</span>
                     </div>
                 ) : (
-                    <svg viewBox="0 0 128 112" xmlns="http://www.w3.org/2000/svg" className="h-full w-auto">
-                        <defs>
-                            <filter id="sidebar-shadow" height="130%">
-                                <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-                                <feOffset dx="1" dy="2" result="offsetblur"/>
-                                <feComponentTransfer><feFuncA type="linear" slope="0.6"/></feComponentTransfer>
-                                <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-                            </filter>
-                        </defs>
-                        <g>
-                            <circle cx="64" cy="47" r="18" fill="#404B69"/>
-                            <path d="M56 38 A 12 12 0 0 1 72 38 M54 49 A 12 12 0 0 0 74 49 M58 60 A 10 10 0 0 1 70 60" stroke="#0c0b1e" stroke-width="2.5" fill="none"/>
-                            <path d="M36.8,80 L61.6,0 h11.2 L47.2,80 H36.8 Z" fill="#404B69"/>
-                            <path d="M91.2,80 L66.4,0 h-11.2 L80.8,80 H91.2 Z" fill="#8B9BBD"/>
-                            <path d="M24,66 C50,18 90,25 110,32 L116,24 L124,36 L110,32 Z" fill="#8B9BBD" filter="url(#sidebar-shadow)"/>
-                        </g>
-                        <text x="64" y="100" text-anchor="middle" fontFamily="inherit" fontSize="22" fontWeight="bold" letterSpacing="5" fill="#8B9BBD">ATLAS</text>
-                    </svg>
+                    <div className="flex items-center justify-center text-center flex-col h-full">
+                        <img src="https://i.imgur.com/CGGyy54.png" alt="Atlas Logo" className="w-auto object-contain max-h-20" />
+                        <span className="mt-2 text-xl font-bold tracking-[5px] text-[#8B9BBD]">ATLAS</span>
+                    </div>
                 )}
             </div>
             <nav className="flex-grow space-y-2">
