@@ -80,6 +80,13 @@
         -ms-overflow-style: none;  /* for Internet Explorer and Edge */
         scrollbar-width: none;  /* for Firefox */
       }
+      /* Prevent focus outline on charts for a cleaner mobile experience */
+      .recharts-wrapper:focus, .recharts-surface:focus {
+        outline: none !important;
+      }
+      .recharts-wrapper {
+        -webkit-tap-highlight-color: transparent;
+      }
       /* Custom Animations */
       @keyframes fade-in {
         from { opacity: 0; }

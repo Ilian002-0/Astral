@@ -102,6 +102,9 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [showTooltip, setShowTooltip] = useState(true);
+
   const profitGoal = goals?.netProfit;
   const drawdownGoal = goals?.maxDrawdown;
 
@@ -114,6 +117,22 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const node = chartRef.current;
+    if (node && isMobile) {
+        const handleTouchEnd = () => {
+            // When touch ends on mobile, quickly remove and re-add the tooltip component
+            // to force its state to reset and hide it.
+            setShowTooltip(false);
+            setTimeout(() => setShowTooltip(true), 50);
+        };
+        node.addEventListener('touchend', handleTouchEnd);
+        return () => {
+            node.removeEventListener('touchend', handleTouchEnd);
+        };
+    }
+  }, [isMobile]);
 
   const yAxisTickFormatter = (value: number) => {
     const thousands = value / 1000;
@@ -283,7 +302,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
             </div>
         </div>
       </div>
-      <div style={{ width: '100%', height: 300 }}>
+      <div style={{ width: '100%', height: 300 }} ref={chartRef}>
         {hasAnyData ? (
           <ResponsiveContainer key={timeRange}>
             <AreaChart
@@ -320,7 +339,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 axisLine={false}
                 allowDataOverflow
               />
-              <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+              {showTooltip && <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>}
               
               <Area
                   isAnimationActive={true}

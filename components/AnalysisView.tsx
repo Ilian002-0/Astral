@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { Trade, ChartDataPoint, Account } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -80,6 +80,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     const { t, language } = useLanguage();
     const isDesktop = useMediaQuery('(min-width: 768px)');
 
+    const chartRef = useRef<HTMLDivElement>(null);
+    const [showTooltip, setShowTooltip] = useState(true);
+
     const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
     const [selectedComments, setSelectedComments] = useState<string[]>([]);
     const [startDate, setStartDate] = useState<string>('');
@@ -89,6 +92,20 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         return `${selectedSymbols.join(',')}-${selectedComments.join(',')}-${startDate}-${endDate}`;
     }, [selectedSymbols, selectedComments, startDate, endDate]);
     
+    useEffect(() => {
+        const node = chartRef.current;
+        if (node && !isDesktop) {
+            const handleTouchEnd = () => {
+                setShowTooltip(false);
+                setTimeout(() => setShowTooltip(true), 50);
+            };
+            node.addEventListener('touchend', handleTouchEnd);
+            return () => {
+                node.removeEventListener('touchend', handleTouchEnd);
+            };
+        }
+    }, [isDesktop]);
+
     const uniqueSymbols = useMemo(() => [...new Set(trades.map(t => t.symbol))].sort(), [trades]);
     const uniqueComments = useMemo(() => [...new Set(trades.map(t => t.comment).filter(c => !!c))].sort(), [trades]);
 
@@ -262,7 +279,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                     </div>
                 </div>
 
-                <div style={{ width: '100%', height: 400 }}>
+                <div style={{ width: '100%', height: 400 }} ref={chartRef}>
                     {hasEnoughData ? (
                         <ResponsiveContainer key={animationKey}>
                             <AreaChart data={chartData} margin={{ top: 5, right: !isDesktop ? 5 : 20, left: !isDesktop ? -10 : -30, bottom: 5 }}>
@@ -279,7 +296,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                                 <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} type="number" domain={['dataMin', 'dataMax']} allowDecimals={false} />
                                 <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} domain={[domainMin, domainMax]} tickLine={false} axisLine={false} allowDataOverflow />
-                                <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                                {showTooltip && <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>}
                                 
                                 <Area
                                     isAnimationActive={true}
