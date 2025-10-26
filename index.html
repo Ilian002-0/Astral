@@ -28,6 +28,15 @@
         -ms-user-select: text; /* Internet Explorer/Edge */
         user-select: text; /* Standard */
       }
+      /* PWA Window Controls Overlay Draggable Regions */
+      .app-region-drag {
+        -webkit-app-region: drag;
+        app-region: drag;
+      }
+      .app-region-no-drag {
+        -webkit-app-region: no-drag;
+        app-region: no-drag;
+      }
       /* Improve visibility of the date picker icon in dark mode */
       input[type="date"]::-webkit-calendar-picker-indicator {
         filter: invert(0.8);

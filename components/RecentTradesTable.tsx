@@ -33,14 +33,14 @@ const RecentTradesTable: React.FC<RecentTradesTableProps> = ({ trades, currency 
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
             <h3 className="text-lg font-semibold text-white mb-4">{t('dashboard.recent_trades_table_title')}</h3>
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
+                <table className="w-full text-sm text-left table-fixed">
                     <thead className="text-xs text-gray-400 uppercase border-b border-gray-700">
                         <tr>
-                            <th scope="col" className="px-2 sm:px-4 py-3">{t('dashboard.symbol')}</th>
-                            <th scope="col" className="px-2 sm:px-4 py-3">{t('dashboard.dates')}</th>
-                            <th scope="col" className="px-2 sm:px-4 py-3">{t('dashboard.type')}</th>
-                            <th scope="col" className="px-2 sm:px-4 py-3 text-right">{t('dashboard.size')}</th>
-                            <th scope="col" className="px-2 sm:px-4 py-3 text-right">{t('dashboard.result')}</th>
+                            <th scope="col" className="px-2 sm:px-4 py-3 w-[25%]">{t('dashboard.symbol')}</th>
+                            <th scope="col" className="px-2 sm:px-4 py-3 w-[25%] sm:w-[30%]">{t('dashboard.dates')}</th>
+                            <th scope="col" className="px-2 sm:px-4 py-3 w-[15%]">{t('dashboard.type')}</th>
+                            <th scope="col" className="px-2 sm:px-4 py-3 text-right w-[15%]">{t('dashboard.size')}</th>
+                            <th scope="col" className="px-2 sm:px-4 py-3 text-right w-[20%] sm:w-[15%]">{t('dashboard.result')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -53,7 +53,7 @@ const RecentTradesTable: React.FC<RecentTradesTableProps> = ({ trades, currency 
                                     className="border-b border-gray-800 text-xs align-top animate-fade-in-up"
                                     style={{ animationDelay: `${index * 50}ms`, opacity: 0 }}
                                 >
-                                    <td className="px-2 sm:px-4 py-3 text-white">{trade.symbol}</td>
+                                    <td className="px-2 sm:px-4 py-3 text-white truncate">{trade.symbol}</td>
                                     <td className="px-2 sm:px-4 py-3 text-white leading-tight">
                                         <div className="sm:hidden">
                                             <div>{trade.closeTime.toLocaleDateString(language, { month: 'short', day: 'numeric' })}</div>
@@ -61,8 +61,8 @@ const RecentTradesTable: React.FC<RecentTradesTableProps> = ({ trades, currency 
                                         </div>
                                         <span className="hidden sm:inline truncate">{formatDate(trade.closeTime)}</span>
                                     </td>
-                                    <td className={`px-2 sm:px-4 py-3 font-bold uppercase ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`}>{trade.type}</td>
-                                    <td className="px-2 sm:px-4 py-3 text-right text-white">{trade.size}</td>
+                                    <td className={`px-2 sm:px-4 py-3 font-bold uppercase truncate ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`}>{trade.type}</td>
+                                    <td className="px-2 sm:px-4 py-3 text-right text-white truncate">{trade.size}</td>
                                     <td className={`px-2 sm:px-4 py-3 text-right font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(trade.profit)}</td>
                                 </tr>
                             );

@@ -10,9 +10,11 @@ interface AddAccountProps {
     isOpen: boolean;
     mode: 'add' | 'update';
     accountToUpdate?: Account | null;
+    launchedFileContent?: {trades: Trade[], fileName: string} | null;
+    onLaunchedFileConsumed: () => void;
 }
 
-const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, isOpen, mode, accountToUpdate }) => {
+const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, isOpen, mode, accountToUpdate, launchedFileContent, onLaunchedFileConsumed }) => {
     const { t } = useLanguage();
     useLockBodyScroll(isOpen);
     const [accountName, setAccountName] = useState('');
@@ -41,7 +43,10 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
     
     useEffect(() => {
         if (isOpen) {
-            if (mode === 'update' && accountToUpdate) {
+            if (launchedFileContent) {
+                handleFileProcessed(launchedFileContent.trades, launchedFileContent.fileName);
+                onLaunchedFileConsumed();
+            } else if (mode === 'update' && accountToUpdate) {
                 setAccountName(accountToUpdate.name);
                 setInitialBalance(String(accountToUpdate.initialBalance));
                 setCurrency(accountToUpdate.currency || 'USD');
@@ -56,7 +61,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
                 resetState();
             }
         }
-    }, [isOpen, mode, accountToUpdate]);
+    }, [isOpen, mode, accountToUpdate, launchedFileContent, onLaunchedFileConsumed]);
     
     const handleFileProcessed = (trades: Trade[], name: string) => {
         setAllTradesFromFile(trades);

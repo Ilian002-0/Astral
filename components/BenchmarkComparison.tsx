@@ -8,7 +8,7 @@ interface BenchmarkComparisonProps {
 
 const Stat: React.FC<{ label: string; value: string; color: string }> = ({ label, value, color }) => (
     <div className="text-center">
-        <p className="text-sm text-gray-400">{label}</p>
+        <p className="text-sm text-gray-400 h-10 flex items-center justify-center">{label}</p>
         <p className={`text-2xl font-bold ${color}`}>{value}</p>
     </div>
 );
@@ -19,9 +19,9 @@ const Bar: React.FC<{ value: number; scale: number; color: string; label: string
 
     return (
         <div>
-            <div className="flex justify-between items-center text-xs mb-1">
+            <div className="flex justify-between items-center text-xs mb-1 min-h-[2rem]">
                 <span className="text-gray-300">{label}</span>
-                <span className={`font-bold ${value >= 0 ? 'text-green-400' : 'text-red-400'}`}>{value.toFixed(2)}%</span>
+                <span className={`font-bold ${value >= 0 ? 'text-green-400' : 'text-red-400'} whitespace-nowrap`}>{value.toFixed(2)}%</span>
             </div>
             <div className="h-6 bg-gray-800/50 rounded-md overflow-hidden relative">
                 <div className="absolute top-0 left-1/2 w-px h-full bg-gray-600"></div>

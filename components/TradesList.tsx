@@ -38,6 +38,8 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    const reversedTrades = useMemo(() => [...trades].reverse(), [trades]);
+
     const formatCurrency = (value: number) => {
         const symbol = currency === 'USD' ? '$' : '€';
         const sign = value >= 0 ? '+' : '-';
@@ -83,14 +85,14 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
       }, []);
 
     const filteredTrades = useMemo(() => {
-        if (!searchTerm) return trades;
+        if (!searchTerm) return reversedTrades;
         const lowercasedFilter = searchTerm.toLowerCase();
-        return trades.filter(trade => {
+        return reversedTrades.filter(trade => {
             return Object.values(trade).some(val => 
                 String(val).toLowerCase().includes(lowercasedFilter)
             );
         });
-    }, [trades, searchTerm]);
+    }, [reversedTrades, searchTerm]);
 
     const activeColumns = COLUMN_DEFINITIONS.filter(col => visibleColumns[col.key]);
 

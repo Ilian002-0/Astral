@@ -55,10 +55,41 @@ const App: React.FC = () => {
 
     const [installPrompt, setInstallPrompt] = useState<any>(null);
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
+    const [launchedFileContent, setLaunchedFileContent] = useState<{trades: Trade[], fileName: string} | null>(null);
 
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { t } = useLanguage();
     
+    // PWA: Handle view navigation from shortcuts
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const viewParam = params.get('view') as AppView;
+        if (viewParam && ['dashboard', 'trades', 'calendar', 'goals', 'profile'].includes(viewParam)) {
+            setView(viewParam);
+        }
+    }, []);
+
+    // PWA: Handle file open events
+    useEffect(() => {
+        if ('launchQueue' in window) {
+            (window as any).launchQueue.setConsumer(async (launchParams: { files: any[] }) => {
+                if (!launchParams.files || launchParams.files.length === 0) return;
+                
+                try {
+                    const fileHandle = launchParams.files[0];
+                    const file = await fileHandle.getFile();
+                    const content = await file.text();
+                    const trades = parseCSV(content);
+                    setLaunchedFileContent({ trades, fileName: file.name });
+                    setModalMode('add');
+                    setAddAccountModalOpen(true);
+                } catch (e) {
+                    setError(e instanceof Error ? e.message : 'Failed to handle launched file.');
+                }
+            });
+        }
+    }, []);
+
     // PWA Install prompt handler
     useEffect(() => {
         const handler = (e: Event) => {
@@ -332,16 +363,18 @@ const App: React.FC = () => {
             <div className="flex h-screen overflow-hidden">
                 {isDesktop && <Sidebar currentView={view} onNavigate={setView} />}
                 <div className="flex-1 flex flex-col w-full">
-                    <header className="flex-shrink-0 z-10 bg-[#0c0b1e] shadow-lg shadow-black/30">
-                        <div className="max-w-4xl mx-auto px-4 md:px-6">
+                    <header className="flex-shrink-0 z-10 bg-[#0c0b1e] shadow-lg shadow-black/30 app-region-drag">
+                        <div className="max-w-4xl mx-auto px-4 md:px-6" style={{ paddingTop: 'env(titlebar-area-height, 0)'}}>
                             <div className={`flex ${!isDesktop ? 'justify-between' : 'justify-end'} items-center h-20`}>
                                 {!isDesktop && (
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 app-region-no-drag">
                                         <img src="https://i.imgur.com/TN8saNO.png" alt="Atlas Logo" className="h-10 w-auto object-contain" />
                                         <span className="text-xl font-bold tracking-widest text-[#8B9BBD]">ATLAS</span>
                                     </div>
                                 )}
-                                {accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
+                                <div className="app-region-no-drag">
+                                    {accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
+                                </div>
                             </div>
                         </div>
                     </header>
@@ -367,6 +400,8 @@ const App: React.FC = () => {
                 onSaveAccount={saveAccount}
                 mode={modalMode}
                 accountToUpdate={currentAccount}
+                launchedFileContent={launchedFileContent}
+                onLaunchedFileConsumed={() => setLaunchedFileContent(null)}
             />
             <AccountActionModal
                 isOpen={isAccountActionModalOpen}
