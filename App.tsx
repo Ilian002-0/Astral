@@ -3,7 +3,6 @@ import useDBStorage from './hooks/useLocalStorage';
 import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, NotificationItem } from './types';
 import { processAccountData, calculateBenchmarkPerformance } from './utils/calculations';
 import { parseCSV } from './utils/csvParser';
-import usePullToRefresh from './hooks/usePullToRefresh';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
 import { useLanguage } from './contexts/LanguageContext';
@@ -210,28 +209,36 @@ const App: React.FC = () => {
                     setError(`An account with the name "${accountData.name}" already exists.`);
                     return prevAccounts;
                 }
-                const newAccount: Account = { ...accountData, goals: {}, lastUpdated: new Date().toISOString() };
+                const sortedTrades = accountData.trades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+                const newAccount: Account = { ...accountData, trades: sortedTrades, goals: {}, lastUpdated: new Date().toISOString() };
                 const newAccounts = [...prevAccounts, newAccount];
                 setCurrentAccountName(newAccount.name);
                 return newAccounts;
-            } else {
+            } else { // 'update'
                 return prevAccounts.map(acc => {
                     if (acc.name === accountData.name) {
-                        const tradesMap = new Map(acc.trades.map(t => [t.ticket, t]));
-                        accountData.trades.forEach(t => tradesMap.set(t.ticket, t));
-                        const allTrades = Array.from(tradesMap.values()).sort((a: Trade, b: Trade) => a.openTime.getTime() - b.openTime.getTime());
-                        return { ...acc, ...accountData, trades: accountData.dataUrl ? acc.trades : allTrades, lastUpdated: new Date().toISOString() };
+                        let updatedTrades = acc.trades;
+                        // If trades were passed, it's a file update, so merge them.
+                        if (accountData.trades.length > 0) {
+                            const tradesMap = new Map(acc.trades.map(t => [t.ticket, t]));
+                            accountData.trades.forEach(t => tradesMap.set(t.ticket, t));
+                            updatedTrades = Array.from(tradesMap.values()).sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+                        }
+                        return { ...acc, ...accountData, trades: updatedTrades, lastUpdated: new Date().toISOString() };
                     }
                     return acc;
                 });
             }
         });
         setAddAccountModalOpen(false);
-        if (accountData.dataUrl) {
-            const accountToSync = { ...accountData, trades: [], goals: {} };
-            refreshData(accountToSync);
+    
+        if (mode === 'update' && accountData.dataUrl) {
+            const updatedAccount = accounts.find(acc => acc.name === accountData.name);
+            if (updatedAccount) {
+                refreshData({ ...updatedAccount, ...accountData });
+            }
         }
-    }, [setAccounts, setCurrentAccountName, refreshData]);
+    }, [accounts, setAccounts, setCurrentAccountName, refreshData]);
     
     const deleteAccount = useCallback(() => {
         if (!currentAccountName) return;
@@ -242,8 +249,6 @@ const App: React.FC = () => {
     const handleRefresh = useCallback(() => {
         if (currentAccount && currentAccount.dataUrl) refreshData(currentAccount);
     }, [currentAccount, refreshData]);
-
-    const { pullToRefreshRef } = usePullToRefresh(handleRefresh);
 
     const handleOpenAccountActions = () => setAccountActionModalOpen(true);
     const handleAddClick = () => { setModalMode('add'); setAddAccountModalOpen(true); setAccountActionModalOpen(false); };
@@ -347,7 +352,7 @@ const App: React.FC = () => {
                         </div>
                     </header>
 
-                    <main ref={pullToRefreshRef as React.RefObject<HTMLDivElement>} className="flex-1 overflow-y-auto">
+                    <main className="flex-1 overflow-y-auto">
                          <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-24 md:pb-6">
                              {error && (
                                 <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm mb-4 flex justify-between items-center animate-fade-in">

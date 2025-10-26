@@ -3,6 +3,7 @@ import { Trade, Account } from '../types';
 import FileUpload from './FileUpload';
 import { useLanguage } from '../contexts/LanguageContext';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
+import { parseCSV } from '../utils/csvParser';
 
 interface AddAccountProps {
     onSaveAccount: (account: { name: string, trades: Trade[], initialBalance: number, currency: 'USD' | 'EUR', dataUrl?: string }, mode: 'add' | 'update') => void;
@@ -27,6 +28,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
     const [error, setError] = useState<string | null>(null);
     const [sourceType, setSourceType] = useState<'file' | 'url'>('file');
     const [dataUrl, setDataUrl] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     const resetState = () => {
         setAccountName('');
@@ -39,10 +41,12 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
         setError(null);
         setSourceType('file');
         setDataUrl('');
+        setIsSaving(false);
     };
     
     useEffect(() => {
         if (isOpen) {
+            setIsSaving(false);
             if (launchedFileContent) {
                 handleFileProcessed(launchedFileContent.trades, launchedFileContent.fileName);
                 onLaunchedFileConsumed();
@@ -84,7 +88,7 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
         setUpdatedTradesCount(null);
     };
     
-    const handleSave = () => {
+    const handleSave = async () => {
         const balance = parseFloat(initialBalance);
         if (!accountName.trim()) {
             setError("Account name is required.");
@@ -94,22 +98,48 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
             setError("Initial balance must be a valid positive number.");
             return;
         }
-        if (sourceType === 'file' && !allTradesFromFile) {
-            setError("Please upload a CSV file with your trade history.");
-            return;
-        }
-         if (sourceType === 'url' && !dataUrl.trim()) {
-            setError("Please provide a valid URL for the CSV file.");
-            return;
-        }
 
-        onSaveAccount({
-            name: accountName,
-            trades: allTradesFromFile || [],
-            initialBalance: balance,
-            currency: currency,
-            dataUrl: sourceType === 'url' ? dataUrl.trim() : undefined,
-        }, mode);
+        if (isSaving) return;
+        setIsSaving(true);
+        setError(null);
+
+        try {
+            let tradesToSave: Trade[] = allTradesFromFile || [];
+            
+            // This is the critical bug fix: when adding a new account via URL,
+            // we must fetch the data first before calling onSaveAccount.
+            if (mode === 'add' && sourceType === 'url') {
+                if (!dataUrl.trim()) {
+                    setError("Please provide a valid URL for the CSV file.");
+                    setIsSaving(false);
+                    return;
+                }
+                const response = await fetch(dataUrl.trim(), { cache: 'reload' });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const csvText = await response.text();
+                tradesToSave = parseCSV(csvText);
+            } else if (sourceType === 'file' && !allTradesFromFile) {
+                 setError("Please upload a CSV file with your trade history.");
+                 setIsSaving(false);
+                 return;
+            } else if (sourceType === 'url' && mode === 'update' && !dataUrl.trim()){
+                 setError("Please provide a valid URL for the CSV file.");
+                 setIsSaving(false);
+                 return;
+            }
+
+            onSaveAccount({
+                name: accountName.trim(),
+                trades: tradesToSave,
+                initialBalance: balance,
+                currency: currency,
+                dataUrl: sourceType === 'url' ? dataUrl.trim() : undefined,
+            }, mode);
+            // Success: App.tsx will close the modal, no need to setIsSaving(false)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : t('errors.fetch_failed'));
+            setIsSaving(false); // Error: stop loading and show message
+        }
     };
 
     const handleClose = () => {
@@ -221,8 +251,12 @@ const AddAccountModal: React.FC<AddAccountProps> = ({ onSaveAccount, onClose, is
                         <button onClick={handleClose} className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105">
                             {t('common.cancel')}
                         </button>
-                        <button onClick={handleSave} className="px-8 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105">
-                            {mode === 'add' ? t('add_account_modal.save_button') : t('add_account_modal.save_button_update')}
+                        <button 
+                            onClick={handleSave} 
+                            disabled={isSaving}
+                            className="px-8 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-wait"
+                        >
+                            {isSaving ? 'Saving...' : (mode === 'add' ? t('add_account_modal.save_button') : t('add_account_modal.save_button_update'))}
                         </button>
                     </div>
                 </footer>
