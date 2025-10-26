@@ -94,7 +94,6 @@ const App: React.FC = () => {
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { t } = useLanguage();
     
-    // FIX: Moved `isLoading`, `currentAccount`, and `refreshData` before `handleRefresh` to fix declaration order.
     const isLoading = isLoadingAccounts || isLoadingCurrentAccount;
 
     const currentAccount = useMemo(() => {
@@ -138,6 +137,7 @@ const App: React.FC = () => {
 
     // --- PWA & NOTIFICATIONS SETUP ---
     useEffect(() => {
+        // 1. Register periodic background sync
         const registerPeriodicSync = async () => {
             const registration = await navigator.serviceWorker.ready;
             try {
@@ -150,19 +150,29 @@ const App: React.FC = () => {
                 console.error('Periodic background sync could not be registered.', e);
             }
         };
-
         if ('serviceWorker' in navigator && 'PeriodicSyncManager' in window) {
             registerPeriodicSync();
         }
 
-        // Handle view navigation from shortcuts
+        // 2. Handle PWA installation prompt events
+        const beforeInstallHandler = (e: Event) => {
+            e.preventDefault();
+            setInstallPrompt(e);
+        };
+        const appInstalledHandler = () => {
+            setInstallPrompt(null);
+        };
+        window.addEventListener('beforeinstallprompt', beforeInstallHandler);
+        window.addEventListener('appinstalled', appInstalledHandler);
+
+        // 3. Handle navigation from app shortcuts
         const params = new URLSearchParams(window.location.search);
         const viewParam = params.get('view') as AppView;
         if (viewParam && ['dashboard', 'trades', 'calendar', 'goals', 'profile'].includes(viewParam)) {
             setView(viewParam);
         }
 
-        // Handle file open events
+        // 4. Handle file open events
         if ('launchQueue' in window) {
             (window as any).launchQueue.setConsumer(async (launchParams: { files: any[] }) => {
                 if (!launchParams.files || launchParams.files.length === 0) return;
@@ -179,21 +189,21 @@ const App: React.FC = () => {
                 }
             });
         }
-
-        // PWA Install prompt handler
-        const handler = (e: Event) => {
-            e.preventDefault();
-            setInstallPrompt(e);
+        
+        // Cleanup listeners
+        return () => {
+            window.removeEventListener('beforeinstallprompt', beforeInstallHandler);
+            window.removeEventListener('appinstalled', appInstalledHandler);
         };
-        window.addEventListener('beforeinstallprompt', handler);
-        return () => window.removeEventListener('beforeinstallprompt', handler);
     }, []);
     
     const handleInstallClick = () => {
         if (!installPrompt) return;
         installPrompt.prompt();
         installPrompt.userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed' }) => {
-            setInstallPrompt(null);
+            if (choiceResult.outcome === 'accepted') {
+                setInstallPrompt(null);
+            }
         });
     };
     
