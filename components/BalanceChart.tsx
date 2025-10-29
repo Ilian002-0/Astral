@@ -54,6 +54,15 @@ const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
     }
 
     if (trade) {
+      if (trade.type === 'balance') {
+        return (
+          <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
+            <p className="font-bold text-lg text-white mb-1">{trade.profit > 0 ? 'Deposit' : 'Withdrawal'}</p>
+            <p className="text-gray-400 text-base font-semibold">{formatCurrency(trade.profit, { signDisplay: 'always' })}</p>
+            <p className="text-xs text-gray-500 mt-1">New Balance: {formatCurrency(balance)}</p>
+          </div>
+        );
+      }
       const netProfit = trade.profit + trade.commission + trade.swap;
 
       return (
@@ -140,13 +149,15 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
     }
   }, [isMobile]);
 
-  const yAxisTickFormatter = (value: number) => {
-    const thousands = value / 1000;
-    const formattedValue = new Intl.NumberFormat(language, {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-    }).format(thousands) + 'K';
-    return formattedValue;
+  const yAxisTickFormatter = (value: any) => {
+    const num = Number(value);
+    if (isNaN(num)) return value;
+    if (num === 0) return '0';
+    
+    return new Intl.NumberFormat(language, {
+        notation: 'compact',
+        compactDisplay: 'short'
+    }).format(num);
   };
 
   const timeRangeOptions: { key: TimeRange; label: string; }[] = useMemo(() => [

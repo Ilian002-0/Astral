@@ -8,11 +8,11 @@ export const parseCSV = (content: string): Trade[] => {
     const separator = headerLine.includes('\t') ? '\t' : ',';
 
     const header = headerLine.split(separator).map(h => h.trim().toLowerCase().replace(/"/g, ''));
-    const requiredHeaders = ['order', 'open time', 'type', 'volume', 'symbol', 'open price', 'close time', 'close price', 'commission', 'swap', 'profit'];
+    const requiredHeaders = ['order', 'open time', 'type', 'profit'];
     const hasAllHeaders = requiredHeaders.every(reqHeader => header.includes(reqHeader));
 
     if (!hasAllHeaders) {
-        throw new Error("CSV file is missing one or more required columns. Expected: Order, Open Time, Type, Volume, Symbol, Open Price, Close Time, Close Price, Commission, Swap, Profit.");
+        throw new Error("CSV file is missing one or more required columns. At least expected: Order, Open Time, Type, Profit.");
     }
 
     const colMap: { [key: string]: number } = {};
@@ -49,17 +49,37 @@ export const parseCSV = (content: string): Trade[] => {
       if (data.length <= Math.max(...Object.values(colMap))) {
         return null;
       }
-
+      
+      const getCleanString = (index: number) => (data[index] || '').trim().replace(/"/g, '');
+      const type = getCleanString(colMap['type']);
       const profit = parseDecimal(data[colMap['profit']]);
-      if (isNaN(profit)) return null;
-
-      // MT5 date format is often YYYY.MM.DD HH:MM:SS
+      
       const parseMT5Date = (dateStr: string) => {
-        if (!dateStr) return new Date();
+        if (!dateStr || dateStr.trim() === '') return new Date(0); // Return epoch for invalid dates
         return new Date(dateStr.replace(/"/g, '').replace(/\./g, '-').trim());
       };
 
-      const getCleanString = (index: number) => (data[index] || '').trim().replace(/"/g, '');
+      if (type === 'balance') {
+        const opTime = parseMT5Date(data[colMap['openTime']]);
+        if (isNaN(opTime.getTime()) || opTime.getTime() === 0) return null; // Skip if date is invalid
+
+        return {
+          ticket: parseInt(getCleanString(colMap['ticket']), 10) || opTime.getTime(), // Use timestamp as fallback ticket
+          openTime: opTime,
+          type: 'balance',
+          size: 0,
+          symbol: 'Balance', // Use a clear identifier
+          openPrice: 0,
+          closeTime: opTime,
+          closePrice: 1, // Sentinel to ensure it's processed as a "closed" operation
+          commission: 0,
+          swap: 0,
+          profit: profit,
+          comment: getCleanString(colMap['comment']) || (profit > 0 ? 'Deposit' : 'Withdrawal')
+        };
+      }
+
+      if (isNaN(profit)) return null;
 
       return {
         ticket: parseInt(getCleanString(colMap['ticket']), 10),
@@ -75,5 +95,5 @@ export const parseCSV = (content: string): Trade[] => {
         profit: profit,
         comment: colMap['comment'] !== undefined ? getCleanString(colMap['comment']) : ''
       };
-    }).filter((trade): trade is Trade => trade !== null && !isNaN(trade.ticket) && trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime()));
+    }).filter((trade): trade is Trade => trade !== null && !isNaN(trade.ticket) && trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime()) && trade.closeTime.getTime() !== 0);
   };

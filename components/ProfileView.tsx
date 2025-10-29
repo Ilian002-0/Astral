@@ -3,6 +3,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import GoogleDriveBackup from './GoogleDriveBackup';
 import { NotificationSettings, NotificationItem } from '../types';
 import Toggle from './Toggle';
+import useDBStorage from '../hooks/useLocalStorage';
+
 
 interface ProfileViewProps {
     canInstall: boolean;
@@ -62,6 +64,9 @@ const NotificationCenter: React.FC<{ history: NotificationItem[]; onClear: () =>
 const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, notificationSettings, onNotificationSettingsChange, notificationHistory, onClearNotifications }) => {
     const { language, setLanguage, t } = useLanguage();
     const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
+    const { data: benchmarkUrl, setData: setBenchmarkUrl } = useDBStorage<string>('benchmark_url_v1', '');
+    const [urlInput, setUrlInput] = useState(benchmarkUrl);
+    const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
 
     const handleUpdate = () => {
         window.location.reload();
@@ -83,6 +88,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
         } else {
             onNotificationSettingsChange({ ...notificationSettings, [key]: value });
         }
+    };
+
+    const handleSaveBenchmarkUrl = () => {
+        setBenchmarkUrl(urlInput);
+        setShowSaveConfirmation(true);
+        setTimeout(() => setShowSaveConfirmation(false), 2000);
     };
 
     return (
@@ -123,6 +134,26 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                 
                 {/* NOTIFICATION CENTER */}
                 <NotificationCenter history={notificationHistory} onClear={onClearNotifications} />
+
+                {/* BENCHMARK SETTINGS */}
+                <div className="p-4 bg-[#0c0b1e] rounded-lg">
+                    <h3 className="text-lg font-medium text-gray-300 mb-2 text-center">{t('profile.benchmark_title')}</h3>
+                    <p className="text-sm text-gray-400 mb-4 text-center">{t('profile.benchmark_description')}</p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                            type="url"
+                            placeholder={t('profile.benchmark_placeholder')}
+                            value={urlInput}
+                            onChange={(e) => setUrlInput(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
+                        />
+                        <button onClick={handleSaveBenchmarkUrl} className="relative px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-colors whitespace-nowrap">
+                            {t('profile.benchmark_save')}
+                            {showSaveConfirmation && <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs bg-green-500 text-white px-2 py-0.5 rounded-md animate-fade-in-fast">Saved!</span>}
+                        </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">{t('profile.benchmark_helper')}</p>
+                </div>
 
                 {/* INSTALL APP */}
                 {canInstall && (

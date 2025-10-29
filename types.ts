@@ -119,3 +119,8 @@ export interface NotificationItem {
   timestamp: number;
   read: boolean;
 }
+
+export interface BenchmarkDataPoint {
+  date: Date;
+  close: number;
+}

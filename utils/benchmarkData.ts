@@ -1,10 +1,5 @@
-export interface BenchmarkDataPoint {
-  date: string; // YYYY-MM-DD
-  price: number;
-}
-
 // Monthly closing prices for SPY ETF
-export const spyData: BenchmarkDataPoint[] = [
+export const spyData: { date: string; price: number }[] = [
   { date: '2020-01-31', price: 321.73 },
   { date: '2020-02-28', price: 296.26 },
   { date: '2020-03-31', price: 257.65 },

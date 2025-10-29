@@ -61,6 +61,7 @@ async function setDBItem(key, value) {
     });
 }
 
+// --- Date Reviver & Stringifier for JSON Serialization ---
 const dateReviver = (key, value) => {
   const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
   if (typeof value === 'string' && isoDateRegex.test(value)) {
@@ -68,9 +69,81 @@ const dateReviver = (key, value) => {
   }
   return value;
 };
+const dateReplacer = (key, value) => {
+    if (value instanceof Date) {
+        return value.toISOString();
+    }
+    return value;
+};
 const deepParse = (jsonString) => {
     if (!jsonString) return null;
     return JSON.parse(jsonString, dateReviver);
+};
+const deepStringify = (obj) => {
+    return JSON.stringify(obj, dateReplacer);
+};
+
+// --- Robust CSV Parser for Service Worker ---
+const parseCSV_SW = (content) => {
+    const lines = content.split('\n').filter(line => line.trim() !== '');
+    if (lines.length < 2) return [];
+
+    const headerLine = lines[0];
+    const separator = headerLine.includes('\t') ? '\t' : ',';
+    const header = headerLine.split(separator).map(h => h.trim().toLowerCase().replace(/"/g, ''));
+    
+    const colMap = {};
+    header.forEach((h, i) => {
+        if (h === 'order' || h === 'ticket') colMap['ticket'] = i;
+        if (h === 'open time') colMap['openTime'] = i;
+        if (h === 'type') colMap['type'] = i;
+        if (h === 'volume' || h === 'size') colMap['size'] = i;
+        if (h === 'symbol') colMap['symbol'] = i;
+        if (h === 'open price') colMap['openPrice'] = i;
+        if (h === 'close time') colMap['closeTime'] = i;
+        if (h === 'close price') colMap['closePrice'] = i;
+        if (h === 'commission') colMap['commission'] = i;
+        if (h === 'swap') colMap['swap'] = i;
+        if (h === 'profit') colMap['profit'] = i;
+        if (h === 'comment') colMap['comment'] = i;
+    });
+
+    const parseDecimal = (value) => {
+        if (typeof value !== 'string' || value.trim() === '') return 0;
+        const cleanedValue = value.replace(/"/g, '').trim().replace(',', '.');
+        return parseFloat(cleanedValue);
+    };
+
+    return lines.slice(1).map(line => {
+        const separatorRegex = separator === ',' ? /,(?=(?:(?:[^"]*"){2})*[^"]*$)/ : /\t/;
+        const data = line.split(separatorRegex);
+        
+        if (data.length <= Math.max(...Object.values(colMap))) return null;
+
+        const profit = parseDecimal(data[colMap['profit']]);
+        if (isNaN(profit)) return null;
+
+        const parseMT5Date = (dateStr) => {
+            if (!dateStr) return new Date();
+            return new Date(dateStr.replace(/"/g, '').replace(/\./g, '-').trim());
+        };
+        const getCleanString = (index) => (data[index] || '').trim().replace(/"/g, '');
+
+        return {
+            ticket: parseInt(getCleanString(colMap['ticket']), 10),
+            openTime: parseMT5Date(data[colMap['openTime']]),
+            type: getCleanString(colMap['type']),
+            size: parseDecimal(data[colMap['size']]),
+            symbol: getCleanString(colMap['symbol']),
+            openPrice: parseDecimal(data[colMap['openPrice']]),
+            closeTime: parseMT5Date(data[colMap['closeTime']]),
+            closePrice: parseDecimal(data[colMap['closePrice']]),
+            commission: parseDecimal(data[colMap['commission']]),
+            swap: parseDecimal(data[colMap['swap']]),
+            profit: profit,
+            comment: colMap['comment'] !== undefined ? getCleanString(colMap['comment']) : ''
+        };
+    }).filter(trade => trade !== null && !isNaN(trade.ticket) && trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime()));
 };
 
 
@@ -149,7 +222,7 @@ const saveNotificationToHistory = async (notification) => {
     const history = deepParse(historyString) || [];
     history.unshift(notification);
     if (history.length > 50) history.pop();
-    await setDBItem('notification_history', JSON.stringify(history));
+    await setDBItem('notification_history', deepStringify(history));
 };
 
 const handlePeriodicSync = async () => {
@@ -159,41 +232,65 @@ const handlePeriodicSync = async () => {
     const settingsString = await getDBItem('notification_settings');
     const lang = await getDBItem('language').then(res => deepParse(res) || 'en');
 
+    if (!accountsString) return;
+
     const accounts = deepParse(accountsString) || [];
     const settings = deepParse(settingsString) || { tradeClosed: true, weeklySummary: true };
+    let hasUpdates = false;
 
     for (const account of accounts) {
         if (!account.dataUrl) continue;
         
         try {
             const response = await fetch(account.dataUrl, { cache: 'no-store' });
-            if (!response.ok) continue;
+            if (!response.ok) {
+                console.error(`Failed to fetch for ${account.name}: ${response.status}`);
+                continue;
+            }
             const csvText = await response.text();
-
-            // Minimal parser for service worker
-            const newTrades = csvText.split('\n').slice(1).map(line => {
-                const data = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                if (data.length < 11) return null;
-                return { ticket: parseInt(data[0]), closeTime: new Date(data[6].replace(/\./g, '-')) };
-            }).filter(t => t && !isNaN(t.ticket));
+            
+            const allFetchedTrades = parseCSV_SW(csvText);
+            if (allFetchedTrades.length === 0) continue;
             
             const existingTickets = new Set(account.trades.map(t => t.ticket));
-            const newlyClosedTrades = newTrades.filter(t => t && !existingTickets.has(t.ticket));
+            const newlyClosedTrades = allFetchedTrades.filter(
+                t => t.closePrice !== 0 && !existingTickets.has(t.ticket)
+            );
 
             if (settings.tradeClosed && newlyClosedTrades.length > 0) {
+                 console.log(`Found ${newlyClosedTrades.length} new trades for ${account.name}`);
                  for (const trade of newlyClosedTrades) {
-                    // We don't have full trade details, so notification is generic
+                    const currencySymbol = account.currency === 'EUR' ? '€' : '$';
                     const title = t(lang, 'notifications.trade_closed_title');
-                    const body = `New trade detected in ${account.name}`;
-                     const notificationItem = { id: `trade-${Date.now()}`, title, body, timestamp: Date.now(), read: false };
+                    const body = t(lang, 'notifications.trade_closed_body', {
+                        symbol: trade.symbol,
+                        profit: trade.profit.toFixed(2),
+                        currency: currencySymbol
+                    });
+                     const notificationItem = { id: `trade-${Date.now()}-${trade.ticket}`, title, body, timestamp: Date.now(), read: false };
                     showNotification(title, { body, tag: `trade-${trade.ticket}` });
                     await saveNotificationToHistory(notificationItem);
                  }
             }
 
+            // Merge trades and update account data if new trades were found
+            if (newlyClosedTrades.length > 0) {
+                const tradesMap = new Map(account.trades.map(t => [t.ticket, t]));
+                allFetchedTrades.forEach(t => tradesMap.set(t.ticket, t));
+                
+                account.trades = Array.from(tradesMap.values()).sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+                account.lastUpdated = new Date().toISOString();
+                hasUpdates = true;
+            }
+
         } catch (e) {
             console.error('Error during background sync for account:', account.name, e);
         }
+    }
+
+    if (hasUpdates) {
+        console.log('Updating accounts in IndexedDB after sync.');
+        await setDBItem('trading_accounts_v1', deepStringify(accounts));
     }
 };
 

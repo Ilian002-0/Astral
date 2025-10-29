@@ -1,12 +1,15 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import useDBStorage from './hooks/useLocalStorage';
-import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, NotificationItem } from './types';
+import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, NotificationItem, BenchmarkDataPoint } from './types';
 import { processAccountData, calculateBenchmarkPerformance } from './utils/calculations';
 import { parseCSV } from './utils/csvParser';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
 import usePullToRefresh from './hooks/usePullToRefresh';
 import { useLanguage } from './contexts/LanguageContext';
+import { fetchBenchmarkData } from './utils/benchmarkDataSource';
+import { spyData as staticSpyData } from './utils/benchmarkData';
+
 
 // Components
 import Header from './components/Header';
@@ -75,6 +78,7 @@ const App: React.FC = () => {
     const { data: currentAccountName, setData: setCurrentAccountName, isLoading: isLoadingCurrentAccount } = useDBStorage<string | null>('current_account_v1', null);
     const { data: notificationSettings, setData: setNotificationSettings } = useDBStorage<NotificationSettings>('notification_settings', { tradeClosed: true, weeklySummary: true });
     const { data: notificationHistory, setData: setNotificationHistory } = useDBStorage<NotificationItem[]>('notification_history', []);
+    const { data: benchmarkUrl } = useDBStorage<string>('benchmark_url_v1', '');
     
     const [isAddAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [isAccountActionModalOpen, setAccountActionModalOpen] = useState(false);
@@ -90,6 +94,7 @@ const App: React.FC = () => {
     const [installPrompt, setInstallPrompt] = useState<any>(null);
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
     const [launchedFileContent, setLaunchedFileContent] = useState<{trades: Trade[], fileName: string} | null>(null);
+    const [benchmarkData, setBenchmarkData] = useState<BenchmarkDataPoint[] | null>(null);
 
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { t } = useLanguage();
@@ -229,13 +234,38 @@ const App: React.FC = () => {
             return null;
         }
     }, [currentAccount]);
+    
+    const fallbackBenchmarkData = useMemo(() => {
+        return staticSpyData.map(d => ({
+            date: new Date(d.date),
+            close: d.price
+        })).sort((a, b) => a.date.getTime() - b.date.getTime());
+    }, []);
+
+    useEffect(() => {
+        if (benchmarkUrl) {
+            fetchBenchmarkData(benchmarkUrl)
+                .then(data => {
+                    setBenchmarkData(data);
+                    if (error?.includes('benchmark')) setError(null);
+                })
+                .catch(err => {
+                    console.error("Failed to fetch benchmark data:", err);
+                    setError("Failed to fetch benchmark data. Using fallback. Check URL and format in Profile.");
+                    setBenchmarkData(fallbackBenchmarkData); // Fallback on error
+                });
+        } else {
+            setBenchmarkData(fallbackBenchmarkData);
+        }
+    }, [benchmarkUrl, fallbackBenchmarkData, error]);
+
 
     const benchmarkReturn = useMemo(() => {
-        if (!processedData || processedData.closedTrades.length < 2) return null;
+        if (!processedData || processedData.closedTrades.length < 2 || !benchmarkData) return null;
         const firstTradeDate = processedData.closedTrades[0].openTime;
         const lastTradeDate = processedData.closedTrades[processedData.closedTrades.length - 1].closeTime;
-        return calculateBenchmarkPerformance(firstTradeDate, lastTradeDate);
-    }, [processedData]);
+        return calculateBenchmarkPerformance(firstTradeDate, lastTradeDate, benchmarkData);
+    }, [processedData, benchmarkData]);
     
     const hasRunInitialSync = useRef(false);
     useEffect(() => {

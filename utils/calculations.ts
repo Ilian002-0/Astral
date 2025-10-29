@@ -1,7 +1,5 @@
-import { Trade, Account, ProcessedData, DashboardMetrics, ChartDataPoint, DailySummary, MaxDrawdown } from '../types';
+import { Trade, Account, ProcessedData, DashboardMetrics, ChartDataPoint, DailySummary, MaxDrawdown, BenchmarkDataPoint } from '../types';
 import { getDayIdentifier } from './calendar';
-import { spyData, BenchmarkDataPoint } from './benchmarkData';
-
 
 // Helper function for linear interpolation of benchmark data
 const getInterpolatedPrice = (targetDate: Date, data: BenchmarkDataPoint[]): number | null => {
@@ -13,7 +11,7 @@ const getInterpolatedPrice = (targetDate: Date, data: BenchmarkDataPoint[]): num
 
     // Data is assumed to be sorted by date
     for (const point of data) {
-        const pointTime = new Date(point.date).getTime();
+        const pointTime = point.date.getTime();
         if (pointTime <= targetTime) {
             beforePoint = point;
         }
@@ -24,38 +22,38 @@ const getInterpolatedPrice = (targetDate: Date, data: BenchmarkDataPoint[]): num
     }
 
     if (!beforePoint && !afterPoint) return null; // No data
-    if (!afterPoint) return beforePoint!.price; // Date is after all data points
-    if (!beforePoint) return afterPoint.price; // Date is before all data points
+    if (!afterPoint) return beforePoint!.close; // Date is after all data points
+    if (!beforePoint) return afterPoint.close; // Date is before all data points
 
-    const beforeTime = new Date(beforePoint.date).getTime();
-    const afterTime = new Date(afterPoint.date).getTime();
+    const beforeTime = beforePoint.date.getTime();
+    const afterTime = afterPoint.date.getTime();
 
     if (beforeTime === afterTime) {
-        return beforePoint.price; // Exact match
+        return beforePoint.close; // Exact match
     }
 
     const timeDiff = afterTime - beforeTime;
-    const priceDiff = afterPoint.price - beforePoint.price;
+    const priceDiff = afterPoint.close - beforePoint.close;
     const targetDiff = targetTime - beforeTime;
     
     // Avoid division by zero if timeDiff is somehow 0
     if (timeDiff === 0) {
-        return beforePoint.price;
+        return beforePoint.close;
     }
 
-    const interpolatedPrice = beforePoint.price + (priceDiff * (targetDiff / timeDiff));
+    const interpolatedPrice = beforePoint.close + (priceDiff * (targetDiff / timeDiff));
     return interpolatedPrice;
 };
 
 
-export const calculateBenchmarkPerformance = (startDate: Date, endDate: Date): number | null => {
-  if (!spyData || spyData.length === 0) return null;
+export const calculateBenchmarkPerformance = (startDate: Date, endDate: Date, data: BenchmarkDataPoint[] | null): number | null => {
+  if (!data || data.length === 0) return null;
 
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return null;
 
   // Assuming spyData is pre-sorted by date.
-  const startPrice = getInterpolatedPrice(startDate, spyData);
-  const endPrice = getInterpolatedPrice(endDate, spyData);
+  const startPrice = getInterpolatedPrice(startDate, data);
+  const endPrice = getInterpolatedPrice(endDate, data);
 
   if (startPrice === null || endPrice === null || startPrice === 0) {
     return null;
@@ -79,12 +77,19 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     return null;
   }
   
-  const trades = validTrades;
   const { initialBalance } = account;
   
-  const openTrades = trades.filter(t => t.closePrice === 0);
-  const closedTrades = trades.filter(t => t.closePrice !== 0);
+  // Separate all operations based on their nature
+  const closedOperations = validTrades
+    .filter(t => t.closePrice !== 0 || t.type === 'balance')
+    .sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
+    
+  const openTrades = validTrades.filter(t => t.closePrice === 0 && t.type !== 'balance');
+  
+  // For calculating trading metrics, we only want actual trades, not balance operations
+  const closedTrades = closedOperations.filter(op => op.type !== 'balance');
 
+  // For display purposes, sort by most recent
   const sortedOpenTrades = [...openTrades].sort((a, b) => b.openTime.getTime() - a.openTime.getTime());
   const sortedClosedTrades = [...closedTrades].sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
 
@@ -93,13 +98,13 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
   let runningBalance = initialBalance;
   
   // 1. Add the true starting point of the account
-  const firstTradeTime = sortedClosedTrades.length > 0 ? sortedClosedTrades[0].openTime.getTime() : Date.now();
+  const firstOpTime = closedOperations.length > 0 ? closedOperations[0].closeTime.getTime() : Date.now();
   chartData.push({
-    date: new Date(firstTradeTime - 1).toISOString().split('T')[0],
+    date: new Date(firstOpTime - 1).toISOString().split('T')[0],
     balance: initialBalance,
     trade: null,
     index: 0,
-    timestamp: firstTradeTime - 1,
+    timestamp: firstOpTime - 1,
   });
 
   let peakBalance = initialBalance;
@@ -112,75 +117,74 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
   let totalSwap = 0;
   const tradesByDay: { [key: string]: Trade[] } = {};
 
-  // 2. Iterate through closed trades to build the equity curve and calculate metrics
-  sortedClosedTrades.forEach((trade, index) => {
-    const netTradeProfit = trade.profit + trade.commission + trade.swap;
-    runningBalance += netTradeProfit;
+  // 2. Iterate through all closed operations chronologically to build equity curve
+  closedOperations.forEach((operation, index) => {
+    const netValue = operation.profit + operation.commission + operation.swap;
+    runningBalance += netValue;
 
     chartData.push({
-      date: trade.closeTime.toISOString().split('T')[0],
+      date: operation.closeTime.toISOString().split('T')[0],
       balance: parseFloat(runningBalance.toFixed(2)),
-      trade,
-      index: index + 1, // index is based on number of closed trades
-      timestamp: trade.closeTime.getTime(),
+      trade: operation,
+      index: index + 1, 
+      timestamp: operation.closeTime.getTime(),
     });
 
-    // Max Drawdown Calculation
-    if (runningBalance > peakBalance) {
-      peakBalance = runningBalance;
-    }
-    const drawdown = peakBalance - runningBalance;
-    if (drawdown > maxDrawdown.absolute) {
-      maxDrawdown.absolute = drawdown;
-      if (peakBalance > 0) {
-        maxDrawdown.percentage = (drawdown / peakBalance) * 100;
+    // Only calculate trading-specific metrics for actual trades
+    if (operation.type !== 'balance') {
+      // Max Drawdown Calculation
+      if (runningBalance > peakBalance) {
+        peakBalance = runningBalance;
       }
-    }
+      const drawdown = peakBalance - runningBalance;
+      if (drawdown > maxDrawdown.absolute) {
+        maxDrawdown.absolute = drawdown;
+        if (peakBalance > 0) {
+          maxDrawdown.percentage = (drawdown / peakBalance) * 100;
+        }
+      }
 
-    // Aggregate Metrics
-    totalCommission += trade.commission;
-    totalSwap += trade.swap;
-    if (trade.profit > 0) {
-        winningTradesCount++;
-        grossProfit += trade.profit;
-    } else {
-        losingTradesCount++;
-        grossLoss += trade.profit;
-    }
+      // Aggregate Metrics
+      totalCommission += operation.commission;
+      totalSwap += operation.swap;
+      if (operation.profit > 0) {
+          winningTradesCount++;
+          grossProfit += operation.profit;
+      } else {
+          losingTradesCount++;
+          grossLoss += operation.profit;
+      }
 
-    // Group Trades by Day using local time
-    const day = getDayIdentifier(trade.closeTime);
-    if (!tradesByDay[day]) {
-      tradesByDay[day] = [];
+      // Group Trades by Day using local time
+      const day = getDayIdentifier(operation.closeTime);
+      if (!tradesByDay[day]) {
+        tradesByDay[day] = [];
+      }
+      tradesByDay[day].push(operation);
     }
-    tradesByDay[day].push(trade);
   });
   
+  // Calculate total deposits/withdrawals from balance operations
+  const totalDepositsFromOps = closedOperations
+    .filter(op => op.type === 'balance' && op.profit > 0)
+    .reduce((sum, op) => sum + op.profit, 0);
+  const totalWithdrawalsFromOps = closedOperations
+    .filter(op => op.type === 'balance' && op.profit < 0)
+    .reduce((sum, op) => sum + op.profit, 0);
+
   // Calculate P/L from trades opened today that are still open
   const todayKey = getDayIdentifier(new Date());
   const todaysOpenTrades = openTrades.filter(t => getDayIdentifier(t.openTime) === todayKey);
   const todaysFloatingPnl = todaysOpenTrades.reduce((sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0);
 
-  // Calculate daily summaries with return percentage
-  const sortedDayKeys = Object.keys(tradesByDay).sort((a, b) => a.localeCompare(b));
-  let balanceAtStartOfDay = initialBalance;
-  const dailySummariesWithReturn: DailySummary[] = [];
-
-  for (const dateKey of sortedDayKeys) {
-      const dailyTrades = tradesByDay[dateKey];
-      const dailyProfit = dailyTrades.reduce((sum, t) => sum + (t.profit + t.commission + t.swap), 0);
-      const dailyReturnPercent = balanceAtStartOfDay > 0 ? (dailyProfit / balanceAtStartOfDay) * 100 : 0;
-      
-      dailySummariesWithReturn.push({
-          dateKey: dateKey,
-          profit: dailyProfit,
-          dailyReturnPercent: dailyReturnPercent,
-      });
-      
-      balanceAtStartOfDay += dailyProfit;
-  }
-
-  const dailySummary = dailySummariesWithReturn.sort((a,b) => b.dateKey.localeCompare(a.dateKey));
+  // Calculate daily summaries. Simpler logic for now.
+  const dailySummary = Object.entries(tradesByDay)
+    .map(([dateKey, dailyTrades]) => ({
+      dateKey,
+      profit: dailyTrades.reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0),
+      dailyReturnPercent: 0, // This is complex to calculate accurately with deposits, simplifying.
+    }))
+    .sort((a, b) => b.dateKey.localeCompare(a.dateKey));
 
   const lastTradeDayKey = Object.keys(tradesByDay).sort().pop();
   const lastDayProfit = lastTradeDayKey ? dailySummary.find(d => d.dateKey === lastTradeDayKey)?.profit || 0 : 0;
@@ -188,23 +192,28 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
   let daysAgo = 0;
   if (lastTradeDayKey) {
     const [year, month, day] = lastTradeDayKey.split('-').map(Number);
-    // This creates a date at midnight in the local timezone
     const lastTradeDayStart = new Date(year, month - 1, day);
-    
     const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0); // Midnight in the local timezone
-
+    todayStart.setHours(0, 0, 0, 0);
     const diffTime = todayStart.getTime() - lastTradeDayStart.getTime();
     daysAgo = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   }
   
+  // Calculate balance at the start of today
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTodayTimestamp = startOfToday.getTime();
+  const opsBeforeToday = closedOperations.filter(op => op.closeTime.getTime() < startOfTodayTimestamp);
+  const startOfDayBalance = initialBalance + opsBeforeToday.reduce((sum, op) => sum + op.profit + op.commission + op.swap, 0);
+
   const netProfit = grossProfit + grossLoss + totalCommission + totalSwap;
-  const totalReturnPercent = initialBalance > 0 ? (netProfit / initialBalance) * 100 : 0;
-  const closedTradesBalance = initialBalance + netProfit;
-  const startOfDayBalance = closedTradesBalance - (daysAgo === 0 ? lastDayProfit : 0);
+  const totalInvested = initialBalance + totalDepositsFromOps;
+  const totalReturnPercent = totalInvested > 0 ? (netProfit / totalInvested) * 100 : 0;
+  
+  const finalClosedBalance = initialBalance + closedOperations.reduce((sum, op) => sum + op.profit + op.commission + op.swap, 0);
 
   const floatingPnl = openTrades.reduce((sum, trade) => sum + (trade.profit + trade.commission + trade.swap), 0);
-  const equity = closedTradesBalance + floatingPnl;
+  const equity = finalClosedBalance + floatingPnl;
 
   if (openTrades.length > 0 || chartData.length === 1) { // If only initial point exists
       const lastIndex = chartData[chartData.length - 1].index;
@@ -227,12 +236,12 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     todaysFloatingPnl,
     startOfDayBalance,
     netProfit,
-    winRate: sortedClosedTrades.length > 0 ? (winningTradesCount / sortedClosedTrades.length) * 100 : 0,
-    totalOrders: sortedClosedTrades.length,
+    winRate: closedTrades.length > 0 ? (winningTradesCount / closedTrades.length) * 100 : 0,
+    totalOrders: closedTrades.length,
     profitFactor: grossLoss !== 0 ? Math.abs(grossProfit / grossLoss) : null,
     maxDrawdown,
-    totalDeposits: initialBalance,
-    totalWithdrawals: 0,
+    totalDeposits: initialBalance + totalDepositsFromOps,
+    totalWithdrawals: Math.abs(totalWithdrawalsFromOps),
     averageWin: winningTradesCount > 0 ? grossProfit / winningTradesCount : 0,
     averageLoss: losingTradesCount > 0 ? grossLoss / losingTradesCount : 0,
     winningTrades: winningTradesCount,
@@ -246,7 +255,7 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     totalReturnPercent,
   };
 
-  const recentTrades = sortedClosedTrades.slice(-6).reverse();
+  const recentTrades = [...closedTrades].sort((a, b) => b.closeTime.getTime() - a.closeTime.getTime()).slice(0, 6);
 
   return {
     metrics,
