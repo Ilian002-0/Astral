@@ -187,7 +187,21 @@
     "data_privacy": "Your data is stored locally on your device.",
     "update_title": "Application Update",
     "update_description": "Force the application to check for the latest version.",
-    "update_button": "Check for Updates"
+    "update_button": "Check for Updates",
+    "notifications_title": "Notifications",
+    "notifications_description": "Manage background notifications for your accounts.",
+    "enable_notifications": "Enable Notifications",
+    "notifications_denied": "Notifications are blocked. Please enable them in your browser settings.",
+    "trade_closed_notifications": "Trade Closed Alerts",
+    "weekly_summary_notifications": "Weekly Summary",
+    "notification_center_title": "Notification Center",
+    "no_notifications": "You have no new notifications.",
+    "clear_all": "Clear All",
+    "benchmark_title": "Benchmark Settings",
+    "benchmark_description": "Provide a link to a published Google Sheet with S&P 500 data to compare performance.",
+    "benchmark_placeholder": "Google Sheet CSV URL",
+    "benchmark_save": "Save URL",
+    "benchmark_helper": "Required columns: Date (YYYY-MM-DD), Open, Close. The app will use the 'Close' price."
   },
   "analysis": {
     "title": "Advanced Analysis",

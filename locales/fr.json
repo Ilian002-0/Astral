@@ -187,7 +187,21 @@
     "data_privacy": "Vos données sont stockées localement sur votre appareil.",
     "update_title": "Mise à jour de l'application",
     "update_description": "Forcer l'application à rechercher la dernière version.",
-    "update_button": "Vérifier les mises à jour"
+    "update_button": "Vérifier les mises à jour",
+    "notifications_title": "Notifications",
+    "notifications_description": "Gérez les notifications en arrière-plan pour vos comptes.",
+    "enable_notifications": "Activer les Notifications",
+    "notifications_denied": "Les notifications sont bloquées. Veuillez les activer dans les paramètres de votre navigateur.",
+    "trade_closed_notifications": "Alertes de Trade Clôturé",
+    "weekly_summary_notifications": "Résumé Hebdomadaire",
+    "notification_center_title": "Centre de Notifications",
+    "no_notifications": "Vous n'avez aucune nouvelle notification.",
+    "clear_all": "Tout effacer",
+    "benchmark_title": "Paramètres du Benchmark",
+    "benchmark_description": "Fournissez un lien vers une feuille Google Sheet publiée avec les données du S&P 500 pour comparer les performances.",
+    "benchmark_placeholder": "URL du CSV de Google Sheet",
+    "benchmark_save": "Enregistrer l'URL",
+    "benchmark_helper": "Colonnes requises : Date (AAAA-MM-JJ), Open, Close. L'application utilisera le prix 'Close'."
   },
   "analysis": {
     "title": "Analyse Avancée",
