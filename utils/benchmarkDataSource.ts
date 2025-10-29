@@ -31,7 +31,7 @@ export const fetchBenchmarkData = async (url: string): Promise<BenchmarkDataPoin
         const month = parseInt(dateParts[1], 10) - 1;
         const day = parseInt(dateParts[2], 10);
 
-        const date = new Date(year, month, day);
+        const date = new Date(Date.UTC(year, month, day));
         const close = parseFloat(closeStr);
 
         if (!isNaN(date.getTime()) && !isNaN(close)) {

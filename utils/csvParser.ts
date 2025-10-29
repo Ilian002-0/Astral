@@ -95,5 +95,5 @@ export const parseCSV = (content: string): Trade[] => {
         profit: profit,
         comment: colMap['comment'] !== undefined ? getCleanString(colMap['comment']) : ''
       };
-    }).filter((trade): trade is Trade => trade !== null && !isNaN(trade.ticket) && trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime()) && trade.closeTime.getTime() !== 0);
+    }).filter((trade): trade is Trade => trade !== null && !isNaN(trade.ticket) && trade.openTime instanceof Date && !isNaN(trade.openTime.getTime()) && trade.openTime.getTime() !== 0 && trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime()) && trade.closeTime.getTime() !== 0);
   };

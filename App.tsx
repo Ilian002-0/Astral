@@ -258,14 +258,22 @@ const App: React.FC = () => {
 
 
     const benchmarkReturn = useMemo(() => {
-        if (!processedData || processedData.closedTrades.length < 2 || !benchmarkData) return null;
-        // processedData.closedTrades is sorted from newest to oldest (reverse chronological)
-        const lastTrade = processedData.closedTrades[0]; // Newest trade
-        const firstTrade = processedData.closedTrades[processedData.closedTrades.length - 1]; // Oldest trade
+        if (!processedData || processedData.closedTrades.length === 0 || !benchmarkData || benchmarkData.length === 0) {
+            return null;
+        }
 
-        const firstTradeDate = firstTrade.openTime;
-        const lastTradeDate = lastTrade.closeTime;
-        return calculateBenchmarkPerformance(firstTradeDate, lastTradeDate, benchmarkData);
+        // Find the earliest open time among all closed trades to set the start date for the comparison.
+        const firstTradeDate = new Date(Math.min(...processedData.closedTrades.map(t => t.openTime.getTime())));
+
+        // The end date for the comparison is the date of the last available data point in the benchmark sheet.
+        const lastBenchmarkDate = benchmarkData[benchmarkData.length - 1].date;
+        
+        // Ensure the date is valid before calculation
+        if (isNaN(firstTradeDate.getTime())) {
+            return null;
+        }
+
+        return calculateBenchmarkPerformance(firstTradeDate, lastBenchmarkDate, benchmarkData);
     }, [processedData, benchmarkData]);
     
     const hasRunInitialSync = useRef(false);
