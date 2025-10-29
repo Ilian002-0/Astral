@@ -40,6 +40,8 @@ const MemoizedAnalysisView = React.memo(AnalysisView);
 const MemoizedGoalsView = React.memo(GoalsView);
 const MemoizedProfileView = React.memo(ProfileView);
 
+const BENCHMARK_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHPLbiDexkq2W-IO8g-HRlu-4QDrnzR8Y3QZ4P26-OsJyqvZdB4yDO12i-cTMuVvKb9c_3ACKu8ngY/pub?output=csv';
+
 const SyncIcon: React.FC<{ isSyncing?: boolean }> = ({ isSyncing }) => (
 <svg
   xmlns="http://www.w3.org/2000/svg"
@@ -78,7 +80,6 @@ const App: React.FC = () => {
     const { data: currentAccountName, setData: setCurrentAccountName, isLoading: isLoadingCurrentAccount } = useDBStorage<string | null>('current_account_v1', null);
     const { data: notificationSettings, setData: setNotificationSettings } = useDBStorage<NotificationSettings>('notification_settings', { tradeClosed: true, weeklySummary: true });
     const { data: notificationHistory, setData: setNotificationHistory } = useDBStorage<NotificationItem[]>('notification_history', []);
-    const { data: benchmarkUrl } = useDBStorage<string>('benchmark_url_v1', '');
     
     const [isAddAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [isAccountActionModalOpen, setAccountActionModalOpen] = useState(false);
@@ -243,27 +244,27 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (benchmarkUrl) {
-            fetchBenchmarkData(benchmarkUrl)
-                .then(data => {
-                    setBenchmarkData(data);
-                    if (error?.includes('benchmark')) setError(null);
-                })
-                .catch(err => {
-                    console.error("Failed to fetch benchmark data:", err);
-                    setError("Failed to fetch benchmark data. Using fallback. Check URL and format in Profile.");
-                    setBenchmarkData(fallbackBenchmarkData); // Fallback on error
-                });
-        } else {
-            setBenchmarkData(fallbackBenchmarkData);
-        }
-    }, [benchmarkUrl, fallbackBenchmarkData, error]);
+        fetchBenchmarkData(BENCHMARK_URL)
+            .then(data => {
+                setBenchmarkData(data);
+                if (error?.includes('benchmark')) setError(null);
+            })
+            .catch(err => {
+                console.error("Failed to fetch benchmark data:", err);
+                setError("Failed to fetch live benchmark data. Using static fallback data.");
+                setBenchmarkData(fallbackBenchmarkData); // Fallback on error
+            });
+    }, [fallbackBenchmarkData, error]);
 
 
     const benchmarkReturn = useMemo(() => {
         if (!processedData || processedData.closedTrades.length < 2 || !benchmarkData) return null;
-        const firstTradeDate = processedData.closedTrades[0].openTime;
-        const lastTradeDate = processedData.closedTrades[processedData.closedTrades.length - 1].closeTime;
+        // processedData.closedTrades is sorted from newest to oldest (reverse chronological)
+        const lastTrade = processedData.closedTrades[0]; // Newest trade
+        const firstTrade = processedData.closedTrades[processedData.closedTrades.length - 1]; // Oldest trade
+
+        const firstTradeDate = firstTrade.openTime;
+        const lastTradeDate = lastTrade.closeTime;
         return calculateBenchmarkPerformance(firstTradeDate, lastTradeDate, benchmarkData);
     }, [processedData, benchmarkData]);
     

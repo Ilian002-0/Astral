@@ -196,12 +196,7 @@
     "weekly_summary_notifications": "Weekly Summary",
     "notification_center_title": "Notification Center",
     "no_notifications": "You have no new notifications.",
-    "clear_all": "Clear All",
-    "benchmark_title": "Benchmark Settings",
-    "benchmark_description": "Provide a link to a published Google Sheet with S&P 500 data to compare performance.",
-    "benchmark_placeholder": "Google Sheet CSV URL",
-    "benchmark_save": "Save URL",
-    "benchmark_helper": "Required columns: Date (YYYY-MM-DD), Open, Close. The app will use the 'Close' price."
+    "clear_all": "Clear All"
   },
   "analysis": {
     "title": "Advanced Analysis",
@@ -240,11 +235,11 @@
     "drawdown_target_label": "Drawdown Limit"
   },
   "benchmark": {
-    "title": "Performance vs. Benchmark (SPY)",
+    "title": "Performance vs. Benchmark (SP500)",
     "your_return": "Your Return",
-    "spy_return": "SPY Return",
+    "benchmark_return": "SP500 Return",
     "outperformance": "Outperformance",
     "your_performance": "Your Performance",
-    "spy_performance": "SPY Performance"
+    "benchmark_performance": "SP500 Performance"
   }
 }

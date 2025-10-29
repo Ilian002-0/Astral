@@ -57,12 +57,12 @@ const BenchmarkComparison: React.FC<BenchmarkComparisonProps> = ({ userReturn, b
             <h3 className="text-lg font-semibold text-white mb-4 text-center">{t('benchmark.title')}</h3>
             <div className="grid grid-cols-3 gap-4 mb-6 border-b border-t border-gray-700/50 py-4">
                 <Stat label={t('benchmark.your_return')} value={`${userReturn.toFixed(2)}%`} color={userReturnColor} />
-                <Stat label={t('benchmark.spy_return')} value={`${benchmarkReturn.toFixed(2)}%`} color={benchmarkReturnColor} />
+                <Stat label={t('benchmark.benchmark_return')} value={`${benchmarkReturn.toFixed(2)}%`} color={benchmarkReturnColor} />
                 <Stat label={t('benchmark.outperformance')} value={`${outperformance > 0 ? '+' : ''}${outperformance.toFixed(2)}%`} color={outperformanceColor} />
             </div>
             <div className="space-y-4">
                 <Bar value={userReturn} scale={scale} color="bg-cyan-500" label={t('benchmark.your_performance')} />
-                <Bar value={benchmarkReturn} scale={scale} color="bg-gray-500" label={t('benchmark.spy_performance')} />
+                <Bar value={benchmarkReturn} scale={scale} color="bg-gray-500" label={t('benchmark.benchmark_performance')} />
             </div>
         </div>
     );
