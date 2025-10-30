@@ -6,9 +6,10 @@ const hapticPatterns: Record<HapticType, number | number[]> = {
     light: 10,
     medium: 40,
     heavy: 70,
-    success: [20, 50, 20],
-    warning: [50, 30, 80],
-    error: [80, 50, 80]
+    // Simplified patterns for broader Android compatibility
+    success: 50,
+    warning: [50, 30],
+    error: [80, 50]
 };
 
 

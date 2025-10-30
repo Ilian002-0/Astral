@@ -1,4 +1,4 @@
-const CACHE_NAME = 'atlas-cache-v14';
+const CACHE_NAME = 'atlas-cache-v15';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -373,7 +373,7 @@ async function handleWidgetData() {
         const currentAccountName = deepParse(currentAccountNameStr);
         const accounts = deepParse(accountsStr);
 
-        if (!currentAccountName || !accounts || accounts.length === 0) {
+        if (!currentAccountName || !Array.isArray(accounts) || accounts.length === 0) {
             return new Response(JSON.stringify({ goalTitle: "No Account Selected" }), { headers: { 'Content-Type': 'application/json' } });
         }
         
