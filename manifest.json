@@ -22,6 +22,11 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
+    },
+    {
+      "src": "https://i.imgur.com/zW6T5bB.png",
+      "sizes": "any",
+      "purpose": "monochrome"
     }
   ],
   "shortcuts": [
@@ -65,6 +70,17 @@
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
+  "widgets": [
+    {
+      "name": "Atlas Goal Progress",
+      "short_name": "Goal",
+      "description": "Track your main trading goal progress.",
+      "tag": "goal-progress-widget",
+      "template": "goal-widget-template",
+      "data": "/widget-goal-data.json",
+      "icons": [{ "src": "https://i.imgur.com/zW6T5bB.png", "sizes": "any" }]
+    }
+  ],
   "window_controls_overlay": {
     "display_override": [
       "window-controls-overlay"

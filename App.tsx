@@ -9,6 +9,7 @@ import usePullToRefresh from './hooks/usePullToRefresh';
 import { useLanguage } from './contexts/LanguageContext';
 import { fetchBenchmarkData } from './utils/benchmarkDataSource';
 import { spyData as staticSpyData } from './utils/benchmarkData';
+import { triggerHaptic } from './utils/haptics';
 
 
 // Components
@@ -94,6 +95,8 @@ const App: React.FC = () => {
 
     const [installPrompt, setInstallPrompt] = useState<any>(null);
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
+    const [transitioningDay, setTransitioningDay] = useState<string | null>(null);
+
     const [launchedFileContent, setLaunchedFileContent] = useState<{trades: Trade[], fileName: string} | null>(null);
     const [benchmarkData, setBenchmarkData] = useState<BenchmarkDataPoint[] | null>(null);
 
@@ -304,8 +307,10 @@ const App: React.FC = () => {
                 const newAccount: Account = { ...accountData, trades: sortedTrades, goals: {}, lastUpdated: new Date().toISOString() };
                 const newAccounts = [...prevAccounts, newAccount];
                 setCurrentAccountName(newAccount.name);
+                triggerHaptic('success');
                 return newAccounts;
             } else { // 'update'
+                triggerHaptic('success');
                 return prevAccounts.map(acc => {
                     if (acc.name === accountData.name) {
                         let updatedTrades = acc.trades;
@@ -335,6 +340,7 @@ const App: React.FC = () => {
         if (!currentAccountName) return;
         setAccounts(prev => prev.filter(acc => acc.name !== currentAccountName));
         setDeleteConfirmModalOpen(false);
+        triggerHaptic('heavy');
     }, [currentAccountName, setAccounts]);
 
     const handleOpenAccountActions = () => setAccountActionModalOpen(true);
@@ -345,7 +351,41 @@ const App: React.FC = () => {
     const saveGoals = useCallback((goals: Goals) => {
         if (!currentAccountName) return;
         setAccounts(prev => prev.map(acc => acc.name === currentAccountName ? { ...acc, goals } : acc));
+        triggerHaptic('success');
     }, [currentAccountName, setAccounts]);
+
+    // --- View Transition Handlers for Calendar Modal ---
+    const handleDayClick = (date: Date) => {
+        // @ts-ignore
+        if (!document.startViewTransition) {
+            setSelectedCalendarDate(date);
+            return;
+        }
+        const dayId = getDayIdentifier(date);
+        setTransitioningDay(dayId);
+        // @ts-ignore
+        document.startViewTransition(() => {
+            setSelectedCalendarDate(date);
+        });
+    };
+    
+    const handleCloseDayModal = () => {
+        // @ts-ignore
+        if (!document.startViewTransition) {
+            setSelectedCalendarDate(null);
+            setTransitioningDay(null);
+            return;
+        }
+        // @ts-ignore
+        const transition = document.startViewTransition(() => {
+            setSelectedCalendarDate(null);
+        });
+
+        // Using .then() for wider compatibility, as .finally() was causing errors in some environments.
+        transition.finished.then(() => {
+            setTransitioningDay(null);
+        });
+    };
     
     const dayDetailModalData = useMemo(() => {
         if (!selectedCalendarDate || !processedData) return null;
@@ -410,7 +450,7 @@ const App: React.FC = () => {
                     </div>
                 );
             case 'trades': return <MemoizedTradesList trades={processedData.closedTrades} currency={currentAccount.currency || 'USD'} />;
-            case 'calendar': return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={setSelectedCalendarDate} currency={currentAccount.currency || 'USD'} />;
+            case 'calendar': return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={handleDayClick} currency={currentAccount.currency || 'USD'} transitioningDay={transitioningDay} />;
             case 'analysis': return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} currency={currentAccount.currency || 'USD'} />;
             case 'goals': return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} currency={currentAccount.currency || 'USD'} />;
             case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} notificationSettings={notificationSettings} onNotificationSettingsChange={setNotificationSettings} notificationHistory={notificationHistory} onClearNotifications={() => setNotificationHistory([])}/>;
@@ -486,15 +526,18 @@ const App: React.FC = () => {
             </div>
             {!isDesktop && <BottomNav currentView={view} onNavigate={setView} />}
 
-            <AddAccountModal 
-                isOpen={isAddAccountModalOpen} 
-                onClose={() => setAddAccountModalOpen(false)}
-                onSaveAccount={saveAccount}
-                mode={modalMode}
-                accountToUpdate={currentAccount}
-                launchedFileContent={launchedFileContent}
-                onLaunchedFileConsumed={() => setLaunchedFileContent(null)}
-            />
+            {isAddAccountModalOpen && (
+                <AddAccountModal 
+                    isOpen={isAddAccountModalOpen}
+                    onClose={() => setAddAccountModalOpen(false)} 
+                    onSaveAccount={saveAccount}
+                    mode={modalMode}
+                    accountToUpdate={currentAccount}
+                    launchedFileContent={launchedFileContent}
+                    onLaunchedFileConsumed={() => setLaunchedFileContent(null)}
+                />
+            )}
+            
             <AccountActionModal
                 isOpen={isAccountActionModalOpen}
                 onClose={() => setAccountActionModalOpen(false)}
@@ -504,24 +547,29 @@ const App: React.FC = () => {
                 canUpdate={!!currentAccount}
                 canDelete={!!currentAccount}
             />
-            <DeleteConfirmationModal
-                isOpen={isDeleteConfirmModalOpen}
-                onClose={() => setDeleteConfirmModalOpen(false)}
-                onConfirm={deleteAccount}
-                accountName={currentAccount?.name || ''}
-            />
+
             {dayDetailModalData && (
-                <DayDetailModal
+                 <DayDetailModal 
                     isOpen={!!selectedCalendarDate}
-                    onClose={() => setSelectedCalendarDate(null)}
+                    onClose={handleCloseDayModal}
                     trades={dayDetailModalData.trades}
                     date={dayDetailModalData.date}
                     startOfDayBalance={dayDetailModalData.startOfDayBalance}
                     currency={currentAccount?.currency || 'USD'}
+                    transitioningDay={transitioningDay}
+                 />
+            )}
+            
+            {isDeleteConfirmModalOpen && (
+                <DeleteConfirmationModal
+                    isOpen={isDeleteConfirmModalOpen}
+                    onClose={() => setDeleteConfirmModalOpen(false)}
+                    onConfirm={deleteAccount}
+                    accountName={currentAccountName || ''}
                 />
             )}
         </>
     );
-};
+}
 
 export default App;

@@ -1,5 +1,7 @@
 
+
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { triggerHaptic } from '../utils/haptics';
 
 const PULL_THRESHOLD = 80; // Pixels to pull down before refresh is triggered
 
@@ -38,6 +40,7 @@ const usePullToRefresh = (onRefresh: () => void) => {
             try {
                 // Await the refresh action passed to the hook
                 await onRefresh();
+                triggerHaptic('light');
             } finally {
                 // Ensure refreshing state is turned off even if the refresh fails
                 setIsRefreshing(false);

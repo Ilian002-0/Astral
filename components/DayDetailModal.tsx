@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Trade } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
+import { getDayIdentifier } from '../utils/calendar';
 
 interface DayDetailModalProps {
     isOpen: boolean;
@@ -10,6 +11,7 @@ interface DayDetailModalProps {
     date: Date;
     startOfDayBalance: number;
     currency: 'USD' | 'EUR';
+    transitioningDay: string | null;
 }
 
 const StatCard: React.FC<{ title: string; value: string; colorClass?: string; }> = ({ title, value, colorClass = 'text-white' }) => {
@@ -21,7 +23,7 @@ const StatCard: React.FC<{ title: string; value: string; colorClass?: string; }>
     );
 };
 
-const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades, date, startOfDayBalance, currency }) => {
+const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades, date, startOfDayBalance, currency, transitioningDay }) => {
     const { t, language } = useLanguage();
     useLockBodyScroll(isOpen);
 
@@ -79,12 +81,18 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose, trades
 
     const netProfitColor = dailyStats.netProfit >= 0 ? 'text-green-400' : 'text-red-400';
     const formattedDate = date.toLocaleString(language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const isTransitioning = getDayIdentifier(date) === transitioningDay;
+    const transitionName = isTransitioning ? `day-card-active` : '';
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 animate-fade-in-fast" onClick={onClose}>
             <div 
-                className="w-full max-w-2xl p-4 sm:p-6 bg-[#16152c] border border-gray-700/50 rounded-2xl shadow-2xl animate-fade-in-scale-up max-h-[90vh] flex flex-col" 
+                className="w-full max-w-2xl p-4 sm:p-6 bg-[#16152c] border border-gray-700/50 rounded-2xl shadow-2xl animate-fade-in-scale-up max-h-[90vh] flex flex-col day-detail-modal-root" 
                 onClick={e => e.stopPropagation()}
+                style={{ 
+                    // @ts-ignore
+                    viewTransitionName: transitionName
+                }}
             >
                 <header className="flex justify-between items-center mb-4 pb-4 border-b border-gray-700">
                     <h2 className="text-modal-title font-bold text-white">

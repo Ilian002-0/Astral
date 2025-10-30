@@ -1,4 +1,4 @@
-const CACHE_NAME = 'atlas-cache-v13';
+const CACHE_NAME = 'atlas-cache-v14';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -8,11 +8,12 @@ const ASSETS_TO_CACHE = [
     'https://i.imgur.com/gA2QYp9.png', // 192x192
     'https://i.imgur.com/pB3S7Lq.png', // 512x512
     'https://i.imgur.com/s4f3z2g.png', // 512x512 maskable
+    'https://i.imgur.com/zW6T5bB.png', // Goals/Widget Icon
     // Shortcut icons from manifest
-    'https://i.imgur.com/rS2Xw9L.png',
-    'https://i.imgur.com/dK7E8fM.png',
-    'https://i.imgur.com/fG3H2jJ.png',
-    'https://i.imgur.com/zW6T5bB.png',
+    '/dashboard-icon.svg',
+    '/list-icon.svg',
+    '/calendar-icon.svg',
+    '/goals-icon.svg',
     // Locales for notifications
     '/locales/en.json',
     '/locales/fr.json',
@@ -150,6 +151,7 @@ const parseCSV_SW = (content) => {
 // --- Service Worker Lifecycle ---
 
 self.addEventListener('install', (event) => {
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS_TO_CACHE);
@@ -172,9 +174,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    if (event.request.url.startsWith('https://aistudiocdn.com') || event.request.url.startsWith('https://cdn.tailwindcss.com')) {
-        return; // Let the browser handle these requests
+    const url = new URL(event.request.url);
+
+    // Handle widget-specific requests first
+    if (url.pathname === '/goal-widget-template') {
+        event.respondWith(handleWidgetTemplate());
+        return;
     }
+    if (url.pathname === '/widget-goal-data.json') {
+        event.respondWith(handleWidgetData());
+        return;
+    }
+    
+    // Ignore external assets
+    if (event.request.url.startsWith('https://aistudiocdn.com') || event.request.url.startsWith('https://cdn.tailwindcss.com')) {
+        return; 
+    }
+
     event.respondWith(
         caches.match(event.request).then((response) => {
             return response || fetch(event.request);
@@ -306,3 +322,97 @@ self.addEventListener('message', event => {
          event.waitUntil(handleWeeklySummary());
     }
 });
+
+// --- PWA WIDGETS ---
+
+const GOAL_WIDGET_TEMPLATE = {
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "${goalTitle}",
+      "size": "Medium",
+      "weight": "Bolder",
+      "horizontalAlignment": "Center"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${progressText}",
+      "size": "ExtraLarge",
+      "weight": "Bolder",
+      "horizontalAlignment": "Center",
+      "color": "${progressColor}"
+    },
+    {
+      "type": "TextBlock",
+      "text": "Current: ${currentValue}",
+      "horizontalAlignment": "Center",
+      "spacing": "None"
+    },
+    {
+      "type": "TextBlock",
+      "text": "Target: ${targetValue}",
+      "horizontalAlignment": "Center",
+      "spacing": "None"
+    }
+  ]
+};
+
+function handleWidgetTemplate() {
+    return new Response(JSON.stringify(GOAL_WIDGET_TEMPLATE), {
+        headers: { 'Content-Type': 'application/json' }
+    });
+}
+
+async function handleWidgetData() {
+    try {
+        const currentAccountNameStr = await getDBItem('current_account_v1');
+        const accountsStr = await getDBItem('trading_accounts_v1');
+        
+        const currentAccountName = deepParse(currentAccountNameStr);
+        const accounts = deepParse(accountsStr);
+
+        if (!currentAccountName || !accounts || accounts.length === 0) {
+            return new Response(JSON.stringify({ goalTitle: "No Account Selected" }), { headers: { 'Content-Type': 'application/json' } });
+        }
+        
+        const currentAccount = accounts.find(acc => acc.name === currentAccountName);
+        if (!currentAccount) {
+            return new Response(JSON.stringify({ goalTitle: "Account Not Found" }), { headers: { 'Content-Type': 'application/json' } });
+        }
+        
+        const goal = currentAccount.goals?.netProfit;
+        if (!goal || !goal.enabled) {
+            return new Response(JSON.stringify({ 
+                goalTitle: "Goal Not Set",
+                progressText: "🎯",
+                currentValue: "N/A",
+                targetValue: "N/A",
+                progressColor: "Default"
+            }), { headers: { 'Content-Type': 'application/json' } });
+        }
+        
+        // Simplified metric calculation for SW context
+        const closedTrades = currentAccount.trades.filter(op => op.type !== 'balance');
+        const netProfit = closedTrades.reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0);
+
+        const isMet = netProfit >= goal.target;
+        const progress = goal.target > 0 ? (netProfit / goal.target) * 100 : (netProfit > 0 ? 100 : 0);
+        const currencySymbol = currentAccount.currency === 'EUR' ? '€' : '$';
+        
+        const data = {
+            goalTitle: `Net Profit Goal`,
+            progressText: isMet ? "🎉 Met!" : `${Math.min(100, progress).toFixed(0)}%`,
+            currentValue: `${netProfit.toFixed(2)}${currencySymbol}`,
+            targetValue: `${goal.target.toFixed(2)}${currencySymbol}`,
+            progressColor: isMet ? "Good" : "Accent"
+        };
+        
+        return new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
+
+    } catch (error) {
+        console.error('Error generating widget data:', error);
+        return new Response(JSON.stringify({ goalTitle: "Error" }), { status: 500 });
+    }
+}

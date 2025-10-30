@@ -3,6 +3,7 @@ import { DashboardMetrics, Goals, Goal, GoalMetric } from '../types';
 import GoalCard from './GoalCard';
 import { useLanguage } from '../contexts/LanguageContext';
 import Toggle from './Toggle';
+import { triggerHaptic } from '../utils/haptics';
 
 interface GoalsViewProps {
   metrics: DashboardMetrics;
@@ -59,6 +60,7 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
     const handleSave = () => {
         onSaveGoals(editableGoals);
         setIsEditing(false);
+        triggerHaptic('success');
     };
 
     const handleCancel = () => {

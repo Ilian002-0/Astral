@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Trade, CalendarDay } from '../types';
-import { generateCalendarData } from '../utils/calendar';
+import { generateCalendarData, getDayIdentifier } from '../utils/calendar';
 import { useLanguage } from '../contexts/LanguageContext';
 import useMediaQuery from '../hooks/useMediaQuery';
 
@@ -8,6 +8,7 @@ interface CalendarViewProps {
     trades: Trade[];
     onDayClick: (date: Date) => void;
     currency: 'USD' | 'EUR';
+    transitioningDay: string | null;
 }
 
 const CalendarHeader: React.FC<{
@@ -39,9 +40,10 @@ interface CalendarDayCellProps {
     onClick: () => void;
     formatCurrency: (value: number) => string;
     index: number;
+    isTransitioning: boolean;
 }
 
-const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatCurrency, index }) => {
+const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatCurrency, index, isTransitioning }) => {
     const isToday = day.isToday && day.isCurrentMonth;
     const hasTrades = day.tradeCount > 0 && day.isCurrentMonth;
 
@@ -85,12 +87,19 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatC
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
         </svg>
     );
+    
+    const transitionName = isTransitioning ? `day-card-active` : '';
 
     return (
         <div 
             className={cellClasses} 
             onClick={day.tradeCount > 0 ? onClick : undefined}
-            style={{ animationDelay: `${index * 15}ms`, opacity: 0 }}
+            style={{ 
+                animationDelay: `${index * 15}ms`, 
+                opacity: 0,
+                // @ts-ignore
+                viewTransitionName: transitionName
+            }}
         >
             <div className={`text-xs sm:text-sm ${isToday ? 'font-bold' : 'font-semibold'} ${!day.isCurrentMonth ? 'text-gray-600' : 'text-white'}`}>
                 {day.date.getDate()}
@@ -108,7 +117,7 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatC
     );
 };
 
-const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currency }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currency, transitioningDay }) => {
     const { t, language } = useLanguage();
     const [displayDate, setDisplayDate] = useState(new Date());
 
@@ -156,7 +165,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                                 day={day} 
                                 onClick={() => onDayClick(day.date)} 
                                 formatCurrency={formatDayProfit}
-                                index={index} 
+                                index={index}
+                                isTransitioning={getDayIdentifier(day.date) === transitioningDay}
                             />
                         ))}
                     </div>
