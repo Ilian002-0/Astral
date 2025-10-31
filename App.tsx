@@ -8,7 +8,6 @@ import useMediaQuery from './hooks/useMediaQuery';
 import usePullToRefresh from './hooks/usePullToRefresh';
 import { useLanguage } from './contexts/LanguageContext';
 import { fetchBenchmarkData } from './utils/benchmarkDataSource';
-import { spyData as staticSpyData } from './utils/benchmarkData';
 import { triggerHaptic } from './utils/haptics';
 
 
@@ -239,13 +238,6 @@ const App: React.FC = () => {
         }
     }, [currentAccount]);
     
-    const fallbackBenchmarkData = useMemo(() => {
-        return staticSpyData.map(d => ({
-            date: new Date(d.date),
-            close: d.price
-        })).sort((a, b) => a.date.getTime() - b.date.getTime());
-    }, []);
-
     useEffect(() => {
         fetchBenchmarkData(BENCHMARK_URL)
             .then(data => {
@@ -254,29 +246,31 @@ const App: React.FC = () => {
             })
             .catch(err => {
                 console.error("Failed to fetch benchmark data:", err);
-                setError("Failed to fetch live benchmark data. Using static fallback data.");
-                setBenchmarkData(fallbackBenchmarkData); // Fallback on error
+                setError("Failed to fetch live benchmark data for comparison.");
+                setBenchmarkData(null); // Ensure no old data is used
             });
-    }, [fallbackBenchmarkData, error]);
+    }, [error]);
 
 
     const benchmarkReturn = useMemo(() => {
-        if (!processedData || processedData.closedTrades.length === 0 || !benchmarkData || benchmarkData.length === 0) {
+        if (!processedData || processedData.closedTrades.length < 2 || !benchmarkData || benchmarkData.length === 0) {
             return null;
         }
 
-        // Find the earliest open time among all closed trades to set the start date for the comparison.
-        const firstTradeDate = new Date(Math.min(...processedData.closedTrades.map(t => t.openTime.getTime())));
-
-        // The end date for the comparison is the date of the last available data point in the benchmark sheet.
-        const lastBenchmarkDate = benchmarkData[benchmarkData.length - 1].date;
+        // The user's trading period is defined by the open time of the first closed trade
+        // and the close time of the last closed trade.
+        const firstTradeOpenTime = Math.min(...processedData.closedTrades.map(t => t.openTime.getTime()));
+        const lastTradeCloseTime = Math.max(...processedData.closedTrades.map(t => t.closeTime.getTime()));
         
-        // Ensure the date is valid before calculation
-        if (isNaN(firstTradeDate.getTime())) {
+        const startDate = new Date(firstTradeOpenTime);
+        const endDate = new Date(lastTradeCloseTime);
+        
+        // Ensure dates are valid before calculation
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate >= endDate) {
             return null;
         }
 
-        return calculateBenchmarkPerformance(firstTradeDate, lastBenchmarkDate, benchmarkData);
+        return calculateBenchmarkPerformance(startDate, endDate, benchmarkData);
     }, [processedData, benchmarkData]);
     
     const hasRunInitialSync = useRef(false);

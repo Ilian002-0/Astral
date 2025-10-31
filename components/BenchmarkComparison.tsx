@@ -52,6 +52,9 @@ const BenchmarkComparison: React.FC<BenchmarkComparisonProps> = ({ userReturn, b
     // Scale for bar chart visualization
     const scale = Math.max(Math.abs(userReturn), Math.abs(benchmarkReturn), 10); // at least 10% scale
 
+    const userBarColor = userReturn >= 0 ? 'bg-green-500' : 'bg-red-500';
+    const benchmarkBarColor = benchmarkReturn >= 0 ? 'bg-gray-400' : 'bg-gray-600';
+
     return (
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
             <h3 className="text-lg font-semibold text-white mb-4 text-center">{t('benchmark.title')}</h3>
@@ -61,8 +64,8 @@ const BenchmarkComparison: React.FC<BenchmarkComparisonProps> = ({ userReturn, b
                 <Stat label={t('benchmark.outperformance')} value={`${outperformance > 0 ? '+' : ''}${outperformance.toFixed(2)}%`} color={outperformanceColor} />
             </div>
             <div className="space-y-4">
-                <Bar value={userReturn} scale={scale} color="bg-cyan-500" label={t('benchmark.your_performance')} />
-                <Bar value={benchmarkReturn} scale={scale} color="bg-gray-500" label={t('benchmark.benchmark_performance')} />
+                <Bar value={userReturn} scale={scale} color={userBarColor} label={t('benchmark.your_performance')} />
+                <Bar value={benchmarkReturn} scale={scale} color={benchmarkBarColor} label={t('benchmark.benchmark_performance')} />
             </div>
         </div>
     );

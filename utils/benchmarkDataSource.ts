@@ -32,7 +32,9 @@ export const fetchBenchmarkData = async (url: string): Promise<BenchmarkDataPoin
         const day = parseInt(dateParts[2], 10);
 
         const date = new Date(Date.UTC(year, month, day));
-        const close = parseFloat(closeStr);
+        // Replace comma with dot for international number format compatibility
+        const formattedCloseStr = closeStr.replace(',', '.');
+        const close = parseFloat(formattedCloseStr);
 
         if (!isNaN(date.getTime()) && !isNaN(close)) {
             dataPoints.push({ date, close });
