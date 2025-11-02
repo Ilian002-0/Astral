@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import MultiSelectDropdown from './MultiSelectDropdown';
 import FilteredTradesTable from './FilteredTradesTable';
 import useMediaQuery from '../hooks/useMediaQuery';
+import { triggerHaptic } from '../utils/haptics';
 
 interface AnalysisViewProps {
   trades: Trade[];
@@ -71,6 +72,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const chartRef = useRef<HTMLDivElement>(null);
+  const lastActiveIndex = useRef<number | null>(null);
 
   const { allSymbols, allComments, minDate, maxDate } = useMemo(() => {
     if (trades.length === 0) return { allSymbols: [], allComments: [], minDate: '', maxDate: '' };
@@ -100,6 +103,44 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     setStartDate(minDate);
     setEndDate(maxDate);
   }, [minDate, maxDate]);
+  
+  useEffect(() => {
+    const node = chartRef.current;
+    if (node && isMobile) {
+        const hideTooltip = () => {
+            const mouseLeaveEvent = new MouseEvent('mouseleave', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+            });
+            const surface = node.querySelector('.recharts-surface');
+            if (surface) {
+                surface.dispatchEvent(mouseLeaveEvent);
+            }
+        };
+
+        node.addEventListener('touchend', hideTooltip);
+        node.addEventListener('touchcancel', hideTooltip);
+        
+        return () => {
+            node.removeEventListener('touchend', hideTooltip);
+            node.removeEventListener('touchcancel', hideTooltip);
+        };
+    }
+  }, [isMobile]);
+
+  const handleChartMouseMove = (state: any) => {
+    if (isMobile && state && state.isTooltipActive) {
+        const currentIndex = state.activeLabel;
+        
+        if (currentIndex !== null && lastActiveIndex.current !== currentIndex) {
+            triggerHaptic('light');
+            lastActiveIndex.current = currentIndex;
+        }
+    } else if (!state || !state.isTooltipActive) {
+        lastActiveIndex.current = null;
+    }
+  };
 
   const filteredTrades = useMemo(() => {
     let result = trades;
@@ -224,10 +265,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
         {/* Chart */}
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
-            <div style={{ width: '100%', height: 300 }}>
+            <div style={{ width: '100%', height: 300 }} ref={chartRef}>
                 {chartData.length > 1 ? (
                 <ResponsiveContainer>
-                    <AreaChart data={chartData} margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? -10 : -30, bottom: 5 }}>
+                    <AreaChart 
+                        data={chartData} 
+                        margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? -10 : -30, bottom: 5 }}
+                        onMouseMove={handleChartMouseMove}
+                        onMouseLeave={() => (lastActiveIndex.current = null)}
+                    >
                         <defs>
                             <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/><stop offset="95%" stopColor={profitFillColor} stopOpacity={0.4}/></linearGradient>
                             <linearGradient id="lossFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/><stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/></linearGradient>

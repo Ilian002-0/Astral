@@ -143,13 +143,14 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
             }
         };
 
-        // Listen on the document to ensure we catch the event even if Recharts stops propagation
-        document.addEventListener('touchend', hideTooltip);
-        document.addEventListener('touchcancel', hideTooltip);
+        // Attach listeners directly to the chart container for better reliability on mobile.
+        node.addEventListener('touchend', hideTooltip);
+        node.addEventListener('touchcancel', hideTooltip);
         
         return () => {
-            document.removeEventListener('touchend', hideTooltip);
-            document.removeEventListener('touchcancel', hideTooltip);
+            // The `node` variable is captured in the closure, so it's available here.
+            node.removeEventListener('touchend', hideTooltip);
+            node.removeEventListener('touchcancel', hideTooltip);
         };
     }
   }, [isMobile]);
