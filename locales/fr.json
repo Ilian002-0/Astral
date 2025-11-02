@@ -196,7 +196,8 @@
     "weekly_summary_notifications": "Résumé Hebdomadaire",
     "notification_center_title": "Centre de Notifications",
     "no_notifications": "Vous n'avez aucune nouvelle notification.",
-    "clear_all": "Tout effacer"
+    "clear_all": "Tout effacer",
+    "background_sync_note": "Les notifications en arrière-plan dépendent de la fréquence de synchronisation de votre navigateur, qui peut être retardée pour économiser la batterie. La synchronisation a également lieu au démarrage de l'application."
   },
   "analysis": {
     "title": "Analyse Avancée",

@@ -170,6 +170,11 @@ self.addEventListener('activate', (event) => {
                 })
             );
         }).then(() => self.clients.claim())
+        .then(() => {
+            // Run a sync check on activation to catch up on any missed notifications
+            console.log('Service worker activated. Running sync check.');
+            return handlePeriodicSync();
+        })
     );
 });
 
@@ -315,6 +320,13 @@ self.addEventListener('periodicsync', (event) => {
         event.waitUntil(handlePeriodicSync());
     }
 });
+
+const handleWeeklySummary = async () => {
+    console.log('Weekly summary handler called. This feature is a work in progress.');
+    // In a full implementation, this would calculate the weekly performance
+    // and show a notification if the user has opted in.
+};
+
 
 // For scheduled weekly notification
 self.addEventListener('message', event => {

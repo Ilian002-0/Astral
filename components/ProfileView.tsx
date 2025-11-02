@@ -109,16 +109,21 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                     )}
 
                     {notificationPermission === 'granted' && (
-                        <div className="space-y-3 pt-2">
-                             <div className="flex items-center justify-between">
-                                <label className="text-gray-300">{t('profile.trade_closed_notifications')}</label>
-                                <Toggle enabled={notificationSettings.tradeClosed} onChange={(val) => handleSettingChange('tradeClosed', val)} />
+                        <>
+                            <div className="space-y-3 pt-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-gray-300">{t('profile.trade_closed_notifications')}</label>
+                                    <Toggle enabled={notificationSettings.tradeClosed} onChange={(val) => handleSettingChange('tradeClosed', val)} />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-gray-300">{t('profile.weekly_summary_notifications')}</label>
+                                    <Toggle enabled={notificationSettings.weeklySummary} onChange={(val) => handleSettingChange('weeklySummary', val)} />
+                                </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <label className="text-gray-300">{t('profile.weekly_summary_notifications')}</label>
-                                <Toggle enabled={notificationSettings.weeklySummary} onChange={(val) => handleSettingChange('weeklySummary', val)} />
-                            </div>
-                        </div>
+                             <p className="text-xs text-gray-500 mt-3 text-center italic">
+                                {t('profile.background_sync_note')}
+                            </p>
+                        </>
                     )}
                 </div>
                 

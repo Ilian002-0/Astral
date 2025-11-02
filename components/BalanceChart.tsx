@@ -3,6 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { ChartDataPoint, Goals } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import useMediaQuery from '../hooks/useMediaQuery';
+import { triggerHaptic } from '../utils/haptics';
 
 const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
   const { language } = useLanguage();
@@ -112,6 +113,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const chartRef = useRef<HTMLDivElement>(null);
+  const lastActiveIndex = useRef<number | null>(null);
 
   const profitGoal = goals?.netProfit;
   const drawdownGoal = goals?.maxDrawdown;
@@ -129,9 +131,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   useEffect(() => {
     const node = chartRef.current;
     if (node && isMobile) {
-        const handleTouchEnd = () => {
-            // Programmatically dispatch a mouseleave event to trick Recharts into hiding the tooltip.
-            // This is the most reliable way to reset the chart's internal tooltip state on mobile.
+        const hideTooltip = () => {
             const mouseLeaveEvent = new MouseEvent('mouseleave', {
                 view: window,
                 bubbles: true,
@@ -142,9 +142,14 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 surface.dispatchEvent(mouseLeaveEvent);
             }
         };
-        node.addEventListener('touchend', handleTouchEnd);
+
+        // Listen on the document to ensure we catch the event even if Recharts stops propagation
+        document.addEventListener('touchend', hideTooltip);
+        document.addEventListener('touchcancel', hideTooltip);
+        
         return () => {
-            node.removeEventListener('touchend', handleTouchEnd);
+            document.removeEventListener('touchend', hideTooltip);
+            document.removeEventListener('touchcancel', hideTooltip);
         };
     }
   }, [isMobile]);
@@ -159,6 +164,21 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
         compactDisplay: 'short'
     }).format(num);
   };
+  
+    const handleChartMouseMove = (state: any) => {
+        if (isMobile && state && state.isTooltipActive) {
+            // state.activeLabel corresponds to the value of the XAxis dataKey, which is 'index'
+            const currentIndex = state.activeLabel;
+            
+            if (currentIndex !== null && lastActiveIndex.current !== currentIndex) {
+                triggerHaptic('light');
+                lastActiveIndex.current = currentIndex;
+            }
+        } else if (!state || !state.isTooltipActive) {
+            // Reset when the finger leaves the chart area
+            lastActiveIndex.current = null;
+        }
+    };
 
   const timeRangeOptions: { key: TimeRange; label: string; }[] = useMemo(() => [
     { key: 'today', label: t('dashboard.time_range.today') },
@@ -324,6 +344,8 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
           <ResponsiveContainer key={timeRange}>
             <AreaChart
               data={filteredData}
+              onMouseMove={handleChartMouseMove}
+              onMouseLeave={() => (lastActiveIndex.current = null)}
               margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? -10 : -30, bottom: 5 }}
             >
               <defs>

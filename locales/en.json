@@ -196,7 +196,8 @@
     "weekly_summary_notifications": "Weekly Summary",
     "notification_center_title": "Notification Center",
     "no_notifications": "You have no new notifications.",
-    "clear_all": "Clear All"
+    "clear_all": "Clear All",
+    "background_sync_note": "Background notifications depend on your browser's sync frequency, which can be delayed to save battery. Sync also occurs when the app starts."
   },
   "analysis": {
     "title": "Advanced Analysis",
