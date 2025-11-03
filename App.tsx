@@ -254,31 +254,17 @@ const App: React.FC = () => {
 
 
     const benchmarkReturn = useMemo(() => {
+        // Ensure all necessary data is available.
         if (!processedData || processedData.closedTrades.length === 0 || !benchmarkData || benchmarkData.length === 0) {
             return null;
         }
 
-        // Determine Start Date from user's first trade
-        const firstTradeOpenTime = Math.min(...processedData.closedTrades.map(t => t.openTime.getTime()));
-        
-        // This function robustly converts a local timestamp to a YYYY-MM-DD string
-        // representing the local calendar day, which prevents timezone-related errors.
-        const getLocalDateString = (timestamp: number): string => {
-            const d = new Date(timestamp);
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
-        const startDateStr = getLocalDateString(firstTradeOpenTime);
+        // Per user request: use the closing date of the very first closed trade as the start date.
+        // Find the earliest closeTime among all closed trades.
+        const firstTradeCloseTimestamp = Math.min(...processedData.closedTrades.map(t => t.closeTime.getTime()));
+        const startDate = new Date(firstTradeCloseTimestamp);
 
-        // Create a Date object representing midnight UTC for the target local calendar day.
-        const startDate = new Date(`${startDateStr}T00:00:00.000Z`);
-
-        if (isNaN(startDate.getTime())) {
-            return null;
-        }
-
+        // Pass the precise date to the calculation utility.
         return calculateBenchmarkPerformance(startDate, benchmarkData);
     }, [processedData, benchmarkData]);
     
