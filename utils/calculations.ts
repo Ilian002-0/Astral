@@ -1,59 +1,28 @@
+
 import { Trade, Account, ProcessedData, DashboardMetrics, ChartDataPoint, DailySummary, MaxDrawdown, BenchmarkDataPoint } from '../types';
 import { getDayIdentifier } from './calendar';
 
-// Helper function for linear interpolation of benchmark data
-const getInterpolatedPrice = (targetDate: Date, data: BenchmarkDataPoint[]): number | null => {
+// Finds the closing price for the first available trading day on or after the target date.
+const findPriceOnOrAfter = (targetDate: Date, data: BenchmarkDataPoint[]): number | null => {
+    // Assumes data is sorted by date ascending
     const targetTime = targetDate.getTime();
-
-    // Find the points before and after the target date
-    let beforePoint: BenchmarkDataPoint | null = null;
-    let afterPoint: BenchmarkDataPoint | null = null;
-
-    // Data is assumed to be sorted by date
     for (const point of data) {
-        const pointTime = point.date.getTime();
-        if (pointTime <= targetTime) {
-            beforePoint = point;
-        }
-        if (pointTime >= targetTime) {
-            afterPoint = point;
-            break; 
+        if (point.date.getTime() >= targetTime) {
+            return point.close;
         }
     }
-
-    if (!beforePoint && !afterPoint) return null; // No data
-    if (!afterPoint) return beforePoint!.close; // Date is after all data points
-    if (!beforePoint) return afterPoint.close; // Date is before all data points
-
-    const beforeTime = beforePoint.date.getTime();
-    const afterTime = afterPoint.date.getTime();
-
-    if (beforeTime === afterTime) {
-        return beforePoint.close; // Exact match
-    }
-
-    const timeDiff = afterTime - beforeTime;
-    const priceDiff = afterPoint.close - beforePoint.close;
-    const targetDiff = targetTime - beforeTime;
-    
-    // Avoid division by zero if timeDiff is somehow 0
-    if (timeDiff === 0) {
-        return beforePoint.close;
-    }
-
-    const interpolatedPrice = beforePoint.close + (priceDiff * (targetDiff / timeDiff));
-    return interpolatedPrice;
+    return null; // No date found on or after
 };
 
-
-export const calculateBenchmarkPerformance = (startDate: Date, endDate: Date, data: BenchmarkDataPoint[] | null): number | null => {
+export const calculateBenchmarkPerformance = (startDate: Date, data: BenchmarkDataPoint[] | null): number | null => {
   if (!data || data.length === 0) return null;
+  if (isNaN(startDate.getTime())) return null;
 
-  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return null;
-
-  // Assuming spyData is pre-sorted by date.
-  const startPrice = getInterpolatedPrice(startDate, data);
-  const endPrice = getInterpolatedPrice(endDate, data);
+  // Find the closing price for the first available trading day on or after the start date.
+  const startPrice = findPriceOnOrAfter(startDate, data);
+  
+  // Per user request, the end price is always the last available price in the benchmark data.
+  const endPrice = data[data.length - 1].close;
 
   if (startPrice === null || endPrice === null || startPrice === 0) {
     return null;

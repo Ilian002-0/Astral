@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import useDBStorage from './hooks/useLocalStorage';
 import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, NotificationItem, BenchmarkDataPoint } from './types';
@@ -253,24 +254,32 @@ const App: React.FC = () => {
 
 
     const benchmarkReturn = useMemo(() => {
-        if (!processedData || processedData.closedTrades.length < 2 || !benchmarkData || benchmarkData.length === 0) {
+        if (!processedData || processedData.closedTrades.length === 0 || !benchmarkData || benchmarkData.length === 0) {
             return null;
         }
 
-        // The user's trading period is defined by the open time of the first closed trade
-        // and the close time of the last closed trade.
+        // Determine Start Date from user's first trade
         const firstTradeOpenTime = Math.min(...processedData.closedTrades.map(t => t.openTime.getTime()));
-        const lastTradeCloseTime = Math.max(...processedData.closedTrades.map(t => t.closeTime.getTime()));
         
-        const startDate = new Date(firstTradeOpenTime);
-        const endDate = new Date(lastTradeCloseTime);
-        
-        // Ensure dates are valid before calculation
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate >= endDate) {
+        // This function robustly converts a local timestamp to a YYYY-MM-DD string
+        // representing the local calendar day, which prevents timezone-related errors.
+        const getLocalDateString = (timestamp: number): string => {
+            const d = new Date(timestamp);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const startDateStr = getLocalDateString(firstTradeOpenTime);
+
+        // Create a Date object representing midnight UTC for the target local calendar day.
+        const startDate = new Date(`${startDateStr}T00:00:00.000Z`);
+
+        if (isNaN(startDate.getTime())) {
             return null;
         }
 
-        return calculateBenchmarkPerformance(startDate, endDate, benchmarkData);
+        return calculateBenchmarkPerformance(startDate, benchmarkData);
     }, [processedData, benchmarkData]);
     
     const hasRunInitialSync = useRef(false);
@@ -506,33 +515,27 @@ const App: React.FC = () => {
                             }}
                         >
                              <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-24 md:pb-6">
-                                 {error && (
-                                    <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm mb-4 flex justify-between items-center animate-fade-in">
-                                        <span>{error}</span>
-                                        <button onClick={() => setError(null)} className="font-bold text-xl">&times;</button>
-                                    </div>
-                                )}
+                                {error && <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">{error}</div>}
                                 {renderView()}
-                             </div>
+                            </div>
                         </main>
+                        
                     </div>
+                    {!isDesktop && <BottomNav currentView={view} onNavigate={setView} />}
                 </div>
             </div>
-            {!isDesktop && <BottomNav currentView={view} onNavigate={setView} />}
-
-            {isAddAccountModalOpen && (
-                <AddAccountModal 
-                    isOpen={isAddAccountModalOpen}
-                    onClose={() => setAddAccountModalOpen(false)} 
-                    onSaveAccount={saveAccount}
-                    mode={modalMode}
-                    accountToUpdate={currentAccount}
-                    launchedFileContent={launchedFileContent}
-                    onLaunchedFileConsumed={() => setLaunchedFileContent(null)}
-                />
-            )}
             
-            <AccountActionModal
+            {/* Modals */}
+            <AddAccountModal 
+                isOpen={isAddAccountModalOpen} 
+                onClose={() => setAddAccountModalOpen(false)} 
+                onSaveAccount={saveAccount}
+                mode={modalMode}
+                accountToUpdate={currentAccount}
+                launchedFileContent={launchedFileContent}
+                onLaunchedFileConsumed={() => setLaunchedFileContent(null)}
+            />
+            <AccountActionModal 
                 isOpen={isAccountActionModalOpen}
                 onClose={() => setAccountActionModalOpen(false)}
                 onAddAccount={handleAddClick}
@@ -541,29 +544,26 @@ const App: React.FC = () => {
                 canUpdate={!!currentAccount}
                 canDelete={!!currentAccount}
             />
-
             {dayDetailModalData && (
                  <DayDetailModal 
-                    isOpen={!!selectedCalendarDate}
-                    onClose={handleCloseDayModal}
-                    trades={dayDetailModalData.trades}
-                    date={dayDetailModalData.date}
-                    startOfDayBalance={dayDetailModalData.startOfDayBalance}
-                    currency={currentAccount?.currency || 'USD'}
+                    isOpen={!!selectedCalendarDate} 
+                    onClose={handleCloseDayModal} 
+                    {...dayDetailModalData}
+                    currency={currentAccount.currency || 'USD'}
                     transitioningDay={transitioningDay}
-                 />
-            )}
-            
-            {isDeleteConfirmModalOpen && (
-                <DeleteConfirmationModal
-                    isOpen={isDeleteConfirmModalOpen}
-                    onClose={() => setDeleteConfirmModalOpen(false)}
-                    onConfirm={deleteAccount}
-                    accountName={currentAccountName || ''}
                 />
             )}
+            <DeleteConfirmationModal 
+                isOpen={isDeleteConfirmModalOpen}
+                onClose={() => setDeleteConfirmModalOpen(false)}
+                onConfirm={deleteAccount}
+                accountName={currentAccount?.name || ''}
+            />
+
+            {error && <div className="fixed bottom-4 right-4 bg-red-800 text-white p-4 rounded-lg shadow-lg animate-fade-in-up">{error}</div>}
         </>
     );
-}
+};
 
+// FIX: Add default export for the App component.
 export default App;
