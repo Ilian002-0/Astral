@@ -1,3 +1,4 @@
+
 {
   "nav": {
     "trades": "List of Trades",
@@ -234,13 +235,5 @@
     "show_on_chart": "Show on chart",
     "profit_target_label": "Profit Target",
     "drawdown_target_label": "Drawdown Limit"
-  },
-  "benchmark": {
-    "title": "Performance vs. Benchmark (SP500)",
-    "your_return": "Your Return",
-    "benchmark_return": "SP500 Return",
-    "outperformance": "Outperformance",
-    "your_performance": "Your Performance",
-    "benchmark_performance": "SP500 Performance"
   }
 }

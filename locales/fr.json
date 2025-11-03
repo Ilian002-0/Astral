@@ -1,3 +1,4 @@
+
 {
   "nav": {
     "trades": "Liste des Trades",
@@ -222,7 +223,7 @@
     "save_goals": "Enregistrer les Objectifs",
     "cancel": "Annuler",
     "metric_netProfit": "Profit Net ($)",
-    "metric_winRate": "Win rate (%)",
+    "metric_winRate": "Taux de réussite (%)",
     "metric_profitFactor": "Facteur de Profit",
     "metric_maxDrawdown": "Drawdown Max (%)",
     "current": "Actuel",
@@ -234,13 +235,5 @@
     "show_on_chart": "Afficher sur le graphique",
     "profit_target_label": "Objectif de Profit",
     "drawdown_target_label": "Limite de Drawdown"
-  },
-  "benchmark": {
-    "title": "Performance vs. Indice (SP500)",
-    "your_return": "Votre Rendement",
-    "benchmark_return": "Rendement SP500",
-    "outperformance": "Surperformance",
-    "your_performance": "Votre Performance",
-    "benchmark_performance": "Performance SP500"
   }
 }

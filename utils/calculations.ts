@@ -1,52 +1,7 @@
 
-import { Trade, Account, ProcessedData, DashboardMetrics, ChartDataPoint, DailySummary, MaxDrawdown, BenchmarkDataPoint } from '../types';
+
+import { Trade, Account, ProcessedData, DashboardMetrics, ChartDataPoint, DailySummary, MaxDrawdown } from '../types';
 import { getDayIdentifier } from './calendar';
-
-/**
- * This function takes a local date and finds the first available S&P 500 closing price
- * on or after that specific calendar day. This correctly handles weekends/holidays by
- * finding the next available trading day.
- * @param localDate The local date of the user's first trade.
- * @param benchmarkData The array of S&P 500 historical data.
- * @returns The closing price, or null if not found.
- */
-const findBenchmarkPriceOnOrAfter = (localDate: Date, benchmarkData: BenchmarkDataPoint[]): number | null => {
-    // Create a UTC date representing midnight at the beginning of the target LOCAL calendar day.
-    // This removes the time component and normalizes the date for a direct comparison with the
-    // benchmark data, which is also based on UTC midnight for each day.
-    const targetDayUTC = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate()));
-    const targetTimestamp = targetDayUTC.getTime();
-
-    // The benchmarkData is pre-sorted by date, ascending.
-    for (const point of benchmarkData) {
-        // point.date is already a UTC date from the parser.
-        if (point.date.getTime() >= targetTimestamp) {
-            return point.close;
-        }
-    }
-
-    return null; // No date found on or after.
-};
-
-export const calculateBenchmarkPerformance = (startDate: Date, data: BenchmarkDataPoint[] | null): number | null => {
-  if (!data || data.length === 0 || isNaN(startDate.getTime())) {
-    return null;
-  }
-
-  // Find the closing price for the first available trading day on or after the start date.
-  const startPrice = findBenchmarkPriceOnOrAfter(startDate, data);
-  
-  // The end price is always the last available price in the benchmark data.
-  const endPrice = data[data.length - 1].close;
-
-  if (startPrice === null || endPrice === null || startPrice === 0) {
-    return null;
-  }
-
-  const returnPercent = ((endPrice - startPrice) / startPrice) * 100;
-  return returnPercent;
-};
-
 
 export const processAccountData = (account: Account | null): ProcessedData | null => {
   if (!account || !account.trades || account.trades.length === 0) {

@@ -1,14 +1,13 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import useDBStorage from './hooks/useLocalStorage';
-import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, NotificationItem, BenchmarkDataPoint } from './types';
-import { processAccountData, calculateBenchmarkPerformance } from './utils/calculations';
+import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, NotificationItem } from './types';
+import { processAccountData } from './utils/calculations';
 import { parseCSV } from './utils/csvParser';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
 import usePullToRefresh from './hooks/usePullToRefresh';
 import { useLanguage } from './contexts/LanguageContext';
-import { fetchBenchmarkData } from './utils/benchmarkDataSource';
 import { triggerHaptic } from './utils/haptics';
 
 
@@ -31,7 +30,6 @@ import DashboardMetricsBottom from './components/DashboardMetricsBottom';
 import GoalsView from './components/GoalsView';
 import DayDetailModal from './components/DayDetailModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
-import BenchmarkComparison from './components/BenchmarkComparison';
 
 // Memoize components to prevent unnecessary re-renders
 const MemoizedDashboard = React.memo(Dashboard);
@@ -40,8 +38,6 @@ const MemoizedCalendarView = React.memo(CalendarView);
 const MemoizedAnalysisView = React.memo(AnalysisView);
 const MemoizedGoalsView = React.memo(GoalsView);
 const MemoizedProfileView = React.memo(ProfileView);
-
-const BENCHMARK_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHPLbiDexkq2W-IO8g-HRlu-4QDrnzR8Y3QZ4P26-OsJyqvZdB4yDO12i-cTMuVvKb9c_3ACKu8ngY/pub?output=csv';
 
 const SyncIcon: React.FC<{ isSyncing?: boolean }> = ({ isSyncing }) => (
 <svg
@@ -98,7 +94,6 @@ const App: React.FC = () => {
     const [transitioningDay, setTransitioningDay] = useState<string | null>(null);
 
     const [launchedFileContent, setLaunchedFileContent] = useState<{trades: Trade[], fileName: string} | null>(null);
-    const [benchmarkData, setBenchmarkData] = useState<BenchmarkDataPoint[] | null>(null);
 
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { t } = useLanguage();
@@ -238,35 +233,6 @@ const App: React.FC = () => {
             return null;
         }
     }, [currentAccount]);
-    
-    useEffect(() => {
-        fetchBenchmarkData(BENCHMARK_URL)
-            .then(data => {
-                setBenchmarkData(data);
-                if (error?.includes('benchmark')) setError(null);
-            })
-            .catch(err => {
-                console.error("Failed to fetch benchmark data:", err);
-                setError("Failed to fetch live benchmark data for comparison.");
-                setBenchmarkData(null); // Ensure no old data is used
-            });
-    }, [error]);
-
-
-    const benchmarkReturn = useMemo(() => {
-        // Ensure all necessary data is available.
-        if (!processedData || processedData.closedTrades.length === 0 || !benchmarkData || benchmarkData.length === 0) {
-            return null;
-        }
-
-        // Per user request: use the closing date of the very first closed trade as the start date.
-        // Find the earliest closeTime among all closed trades.
-        const firstTradeCloseTimestamp = Math.min(...processedData.closedTrades.map(t => t.closeTime.getTime()));
-        const startDate = new Date(firstTradeCloseTimestamp);
-
-        // Pass the precise date to the calculation utility.
-        return calculateBenchmarkPerformance(startDate, benchmarkData);
-    }, [processedData, benchmarkData]);
     
     const hasRunInitialSync = useRef(false);
     useEffect(() => {
@@ -417,23 +383,15 @@ const App: React.FC = () => {
                         <div className="animate-fade-in-up animation-delay-300">
                            <BalanceChart data={processedData.chartData} onAdvancedAnalysisClick={() => setView('analysis')} initialBalance={currentAccount.initialBalance} currency={currentAccount.currency || 'USD'} goals={currentAccount.goals || {}} />
                         </div>
-                        {benchmarkReturn !== null && (
-                            <div className="animate-fade-in-up animation-delay-400">
-                                <BenchmarkComparison
-                                    userReturn={processedData.metrics.totalReturnPercent}
-                                    benchmarkReturn={benchmarkReturn}
-                                />
-                            </div>
-                        )}
                          {processedData.openTrades.length > 0 && (
-                            <div className="animate-fade-in-up animation-delay-500">
+                            <div className="animate-fade-in-up animation-delay-400">
                                 <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} currency={currentAccount.currency || 'USD'} />
                             </div>
                         )}
-                        <div className="animate-fade-in-up animation-delay-600">
+                        <div className="animate-fade-in-up animation-delay-500">
                             <RecentTradesTable trades={processedData.recentTrades} currency={currentAccount.currency || 'USD'} />
                         </div>
-                        <div className="animate-fade-in-up animation-delay-700">
+                        <div className="animate-fade-in-up animation-delay-600">
                            <DashboardMetricsBottom metrics={processedData.metrics} currency={currentAccount.currency || 'USD'}/>
                         </div>
                     </div>

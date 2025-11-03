@@ -1,3 +1,4 @@
+
 export interface Trade {
   ticket: number;
   openTime: Date;
@@ -43,6 +44,12 @@ export interface ChartDataPoint {
   timestamp: number;
   isEquityPoint?: boolean;
   floatingPnl?: number;
+}
+
+// FIX: Add missing BenchmarkDataPoint interface.
+export interface BenchmarkDataPoint {
+  date: Date;
+  close: number;
 }
 
 export interface DailySummary {
@@ -118,9 +125,4 @@ export interface NotificationItem {
   body: string;
   timestamp: number;
   read: boolean;
-}
-
-export interface BenchmarkDataPoint {
-  date: Date;
-  close: number;
 }

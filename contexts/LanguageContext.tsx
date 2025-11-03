@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode, useState } from 'react';
 import useDBStorage from '../hooks/useLocalStorage';
 
@@ -23,8 +24,7 @@ const enTranslations: Translations = {
   "profile": { "title": "Profile & Settings", "language": "Language", "english": "English", "french": "French", "backup_title": "Data Backup", "backup_description": "Connect your Google account to back up all your accounts, trades, and settings to Google Drive.", "connect_google": "Connect Google Account", "backup_button": "Backup to Google Drive", "backup_loading": "Backing up...", "backup_success": "Backup Successful!", "backup_retry": "Retry Backup", "backup_no_client_id": "Google Client ID is not configured. Backup is unavailable.", "feature_coming_soon": "Functionality coming soon.", "free_to_use": "Atlas is free to use.", "data_privacy": "Your data is stored locally on your device.", "update_title": "Application Update", "update_description": "Force the application to check for the latest version.", "update_button": "Check for Updates", "notifications_title": "Notifications", "notifications_description": "Manage background notifications for your accounts.", "enable_notifications": "Enable Notifications", "notifications_denied": "Notifications are blocked. Please enable them in your browser settings.", "trade_closed_notifications": "Trade Closed Alerts", "weekly_summary_notifications": "Weekly Summary", "notification_center_title": "Notification Center", "no_notifications": "You have no new notifications.", "clear_all": "Clear All", "background_sync_note": "Background notifications depend on your browser's sync frequency, which can be delayed to save battery. Sync also occurs when the app starts." },
   "notifications": { "trade_closed_title": "Trade Closed", "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}", "weekly_summary_title": "Weekly Performance Summary", "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)" },
   "analysis": { "title": "Advanced Analysis", "filter_symbols_title": "Filter by Symbol", "filter_symbols_placeholder": "All Symbols", "filter_comments_title": "Filter by Comment", "filter_comments_placeholder": "All Comments", "select_all": "Select All", "clear_all": "Clear All", "filtered_trades_title": "Filtered Trades", "filtered_profit_title": "Filtered Net Profit", "back_to_dashboard": "Back to Dashboard", "item_name_symbols": "symbols", "item_name_comments": "comments", "start_date": "Start Date", "end_date": "End Date" },
-  "goals": { "title": "Trading Goals", "subtitle": "Set your targets and track your progress.", "edit_goals": "Edit Goals", "save_goals": "Save Goals", "cancel": "Cancel", "metric_netProfit": "Net Profit ($)", "metric_winRate": "Win Rate (%)", "metric_profitFactor": "Profit Factor", "metric_maxDrawdown": "Max Drawdown (%)", "current": "Current", "target": "Target", "not_set": "Not Set", "enable_goal": "Enable Goal", "goal_met": "Goal Met!", "less_is_better": "lower is better", "show_on_chart": "Show on chart", "profit_target_label": "Profit Target", "drawdown_target_label": "Drawdown Limit" },
-  "benchmark": { "title": "Performance vs. Benchmark (SP500)", "your_return": "Your Return", "benchmark_return": "SP500 Return", "outperformance": "Outperformance", "your_performance": "Your Performance", "benchmark_performance": "SP500 Performance" }
+  "goals": { "title": "Trading Goals", "subtitle": "Set your targets and track your progress.", "edit_goals": "Edit Goals", "save_goals": "Save Goals", "cancel": "Cancel", "metric_netProfit": "Net Profit ($)", "metric_winRate": "Win Rate (%)", "metric_profitFactor": "Profit Factor", "metric_maxDrawdown": "Max Drawdown (%)", "current": "Current", "target": "Target", "not_set": "Not Set", "enable_goal": "Enable Goal", "goal_met": "Goal Met!", "less_is_better": "lower is better", "show_on_chart": "Show on chart", "profit_target_label": "Profit Target", "drawdown_target_label": "Drawdown Limit" }
 };
 
 const frTranslations: Translations = {
@@ -65,14 +65,6 @@ const frTranslations: Translations = {
     "show_on_chart": "Afficher sur le graphique",
     "profit_target_label": "Objectif de Profit",
     "drawdown_target_label": "Limite de Drawdown"
-  },
-  "benchmark": { 
-    "title": "Performance vs. Indice (SP500)",
-    "your_return": "Votre Rendement",
-    "benchmark_return": "Rendement SP500",
-    "outperformance": "Surperformance",
-    "your_performance": "Votre Performance",
-    "benchmark_performance": "Performance SP500"
   }
 };
 

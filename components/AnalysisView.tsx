@@ -265,7 +265,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
         {/* Chart */}
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
-            <div style={{ width: '100%', height: 300 }} ref={chartRef}>
+            <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
                 {chartData.length > 1 ? (
                 <ResponsiveContainer>
                     <AreaChart 
