@@ -35,28 +35,40 @@
       "short_name": "Dashboard",
       "description": "View trading dashboard",
       "url": "/?view=dashboard",
-      "icons": [{ "src": "/dashboard-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [
+        { "src": "/dashboard-icon.svg", "sizes": "any", "type": "image/svg+xml" },
+        { "src": "https://i.imgur.com/DiL35B4.png", "sizes": "192x192", "type": "image/png" }
+      ]
     },
     {
       "name": "List of Trades",
       "short_name": "Trades",
       "description": "View all trades",
       "url": "/?view=trades",
-      "icons": [{ "src": "/list-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [
+        { "src": "/list-icon.svg", "sizes": "any", "type": "image/svg+xml" },
+        { "src": "https://i.imgur.com/99be8qn.png", "sizes": "192x192", "type": "image/png" }
+      ]
     },
     {
       "name": "Calendar",
       "short_name": "Calendar",
       "description": "View trades on a calendar",
       "url": "/?view=calendar",
-      "icons": [{ "src": "/calendar-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [
+        { "src": "/calendar-icon.svg", "sizes": "any", "type": "image/svg+xml" },
+        { "src": "https://i.imgur.com/eKKCWQN.png", "sizes": "192x192", "type": "image/png" }
+      ]
     },
     {
       "name": "Goals",
       "short_name": "Goals",
       "description": "View trading goals",
       "url": "/?view=goals",
-      "icons": [{ "src": "/goals-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [
+        { "src": "/goals-icon.svg", "sizes": "any", "type": "image/svg+xml" },
+        { "src": "https://i.imgur.com/gA2QYp9.png", "sizes": "192x192", "type": "image/png" }
+      ]
     }
   ],
   "file_handlers": [
