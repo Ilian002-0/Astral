@@ -158,11 +158,12 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const yAxisTickFormatter = (value: any) => {
     const num = Number(value);
     if (isNaN(num)) return value;
-    if (num === 0) return '0';
     
+    // Use compact notation for large numbers (e.g., 50k, 1M) for better readability
     return new Intl.NumberFormat(language, {
-        notation: 'compact',
-        compactDisplay: 'short'
+      notation: 'compact',
+      compactDisplay: 'short',
+      maximumFractionDigits: 1
     }).format(num);
   };
   
@@ -261,33 +262,6 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const profitFillColor = 'rgb(13 148 136)'; // teal-600
   const lossFillColor = 'rgb(159 18 57)'; // rose-800
   const grayColor = '#6b7280'; // gray-500
-
-  const chartDomain = useMemo(() => {
-    if (!hasAnyData) return { domainMin: initialBalance * 0.95, domainMax: initialBalance * 1.05 };
-
-    let balanceValues = filteredData.map(d => d.balance).filter(b => b !== null) as number[];
-    if (balanceValues.length === 0) balanceValues = [initialBalance];
-
-     if (profitGoal?.enabled && profitGoal.showOnChart && profitGoal.target) {
-        balanceValues.push(initialBalance + profitGoal.target);
-    }
-    if (drawdownGoal?.enabled && drawdownGoal.showOnChart && drawdownGoal.target) {
-        const drawdownValue = initialBalance - (initialBalance * (drawdownGoal.target / 100));
-        balanceValues.push(drawdownValue);
-    }
-    
-    const minBalance = Math.min(...balanceValues, initialBalance);
-    const maxBalance = Math.max(...balanceValues, initialBalance);
-    const range = maxBalance - minBalance;
-    
-    const padding = range === 0 ? (maxBalance > 0 ? maxBalance * 0.1 : 1000) : range * 0.05;
-
-    const domainMin = Math.floor(minBalance - padding);
-    const domainMax = Math.ceil(maxBalance + padding);
-    return { domainMin, domainMax };
-  }, [filteredData, hasAnyData, initialBalance, profitGoal, drawdownGoal]);
-
-  const { domainMin, domainMax } = chartDomain;
   
   const xDomain = useMemo(() => {
       if (!hasAnyData) return [0, 1];
@@ -347,7 +321,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
               data={filteredData}
               onMouseMove={handleChartMouseMove}
               onMouseLeave={() => (lastActiveIndex.current = null)}
-              margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? -10 : -30, bottom: 5 }}
+              margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
             >
               <defs>
                  <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1">
@@ -374,10 +348,11 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 stroke="#888" 
                 tick={{ fontSize: 12 }}
                 tickFormatter={yAxisTickFormatter}
-                domain={[domainMin, domainMax]}
                 tickLine={false}
                 axisLine={false}
-                allowDataOverflow
+                type="number"
+                domain={['dataMin', 'dataMax']}
+                width={isMobile ? 40 : 60}
               />
               <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
               
