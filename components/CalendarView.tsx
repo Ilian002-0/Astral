@@ -1,8 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Trade, CalendarDay } from '../types';
 import { generateCalendarData, getDayIdentifier } from '../utils/calendar';
 import { useLanguage } from '../contexts/LanguageContext';
 import useMediaQuery from '../hooks/useMediaQuery';
+
+// @ts-ignore
+declare const html2canvas: any;
+
+const CameraIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
+const SpinnerIcon = () => <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>;
+
 
 interface CalendarViewProps {
     trades: Trade[];
@@ -11,11 +18,15 @@ interface CalendarViewProps {
     transitioningDay: string | null;
 }
 
-const CalendarHeader: React.FC<{
+interface CalendarHeaderProps {
     displayDate: Date;
     onPrevMonth: () => void;
     onNextMonth: () => void;
-}> = ({ displayDate, onPrevMonth, onNextMonth }) => {
+    onScreenshot: () => void;
+    isCapturing: boolean;
+}
+
+const CalendarHeader: React.FC<CalendarHeaderProps> = ({ displayDate, onPrevMonth, onNextMonth, onScreenshot, isCapturing }) => {
     const { language } = useLanguage();
     const monthYear = displayDate.toLocaleDateString(language, {
         month: 'long',
@@ -28,9 +39,19 @@ const CalendarHeader: React.FC<{
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <h2 className="text-xl font-bold text-white">{monthYear}</h2>
-            <button onClick={onNextMonth} className="p-2 rounded-full hover:bg-gray-700 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-            </button>
+            <div className="flex items-center gap-2">
+                <button onClick={onNextMonth} className="p-2 rounded-full hover:bg-gray-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+                 <button
+                    onClick={onScreenshot}
+                    disabled={isCapturing}
+                    className="p-2 rounded-full hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                    title="Take Screenshot & Share"
+                >
+                    {isCapturing ? <SpinnerIcon /> : <CameraIcon />}
+                </button>
+            </div>
         </div>
     );
 };
@@ -41,9 +62,10 @@ interface CalendarDayCellProps {
     formatCurrency: (value: number) => string;
     index: number;
     isTransitioning: boolean;
+    isCapturing: boolean;
 }
 
-const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatCurrency, index, isTransitioning }) => {
+const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatCurrency, index, isTransitioning, isCapturing }) => {
     const isToday = day.isToday && day.isCurrentMonth;
     const hasTrades = day.tradeCount > 0 && day.isCurrentMonth;
 
@@ -70,7 +92,7 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatC
         ${tradeDayClasses}
         ${isToday ? '!bg-slate-800 border !border-slate-600' : ''}
         ${!day.isCurrentMonth ? 'text-gray-600' : ''}
-        animate-fade-in
+        ${!isCapturing ? 'animate-fade-in' : ''}
     `;
 
     const formattedProfit = formatCurrency(day.profit);
@@ -95,8 +117,8 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatC
             className={cellClasses} 
             onClick={day.tradeCount > 0 ? onClick : undefined}
             style={{ 
-                animationDelay: `${index * 15}ms`, 
-                opacity: 0,
+                animationDelay: !isCapturing ? `${index * 15}ms` : '0s', 
+                opacity: isCapturing ? 1 : 0,
                 // @ts-ignore
                 viewTransitionName: transitionName
             }}
@@ -120,11 +142,74 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatC
 const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currency, transitioningDay }) => {
     const { t, language } = useLanguage();
     const [displayDate, setDisplayDate] = useState(new Date());
+    const calendarRef = useRef<HTMLDivElement>(null);
+    const [isCapturing, setIsCapturing] = useState(false);
 
     const { calendarDays, weeklySummaries, monthlyProfit } = useMemo(() => generateCalendarData(trades, displayDate, language), [trades, displayDate, language]);
 
     const handlePrevMonth = () => setDisplayDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
     const handleNextMonth = () => setDisplayDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+
+    const handleScreenshot = () => {
+        if (!calendarRef.current || isCapturing) return;
+
+        setIsCapturing(true);
+
+        // A short timeout allows React to re-render the component with animations disabled
+        // before html2canvas starts its work.
+        setTimeout(async () => {
+            try {
+                if (!calendarRef.current) {
+                    setIsCapturing(false);
+                    return;
+                }
+                const canvas = await html2canvas(calendarRef.current, {
+                    useCORS: true,
+                    backgroundColor: '#0c0b1e',
+                    scale: 2,
+                });
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        console.error("Could not create blob from canvas");
+                        setIsCapturing(false);
+                        return;
+                    }
+                    const file = new File([blob], 'atlas-calendar.png', { type: 'image/png' });
+                    const shareData = {
+                        files: [file],
+                        title: t('common.share'),
+                        text: 'My trading calendar from Atlas.'
+                    };
+
+                    try {
+                         // @ts-ignore
+                        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                            // @ts-ignore
+                            await navigator.share(shareData);
+                        } else {
+                            // Fallback to download
+                            const link = document.createElement('a');
+                            link.href = URL.createObjectURL(blob);
+                            link.download = 'atlas-calendar.png';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+                    } catch (err) {
+                        console.error("Share failed:", err);
+                    } finally {
+                        setIsCapturing(false);
+                    }
+                }, 'image/png');
+
+            } catch (error) {
+                console.error("Screenshot failed:", error);
+                setIsCapturing(false);
+            }
+        }, 50);
+    };
+
 
     const formatCurrency = (value: number, options: Intl.NumberFormatOptions = {}) => {
         const symbol = currency === 'EUR' ? '€' : '$';
@@ -149,10 +234,16 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
     const weekDays = [t('calendar.mon'), t('calendar.tue'), t('calendar.wed'), t('calendar.thu'), t('calendar.fri'), t('calendar.sat'), t('calendar.sun')];
 
     return (
-        <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+        <div ref={calendarRef} className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
             <div className="flex flex-col lg:flex-row lg:gap-8">
                 <div className="flex-1 min-w-0">
-                    <CalendarHeader displayDate={displayDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} />
+                    <CalendarHeader 
+                        displayDate={displayDate} 
+                        onPrevMonth={handlePrevMonth} 
+                        onNextMonth={handleNextMonth}
+                        onScreenshot={handleScreenshot}
+                        isCapturing={isCapturing}
+                    />
                     
                     <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2">
                         {weekDays.map(day => <div key={day}>{day}</div>)}
@@ -167,6 +258,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                                 formatCurrency={formatDayProfit}
                                 index={index}
                                 isTransitioning={getDayIdentifier(day.date) === transitioningDay}
+                                isCapturing={isCapturing}
                             />
                         ))}
                     </div>

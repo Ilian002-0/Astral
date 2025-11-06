@@ -43,20 +43,12 @@ export const generateCalendarData = (trades: Trade[], displayDate: Date, languag
         calendarDays.push({ ...data, date, isCurrentMonth: true, isToday: dayId === todayId });
     }
     
-    // Add days from the next month to fill the grid (6 weeks * 7 days = 42 cells)
-    const remainingCells = 42 - calendarDays.length;
-    for (let i = 1; i <= remainingCells; i++) {
+    // Add days from the next month to fill out the last week
+    const totalCells = calendarDays.length;
+    const cellsToPadEnd = (7 - (totalCells % 7)) % 7;
+    for (let i = 1; i <= cellsToPadEnd; i++) {
         const date = new Date(year, month + 1, i);
         calendarDays.push({ date, profit: 0, tradeCount: 0, isCurrentMonth: false, isToday: false });
-    }
-
-    // If the calendar grid extends to 6 weeks, check if the last week is entirely
-    // composed of days from the next month. If so, remove it for a tighter view.
-    if (calendarDays.length > 35) {
-        const lastWeek = calendarDays.slice(35);
-        if (!lastWeek.some(day => day.isCurrentMonth)) {
-            calendarDays.splice(35);
-        }
     }
 
     const calendarWeeks: CalendarDay[][] = [];
