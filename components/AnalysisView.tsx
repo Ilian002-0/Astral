@@ -191,6 +191,32 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
     return { chartData: data, filteredNetProfit: netProfit };
   }, [filteredTrades, initialBalance]);
+  
+  const xDomain = useMemo(() => {
+      if (!chartData || chartData.length < 2) return [0, 1];
+      const indices = chartData.map(d => d.index);
+      const min = Math.min(...indices);
+      const max = Math.max(...indices);
+      return [min, max === min ? max + 1 : max];
+  }, [chartData]);
+
+  const yDomain = useMemo(() => {
+    if (!chartData || chartData.length < 2) {
+        return ['auto', 'auto'];
+    }
+    const balances = chartData.map(d => d.balance);
+    let min = Math.min(...balances);
+    let max = Math.max(...balances);
+
+    if (min === max) {
+        const padding = Math.abs(min * 0.01) || 10; // 1% padding or 10 units
+        return [min - padding, max + padding];
+    }
+
+    const padding = (max - min) * 0.1;
+    
+    return [min - padding, max + padding];
+  }, [chartData]);
 
   const yAxisTickFormatter = (value: any) => {
     const num = Number(value);
@@ -267,8 +293,17 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                             <linearGradient id="lossFillAnalysis" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/><stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/></linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                        <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} allowDecimals={false} type="number" />
-                        <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} type="number" tickLine={false} axisLine={false} width={isMobile ? 40 : 60} />
+                        <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} allowDecimals={false} type="number" domain={xDomain} />
+                        <YAxis 
+                            stroke="#888" 
+                            tick={{ fontSize: 12 }} 
+                            tickFormatter={yAxisTickFormatter} 
+                            type="number" 
+                            tickLine={false} 
+                            axisLine={false} 
+                            width={isMobile ? 40 : 60} 
+                            domain={yDomain} 
+                        />
                         <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
                         <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance >= initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#profitFillAnalysis)" />
                         <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance < initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#lossFillAnalysis)" />
