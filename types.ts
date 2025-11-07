@@ -112,6 +112,10 @@ export interface WeeklySummary {
   tradingDays: number;
 }
 
+export interface CalendarSettings {
+  hideWeekends: boolean;
+}
+
 export type AppView = 'dashboard' | 'trades' | 'calendar' | 'profile' | 'analysis' | 'goals';
 
 export interface NotificationSettings {

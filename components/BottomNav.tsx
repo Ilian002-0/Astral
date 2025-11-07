@@ -1,5 +1,6 @@
-import React from 'react';
-import { AppView } from '../types';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { AppView, CalendarSettings } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { triggerHaptic } from '../utils/haptics';
 
@@ -18,6 +19,8 @@ const GoalsIcon = () => (
 interface BottomNavProps {
     currentView: AppView;
     onNavigate: (view: AppView) => void;
+    calendarSettings: CalendarSettings;
+    onCalendarSettingsChange: (settings: CalendarSettings) => void;
 }
 
 const NavButton: React.FC<{
@@ -40,10 +43,69 @@ const NavButton: React.FC<{
     );
 };
 
-const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate }) => {
+const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendarSettings, onCalendarSettingsChange }) => {
     const { t } = useLanguage();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const handleToggleWeekends = () => {
+        onCalendarSettingsChange({ hideWeekends: !calendarSettings.hideWeekends });
+        setIsMenuOpen(false);
+    };
+
+    // --- Logic for Calendar Button Long Press ---
+    const timerRef = useRef<number | null>(null);
+    const longPressTriggered = useRef(false);
+
+    const handleCalendarPressStart = () => {
+        longPressTriggered.current = false;
+        timerRef.current = window.setTimeout(() => {
+            setIsMenuOpen(v => !v); // Toggle menu on long press
+            longPressTriggered.current = true;
+            triggerHaptic('medium');
+        }, 500);
+    };
+
+    const handleCalendarPressEnd = () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+    };
+
+    const handleCalendarClick = () => {
+        if (longPressTriggered.current) return;
+        triggerHaptic('light');
+        onNavigate('calendar');
+    };
+
+    // Close menu on outside click
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                // Check if the click was on the calendar button itself to avoid immediate re-closing
+                const calendarButton = (event.target as HTMLElement).closest('[data-calendar-button="true"]');
+                if (!calendarButton) {
+                    setIsMenuOpen(false);
+                }
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     return (
         <footer className="fixed bottom-0 left-0 right-0 z-10">
+            {isMenuOpen && (
+                <div ref={menuRef} className="absolute bottom-[70px] left-1/2 -translate-x-1/2 z-20" style={{ animation: 'fade-in-up 0.2s ease-out forwards' }}>
+                     <div className="bg-[#1e1d35] border border-gray-700 rounded-lg p-1 shadow-lg w-48">
+                        <button 
+                            onClick={handleToggleWeekends}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md flex items-center justify-between"
+                        >
+                            <span>{calendarSettings.hideWeekends ? t('calendar.show_weekends') : t('calendar.hide_weekends')}</span>
+                            <span className="text-xs text-gray-500">Sat, Sun</span>
+                        </button>
+                    </div>
+                </div>
+            )}
             <div className="max-w-4xl mx-auto">
                 <div className="bg-[#16152c]/90 backdrop-blur-md border-t border-gray-700/50 flex justify-around items-center text-gray-400">
                     <NavButton isActive={currentView === 'dashboard'} onClick={() => onNavigate('dashboard')} label={t('nav.dashboard')}>
@@ -52,9 +114,19 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate }) => {
                     <NavButton isActive={currentView === 'trades'} onClick={() => onNavigate('trades')} label={t('nav.trades_short')}>
                         <ListIcon />
                     </NavButton>
-                    <NavButton isActive={currentView === 'calendar'} onClick={() => onNavigate('calendar')} label={t('nav.calendar')}>
+                    <button
+                        data-calendar-button="true"
+                        onClick={handleCalendarClick}
+                        onTouchStart={handleCalendarPressStart}
+                        onTouchEnd={handleCalendarPressEnd}
+                        onMouseDown={handleCalendarPressStart}
+                        onMouseUp={handleCalendarPressEnd}
+                        onMouseLeave={handleCalendarPressEnd}
+                        onContextMenu={(e) => e.preventDefault()}
+                        className={`flex flex-col items-center justify-center p-2 transition-colors w-1/5 ${currentView === 'calendar' ? 'text-cyan-400 font-bold' : 'text-gray-500 hover:text-white'}`}>
                         <CalendarIcon />
-                    </NavButton>
+                        <span className="text-xs mt-1 text-center">{t('nav.calendar')}</span>
+                    </button>
                     <NavButton isActive={currentView === 'goals'} onClick={() => onNavigate('goals')} label={t('nav.goals')}>
                         <GoalsIcon />
                     </NavButton>
