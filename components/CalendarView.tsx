@@ -258,12 +258,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
             <div ref={calendarRef} className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
                 <CalendarHeader displayDate={displayDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} onScreenshot={handleScreenshot} isCapturing={isCapturing} />
                 
-                <div className="flex">
-                    <div className="flex-1 grid grid-cols-5 gap-1 text-center text-xs text-gray-400 mb-2 border-r border-gray-700 pr-2">
+                <div className="flex items-end border-b border-gray-700 pb-2 mb-2 gap-4">
+                    <div className="flex-1 grid grid-cols-5 gap-1 text-center text-xs text-gray-400">
                         {weekDayHeaders.map(day => <div key={day}>{day}</div>)}
                     </div>
-                    <div className="w-24 flex-shrink-0 text-center mb-2 pl-2">
-                         <h3 className="text-base font-bold text-white">{t('calendar.weekly_summary')}</h3>
+                    <div className="w-20 flex-shrink-0 text-center">
+                         <h3 className="text-sm font-bold text-white">{t('calendar.weekly_summary')}</h3>
                     </div>
                 </div>
 
@@ -273,8 +273,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                         if (!summary) return null;
 
                         return (
-                             <div key={index} className="flex items-stretch">
-                                <div className="flex-1 grid grid-cols-5 gap-1 sm:gap-2 border-r border-gray-700 pr-2">
+                             <div key={index} className="flex items-stretch gap-4">
+                                <div className="flex-1 grid grid-cols-5 gap-1 sm:gap-2">
                                      {week.slice(0, 5).map((day, dayIndex) => (
                                         <CalendarDayCell 
                                             key={day.date.toISOString()} 
@@ -287,10 +287,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                                         />
                                     ))}
                                 </div>
-                                <div className="w-24 flex-shrink-0 flex items-center pl-2">
+                                <div className="w-20 flex-shrink-0 flex items-center">
                                      <div className="bg-gray-800/50 rounded-lg flex flex-col justify-center items-center text-center w-full h-16 sm:h-20 p-2">
-                                        <p className="font-semibold text-white text-sm">{summary.weekLabel}</p>
-                                        <p className={`font-bold whitespace-nowrap ${summary.pnl >= 0 ? 'text-green-400' : 'text-red-400'} text-sm mt-1`}>
+                                        <p className="font-semibold text-white text-xs">{summary.weekLabel}</p>
+                                        <p className={`font-bold whitespace-nowrap ${summary.pnl >= 0 ? 'text-green-400' : 'text-red-400'} text-xs mt-1`}>
                                             {formatCurrency(summary.pnl)}
                                         </p>
                                     </div>
@@ -317,7 +317,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
             <div className={`lg:flex lg:gap-8`}>
                 <div className="flex-1 min-w-0">
                     <CalendarHeader displayDate={displayDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} onScreenshot={handleScreenshot} isCapturing={isCapturing} />
-                    <div className={`grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2`}>
+                    <div className={`grid grid-cols-7 gap-1 text-center text-xs text-gray-400 pb-2 mb-2 border-b border-gray-700`}>
                         {weekDayHeaders.map(day => <div key={day}>{day}</div>)}
                     </div>
                     <div className={`grid grid-cols-7 gap-1 sm:gap-2`}>

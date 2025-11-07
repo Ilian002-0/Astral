@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppView, CalendarSettings } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { triggerHaptic } from '../utils/haptics';
+import Toggle from './Toggle';
 
 // Icons
 const DashboardIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>;
@@ -48,9 +49,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendar
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    const handleToggleWeekends = () => {
-        onCalendarSettingsChange({ hideWeekends: !calendarSettings.hideWeekends });
-        setIsMenuOpen(false);
+    const handleToggleWeekends = (shouldHide: boolean) => {
+        onCalendarSettingsChange({ hideWeekends: shouldHide });
     };
 
     // --- Logic for Calendar Button Long Press ---
@@ -94,19 +94,6 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendar
 
     return (
         <footer className="fixed bottom-0 left-0 right-0 z-10">
-            {isMenuOpen && (
-                <div ref={menuRef} className="absolute bottom-[70px] left-1/2 -translate-x-1/2 z-20" style={{ animation: 'fade-in-up 0.2s ease-out forwards' }}>
-                     <div className="bg-[#1e1d35] border border-gray-700 rounded-lg p-1 shadow-lg w-48">
-                        <button 
-                            onClick={handleToggleWeekends}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md flex items-center justify-between"
-                        >
-                            <span>{calendarSettings.hideWeekends ? t('calendar.show_weekends') : t('calendar.hide_weekends')}</span>
-                            <span className="text-xs text-gray-500">Sat, Sun</span>
-                        </button>
-                    </div>
-                </div>
-            )}
             <div className="max-w-4xl mx-auto">
                 <div className="bg-[#16152c]/90 backdrop-blur-md border-t border-gray-700/50 flex justify-around items-center text-gray-400">
                     <NavButton isActive={currentView === 'dashboard'} onClick={() => onNavigate('dashboard')} label={t('nav.dashboard')}>
@@ -115,19 +102,36 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendar
                     <NavButton isActive={currentView === 'trades'} onClick={() => onNavigate('trades')} label={t('nav.trades_short')}>
                         <ListIcon />
                     </NavButton>
-                    <button
-                        data-calendar-button="true"
-                        onClick={handleCalendarClick}
-                        onTouchStart={handleCalendarPressStart}
-                        onTouchEnd={handleCalendarPressEnd}
-                        onMouseDown={handleCalendarPressStart}
-                        onMouseUp={handleCalendarPressEnd}
-                        onMouseLeave={handleCalendarPressEnd}
-                        onContextMenu={(e) => e.preventDefault()}
-                        className={`flex flex-col items-center justify-center p-2 transition-colors w-1/5 ${currentView === 'calendar' ? 'text-cyan-400 font-bold' : 'text-gray-500 hover:text-white'}`}>
-                        <CalendarIcon />
-                        <span className="text-xs mt-1 text-center">{t('nav.calendar')}</span>
-                    </button>
+                    
+                    <div className="relative w-1/5">
+                         {isMenuOpen && (
+                            <div ref={menuRef} className="absolute bottom-full left-1/2 -translate-x-1/2 z-20 mb-2" style={{ animation: 'fade-in-up 0.2s ease-out forwards' }}>
+                                <div className="bg-[#1e1d35] border border-gray-700 rounded-lg p-2 shadow-lg w-48">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm text-gray-300 pr-4">{t('calendar.hide_weekends')}</label>
+                                        <Toggle
+                                            enabled={calendarSettings.hideWeekends}
+                                            onChange={handleToggleWeekends}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <button
+                            data-calendar-button="true"
+                            onClick={handleCalendarClick}
+                            onTouchStart={handleCalendarPressStart}
+                            onTouchEnd={handleCalendarPressEnd}
+                            onMouseDown={handleCalendarPressStart}
+                            onMouseUp={handleCalendarPressEnd}
+                            onMouseLeave={handleCalendarPressEnd}
+                            onContextMenu={(e) => e.preventDefault()}
+                            className={`flex flex-col items-center justify-center p-2 transition-colors w-full ${currentView === 'calendar' ? 'text-cyan-400 font-bold' : 'text-gray-500 hover:text-white'}`}>
+                            <CalendarIcon />
+                            <span className="text-xs mt-1 text-center">{t('nav.calendar')}</span>
+                        </button>
+                    </div>
+
                     <NavButton isActive={currentView === 'goals'} onClick={() => onNavigate('goals')} label={t('nav.goals')}>
                         <GoalsIcon />
                     </NavButton>
