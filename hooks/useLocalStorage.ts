@@ -99,14 +99,16 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
     }, [key]);
 
     const setData = useCallback((value: T | ((prevState: T) => T)) => {
-        try {
-            const valueToStore = value instanceof Function ? value(data) : value;
-            setDataState(valueToStore);
-            setDBItem(key, deepStringify(valueToStore));
-        } catch (error) {
-            console.error(`Error setting IndexedDB key “${key}”:`, error);
-        }
-    }, [key, data]);
+        setDataState(currentState => {
+            const valueToStore = value instanceof Function ? value(currentState) : value;
+            try {
+                setDBItem(key, deepStringify(valueToStore));
+            } catch (error) {
+                console.error(`Error setting IndexedDB key “${key}”:`, error);
+            }
+            return valueToStore;
+        });
+    }, [key]);
 
     return { data, setData, isLoading };
 }

@@ -40,11 +40,13 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
     };
     
     const handleToggleGoal = (metric: GoalMetric, enabled: boolean) => {
-        const currentGoal = editableGoals[metric] || { target: 0, enabled: false, showOnChart: false };
-        setEditableGoals(prev => ({
-            ...prev,
-            [metric]: { ...currentGoal, enabled }
-        }));
+        setEditableGoals(prev => {
+            const currentGoal = prev[metric] || { target: 0, enabled: false, showOnChart: false };
+            return {
+                ...prev,
+                [metric]: { ...currentGoal, enabled }
+            };
+        });
     };
     
     const handleToggleShowOnChart = (metric: GoalMetric, show: boolean) => {
