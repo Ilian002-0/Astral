@@ -145,7 +145,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
     const [displayDate, setDisplayDate] = useState(new Date());
     const calendarRef = useRef<HTMLDivElement>(null);
     const [isCapturing, setIsCapturing] = useState(false);
-    const isMobile = useMediaQuery('(max-width: 1023px)'); // lg breakpoint
     const { hideWeekends } = calendarSettings;
 
     const { calendarDays, weeklySummaries, monthlyProfit } = useMemo(() => generateCalendarData(trades, displayDate, language), [trades, displayDate, language]);
@@ -158,7 +157,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
             allWeeks.push(calendarDays.slice(i, i + 7));
         }
 
-        if (hideWeekends && isMobile) {
+        if (hideWeekends) {
             return {
                 weekDayHeaders: allWeekDays.slice(0, 5),
                 weeks: allWeeks,
@@ -168,7 +167,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
             weekDayHeaders: allWeekDays,
             weeks: allWeeks,
         };
-    }, [calendarDays, hideWeekends, isMobile, t]);
+    }, [calendarDays, hideWeekends, t]);
 
     const handlePrevMonth = () => setDisplayDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
     const handleNextMonth = () => setDisplayDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
@@ -251,9 +250,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
         return formatCurrency(value, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
 
-    const showCombinedView = hideWeekends && isMobile;
-
-    if (showCombinedView) {
+    if (hideWeekends) {
         const relevantWeeks = weeks.filter(week => week.some(day => day.isCurrentMonth));
         const relevantSummaries = weeklySummaries.filter((_, index) => weeks[index] && weeks[index].some(d => d.isCurrentMonth));
 
@@ -261,23 +258,23 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
             <div ref={calendarRef} className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
                 <CalendarHeader displayDate={displayDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} onScreenshot={handleScreenshot} isCapturing={isCapturing} />
                 
-                <div className="flex gap-4">
-                    <div className="flex-1 grid grid-cols-5 gap-1 text-center text-xs text-gray-400 mb-2">
+                <div className="flex">
+                    <div className="flex-1 grid grid-cols-5 gap-1 text-center text-xs text-gray-400 mb-2 border-r border-gray-700 pr-2">
                         {weekDayHeaders.map(day => <div key={day}>{day}</div>)}
                     </div>
-                    <div className="w-32 flex-shrink-0 text-center mb-2">
+                    <div className="w-28 flex-shrink-0 text-center mb-2 pl-2">
                          <h3 className="text-base font-bold text-white">{t('calendar.weekly_summary')}</h3>
                     </div>
                 </div>
 
-                <div className="flex flex-col border-b border-gray-600">
+                <div className="flex flex-col border-b border-gray-700">
                     {relevantWeeks.map((week, index) => {
                         const summary = relevantSummaries[index];
                         if (!summary) return null;
 
                         return (
-                             <div key={index} className="flex items-stretch border-t border-gray-600">
-                                <div className="flex-1 grid grid-cols-5 gap-1 sm:gap-2">
+                             <div key={index} className="flex items-stretch border-t border-gray-700">
+                                <div className="flex-1 grid grid-cols-5 gap-1 sm:gap-2 border-r border-gray-700 pr-2">
                                      {week.slice(0, 5).map((day, dayIndex) => (
                                         <CalendarDayCell 
                                             key={day.date.toISOString()} 
@@ -290,17 +287,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                                         />
                                     ))}
                                 </div>
-                                <div className="w-4 flex-shrink-0 relative">
-                                    <div className="absolute top-[-1px] left-0 w-px h-full bg-gray-600" />
-                                    <div className="absolute top-1/2 left-0 w-full h-px bg-gray-600" />
-                                </div>
-                                <div className="w-32 flex-shrink-0 flex items-center">
-                                    <div className="bg-gray-800/50 rounded-lg flex justify-between items-center w-full h-16 sm:h-20 p-2">
-                                        <div>
-                                            <p className="font-semibold text-white text-sm">{summary.weekLabel}</p>
-                                            <p className="text-gray-400 text-xs">{summary.tradingDays} {summary.tradingDays === 1 ? t('calendar.day') : t('calendar.days')}</p>
-                                        </div>
-                                        <p className={`font-bold whitespace-nowrap ${summary.pnl >= 0 ? 'text-green-400' : 'text-red-400'} text-base`}>
+                                <div className="w-28 flex-shrink-0 flex items-center pl-2">
+                                     <div className="bg-gray-800/50 rounded-lg flex flex-col justify-center items-center text-center w-full h-16 sm:h-20 p-2">
+                                        <p className="font-semibold text-white text-sm">{summary.weekLabel}</p>
+                                        <p className={`font-bold whitespace-nowrap ${summary.pnl >= 0 ? 'text-green-400' : 'text-red-400'} text-sm mt-1`}>
                                             {formatCurrency(summary.pnl)}
                                         </p>
                                     </div>
@@ -337,16 +327,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                     </div>
                 </div>
 
-                <div className={`lg:w-56 lg:flex-shrink-0 mt-6 lg:mt-0`}>
+                <div className={`lg:w-48 lg:flex-shrink-0 mt-6 lg:mt-0`}>
                     <h3 className={`text-lg font-bold text-white mb-4 text-center lg:text-left`}>{t('calendar.weekly_summary')}</h3>
                     <div className="space-y-1 sm:space-y-2">
                         {weeklySummaries.filter(w => w.weekLabel.trim()).map((week, index) => (
-                            <div key={`${week.weekLabel}-${index}`} className={`bg-gray-800/50 rounded-lg flex justify-between items-center p-3 sm:p-4`}>
-                                <div>
-                                    <p className={`font-semibold text-white text-base`}>{week.weekLabel}</p>
-                                    <p className={`text-gray-400 text-sm`}>{week.tradingDays} {week.tradingDays === 1 ? t('calendar.day') : t('calendar.days')}</p>
-                                </div>
-                                <p className={`font-bold whitespace-nowrap ${week.pnl >= 0 ? 'text-green-400' : 'text-red-400'} text-lg`}>
+                            <div key={`${week.weekLabel}-${index}`} className={`bg-gray-800/50 rounded-lg flex justify-between items-center p-3`}>
+                                <p className={`font-semibold text-white text-sm`}>{week.weekLabel}</p>
+                                <p className={`font-bold whitespace-nowrap ${week.pnl >= 0 ? 'text-green-400' : 'text-red-400'} text-base`}>
                                     {formatCurrency(week.pnl)}
                                 </p>
                             </div>
