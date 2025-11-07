@@ -9,7 +9,7 @@ import Toggle from './Toggle';
 const DashboardIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>;
 const AccountsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
 const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
-const ListIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>;
+const ListIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>;
 const GoalsIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
         <circle cx="12" cy="8" r="7"></circle>
@@ -22,6 +22,7 @@ interface BottomNavProps {
     onNavigate: (view: AppView) => void;
     calendarSettings: CalendarSettings;
     onCalendarSettingsChange: (settings: CalendarSettings) => void;
+    hasAccount: boolean;
 }
 
 const NavButton: React.FC<{
@@ -44,10 +45,11 @@ const NavButton: React.FC<{
     );
 };
 
-const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendarSettings, onCalendarSettingsChange }) => {
+const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendarSettings, onCalendarSettingsChange, hasAccount }) => {
     const { t } = useLanguage();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const calendarButtonRef = useRef<HTMLButtonElement>(null);
 
     const handleToggleWeekends = (shouldHide: boolean) => {
         onCalendarSettingsChange({ hideWeekends: shouldHide });
@@ -58,10 +60,13 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendar
     const longPressTriggered = useRef(false);
 
     const handleCalendarPressStart = () => {
-        if (currentView !== 'calendar') return;
         longPressTriggered.current = false;
+        if (currentView !== 'calendar' || !hasAccount) {
+            return;
+        }
+        
         timerRef.current = window.setTimeout(() => {
-            setIsMenuOpen(v => !v); // Toggle menu on long press
+            setIsMenuOpen(v => !v);
             longPressTriggered.current = true;
             triggerHaptic('medium');
         }, 500);
@@ -80,20 +85,42 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendar
     // Close menu on outside click
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                // Check if the click was on the calendar button itself to avoid immediate re-closing
-                const calendarButton = (event.target as HTMLElement).closest('[data-calendar-button="true"]');
-                if (!calendarButton) {
-                    setIsMenuOpen(false);
-                }
+            if (!isMenuOpen) return;
+            if (
+                (menuRef.current && menuRef.current.contains(event.target as Node)) ||
+                (calendarButtonRef.current && calendarButtonRef.current.contains(event.target as Node))
+            ) {
+                return;
             }
+            setIsMenuOpen(false);
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [isMenuOpen]);
 
     return (
         <footer className="fixed bottom-0 left-0 right-0 z-10">
+            {isMenuOpen && (
+                <div
+                    className="absolute bottom-full w-full flex justify-center mb-2 pointer-events-none"
+                >
+                    <div
+                        ref={menuRef}
+                        className="bg-[#1e1d35] border border-gray-700 rounded-lg p-2 shadow-lg w-48 pointer-events-auto"
+                        style={{
+                            animation: 'fade-in-up 0.2s ease-out forwards',
+                        }}
+                    >
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm text-gray-300 pr-4">{t('calendar.hide_weekends')}</label>
+                            <Toggle
+                                enabled={calendarSettings.hideWeekends}
+                                onChange={handleToggleWeekends}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="max-w-4xl mx-auto">
                 <div className="bg-[#16152c]/90 backdrop-blur-md border-t border-gray-700/50 flex justify-around items-center text-gray-400">
                     <NavButton isActive={currentView === 'dashboard'} onClick={() => onNavigate('dashboard')} label={t('nav.dashboard')}>
@@ -103,21 +130,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendar
                         <ListIcon />
                     </NavButton>
                     
-                    <div className="relative w-1/5">
-                         {isMenuOpen && (
-                            <div ref={menuRef} className="absolute bottom-full left-1/2 -translate-x-1/2 z-20 mb-2" style={{ animation: 'fade-in-up 0.2s ease-out forwards' }}>
-                                <div className="bg-[#1e1d35] border border-gray-700 rounded-lg p-2 shadow-lg w-48">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-sm text-gray-300 pr-4">{t('calendar.hide_weekends')}</label>
-                                        <Toggle
-                                            enabled={calendarSettings.hideWeekends}
-                                            onChange={handleToggleWeekends}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                    <div className="w-1/5">
                         <button
+                            ref={calendarButtonRef}
                             data-calendar-button="true"
                             onClick={handleCalendarClick}
                             onTouchStart={handleCalendarPressStart}

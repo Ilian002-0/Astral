@@ -465,7 +465,7 @@ const App: React.FC = () => {
                         </main>
                         
                     </div>
-                    {!isDesktop && <BottomNav currentView={view} onNavigate={setView} calendarSettings={calendarSettings} onCalendarSettingsChange={setCalendarSettings} />}
+                    {!isDesktop && <BottomNav hasAccount={!!currentAccount} currentView={view} onNavigate={setView} calendarSettings={calendarSettings} onCalendarSettingsChange={setCalendarSettings} />}
                 </div>
             </div>
             
