@@ -58,6 +58,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendar
     const longPressTriggered = useRef(false);
 
     const handleCalendarPressStart = () => {
+        if (currentView !== 'calendar') return;
         longPressTriggered.current = false;
         timerRef.current = window.setTimeout(() => {
             setIsMenuOpen(v => !v); // Toggle menu on long press

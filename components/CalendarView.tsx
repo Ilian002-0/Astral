@@ -262,18 +262,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                     <div className="flex-1 grid grid-cols-5 gap-1 text-center text-xs text-gray-400 mb-2 border-r border-gray-700 pr-2">
                         {weekDayHeaders.map(day => <div key={day}>{day}</div>)}
                     </div>
-                    <div className="w-28 flex-shrink-0 text-center mb-2 pl-2">
+                    <div className="w-24 flex-shrink-0 text-center mb-2 pl-2">
                          <h3 className="text-base font-bold text-white">{t('calendar.weekly_summary')}</h3>
                     </div>
                 </div>
 
-                <div className="flex flex-col border-b border-gray-700">
+                <div className="flex flex-col gap-1 sm:gap-2">
                     {relevantWeeks.map((week, index) => {
                         const summary = relevantSummaries[index];
                         if (!summary) return null;
 
                         return (
-                             <div key={index} className="flex items-stretch border-t border-gray-700">
+                             <div key={index} className="flex items-stretch">
                                 <div className="flex-1 grid grid-cols-5 gap-1 sm:gap-2 border-r border-gray-700 pr-2">
                                      {week.slice(0, 5).map((day, dayIndex) => (
                                         <CalendarDayCell 
@@ -287,7 +287,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                                         />
                                     ))}
                                 </div>
-                                <div className="w-28 flex-shrink-0 flex items-center pl-2">
+                                <div className="w-24 flex-shrink-0 flex items-center pl-2">
                                      <div className="bg-gray-800/50 rounded-lg flex flex-col justify-center items-center text-center w-full h-16 sm:h-20 p-2">
                                         <p className="font-semibold text-white text-sm">{summary.weekLabel}</p>
                                         <p className={`font-bold whitespace-nowrap ${summary.pnl >= 0 ? 'text-green-400' : 'text-red-400'} text-sm mt-1`}>
@@ -300,7 +300,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                     })}
                 </div>
 
-                <div className="pt-3 mt-4">
+                <div className="pt-3 mt-4 border-t border-gray-700">
                      <div className="flex justify-between items-center">
                          <p className="font-semibold text-white">{t('calendar.monthly_total')}</p>
                          <p className={`text-xl font-bold ${monthlyProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
