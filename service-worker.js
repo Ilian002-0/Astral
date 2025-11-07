@@ -1,3 +1,4 @@
+
 const CACHE_NAME = 'atlas-cache-v15';
 const ASSETS_TO_CACHE = [
     '/',
@@ -261,14 +262,6 @@ const showNotification = (title, options) => {
     self.registration.showNotification(title, options);
 };
 
-const saveNotificationToHistory = async (notification) => {
-    const historyString = await getDBItem('notification_history');
-    const history = deepParse(historyString) || [];
-    history.unshift(notification);
-    if (history.length > 50) history.pop();
-    await setDBItem('notification_history', deepStringify(history));
-};
-
 const handlePeriodicSync = async () => {
     console.log('Periodic sync event fired!');
     await fetchTranslations();
@@ -316,9 +309,7 @@ const handlePeriodicSync = async () => {
                         profit: trade.profit.toFixed(2),
                         currency: currencySymbol
                     });
-                     const notificationItem = { id: `trade-${Date.now()}-${trade.ticket}`, title, body, timestamp: Date.now(), read: false };
                     showNotification(title, { body, tag: `trade-${trade.ticket}` });
-                    await saveNotificationToHistory(notificationItem);
                  }
             }
 

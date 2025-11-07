@@ -122,11 +122,3 @@ export interface NotificationSettings {
   tradeClosed: boolean;
   weeklySummary: boolean;
 }
-
-export interface NotificationItem {
-  id: string;
-  title: string;
-  body: string;
-  timestamp: number;
-  read: boolean;
-}

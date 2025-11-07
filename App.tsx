@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import useDBStorage from './hooks/useLocalStorage';
-import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, NotificationItem, CalendarSettings } from './types';
+import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, CalendarSettings } from './types';
 import { processAccountData } from './utils/calculations';
 import { parseCSV } from './utils/csvParser';
 import { getDayIdentifier } from './utils/calendar';
@@ -76,7 +76,6 @@ const App: React.FC = () => {
     const { data: accounts, setData: setAccounts, isLoading: isLoadingAccounts } = useDBStorage<Account[]>('trading_accounts_v1', []);
     const { data: currentAccountName, setData: setCurrentAccountName, isLoading: isLoadingCurrentAccount } = useDBStorage<string | null>('current_account_v1', null);
     const { data: notificationSettings, setData: setNotificationSettings } = useDBStorage<NotificationSettings>('notification_settings', { tradeClosed: true, weeklySummary: true });
-    const { data: notificationHistory, setData: setNotificationHistory } = useDBStorage<NotificationItem[]>('notification_history', []);
     const { data: calendarSettings, setData: setCalendarSettings } = useDBStorage<CalendarSettings>('calendar_settings_v1', { hideWeekends: false });
     
     const [isAddAccountModalOpen, setAddAccountModalOpen] = useState(false);
@@ -401,7 +400,7 @@ const App: React.FC = () => {
             case 'calendar': return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={handleDayClick} currency={currentAccount.currency || 'USD'} transitioningDay={transitioningDay} calendarSettings={calendarSettings} />;
             case 'analysis': return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} currency={currentAccount.currency || 'USD'} />;
             case 'goals': return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} currency={currentAccount.currency || 'USD'} />;
-            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} notificationSettings={notificationSettings} onNotificationSettingsChange={setNotificationSettings} notificationHistory={notificationHistory} onClearNotifications={() => setNotificationHistory([])}/>;
+            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} notificationSettings={notificationSettings} onNotificationSettingsChange={setNotificationSettings} />;
             default: return null;
         }
     };
