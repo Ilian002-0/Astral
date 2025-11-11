@@ -47,7 +47,7 @@
     "chart_no_data": "Pas assez de données pour afficher le graphique pour la période sélectionnée.",
     "daily_results_table_title": "Résultats journaliers",
     "date": "Date",
-    "result": "Résultat",
+    "result": "Profit",
     "total_result": "Résultat total",
     "recent_trades_table_title": "Derniers trades",
     "id": "ID",
@@ -98,7 +98,8 @@
     "col_commission": "Commission",
     "col_swap": "Swap",
     "col_profit": "Profit",
-    "col_comment": "Commentaire"
+    "col_comment": "Commentaire",
+    "col_pips": "Pips"
   },
   "calendar": {
     "title": "Résumé journalier",

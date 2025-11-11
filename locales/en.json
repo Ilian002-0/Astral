@@ -98,7 +98,8 @@
     "col_commission": "Commission",
     "col_swap": "Swap",
     "col_profit": "Profit",
-    "col_comment": "Comment"
+    "col_comment": "Comment",
+    "col_pips": "Pips"
   },
   "calendar": {
     "title": "Daily Summary",
