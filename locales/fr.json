@@ -88,7 +88,7 @@
     "customize_columns": "Personnaliser les colonnes",
     "no_trades_found": "Aucun trade trouvé.",
     "col_id": "ID",
-    "col_open_time": "Ouverture",
+    "col_open_time": "Heure d'ouverture",
     "col_type": "Type",
     "col_size": "Taille",
     "col_symbol": "Symbole",

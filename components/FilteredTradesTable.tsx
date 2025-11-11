@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Trade } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -51,21 +52,21 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
     const { t, language } = useLanguage();
 
     const COLUMN_DEFINITIONS = useMemo(() => [
+        { key: 'ticket' as const, label: t('trades_list.col_id'), defaultVisible: false },
+        { key: 'openTime' as const, label: t('trades_list.col_open_time'), defaultVisible: false },
         { key: 'type' as const, label: t('dashboard.type'), defaultVisible: true },
         { key: 'size' as const, label: t('dashboard.size'), defaultVisible: true, isNumeric: true },
         { key: 'symbol' as const, label: t('dashboard.symbol'), defaultVisible: true },
+        { key: 'openPrice' as const, label: t('trades_list.col_open_price'), defaultVisible: false, isNumeric: true },
         { key: 'closeTime' as const, label: t('trades_list.col_close_time'), defaultVisible: true },
         { key: 'duration' as const, label: t('trades_list.col_duration'), defaultVisible: true, isNumeric: false },
-        { key: 'profit' as const, label: t('trades_list.col_profit'), defaultVisible: true, isNumeric: true },
-        { key: 'profitPercentage' as const, label: t('trades_list.col_profit_percentage'), defaultVisible: true, isNumeric: true },
-        { key: 'comment' as const, label: t('trades_list.col_comment'), defaultVisible: true },
-        { key: 'pips' as const, label: t('trades_list.col_pips'), defaultVisible: false, isNumeric: true },
-        { key: 'ticket' as const, label: t('trades_list.col_id'), defaultVisible: false },
-        { key: 'openTime' as const, label: t('trades_list.col_open_time'), defaultVisible: false },
-        { key: 'openPrice' as const, label: t('trades_list.col_open_price'), defaultVisible: false, isNumeric: true },
         { key: 'closePrice' as const, label: t('trades_list.col_close_price'), defaultVisible: false, isNumeric: true },
         { key: 'commission' as const, label: t('trades_list.col_commission'), defaultVisible: false, isNumeric: true },
         { key: 'swap' as const, label: t('trades_list.col_swap'), defaultVisible: false, isNumeric: true },
+        { key: 'profit' as const, label: t('trades_list.col_profit'), defaultVisible: true, isNumeric: true },
+        { key: 'profitPercentage' as const, label: t('trades_list.col_profit_percentage'), defaultVisible: true, isNumeric: true },
+        { key: 'pips' as const, label: t('trades_list.col_pips'), defaultVisible: false, isNumeric: true },
+        { key: 'comment' as const, label: t('trades_list.col_comment'), defaultVisible: false },
     ], [t]);
 
     const initialVisibility = useMemo(() => COLUMN_DEFINITIONS.reduce((acc, col) => {
@@ -73,7 +74,7 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
         return acc;
     }, {} as Record<typeof COLUMN_DEFINITIONS[number]['key'], boolean>), [COLUMN_DEFINITIONS]);
 
-    const { data: visibleColumns, setData: setVisibleColumns } = useDBStorage('filtered_trades_columns_v3', initialVisibility);
+    const { data: visibleColumns, setData: setVisibleColumns } = useDBStorage('filtered_trades_columns_v4', initialVisibility);
     const [isDropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     
