@@ -8,7 +8,19 @@ interface TradesListProps {
   currency: 'USD' | 'EUR';
 }
 
-type TradeKeys = keyof Trade;
+type TradeKeys = keyof Trade | 'duration';
+
+const calculateDuration = (trade: Trade): string => {
+    if (!trade.closeTime || !trade.openTime || !trade.closeTime.getTime() || !trade.openTime.getTime()) return '-';
+    const diffMs = trade.closeTime.getTime() - trade.openTime.getTime();
+    if (diffMs < 0) return '-';
+
+    const totalMinutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    return `${hours}h ${minutes}m`;
+};
 
 const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     const { t, language } = useLanguage();
@@ -21,6 +33,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
         { key: 'symbol', label: t('trades_list.col_symbol'), defaultVisible: true },
         { key: 'openPrice', label: t('trades_list.col_open_price'), defaultVisible: false },
         { key: 'closeTime', label: t('trades_list.col_close_time'), defaultVisible: true },
+        { key: 'duration', label: t('trades_list.col_duration'), defaultVisible: true },
         { key: 'closePrice', label: t('trades_list.col_close_price'), defaultVisible: false },
         { key: 'commission', label: t('trades_list.col_commission'), defaultVisible: false },
         { key: 'swap', label: t('trades_list.col_swap'), defaultVisible: false },
@@ -33,7 +46,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
         return acc;
     }, {} as Record<TradeKeys, boolean>), [COLUMN_DEFINITIONS]);
 
-    const { data: visibleColumns, setData: setVisibleColumns, isLoading } = useDBStorage('trades_list_columns_v1', initialVisibility);
+    const { data: visibleColumns, setData: setVisibleColumns, isLoading } = useDBStorage('trades_list_columns_v2', initialVisibility);
     const [isDropdownOpen, setDropdownOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -60,7 +73,10 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     };
 
     const formatValue = (trade: Trade, key: TradeKeys) => {
-        const value = trade[key];
+        if (key === 'duration') {
+            return calculateDuration(trade);
+        }
+        const value = trade[key as keyof Trade];
         if (value instanceof Date) {
             return formatDate(value);
         }
@@ -149,10 +165,14 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                             >
                                {activeColumns.map(col => {
                                     const isBuy = trade.type.toLowerCase() === 'buy';
-                                    const isProfit = trade.profit >= 0;
                                     let cellClass = 'text-white';
                                     if(col.key === 'type') cellClass = `font-bold uppercase ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`;
-                                    if(col.key === 'profit' || col.key === 'commission' || col.key === 'swap') cellClass = `font-bold ${trade[col.key] >= 0 ? 'text-green-400' : 'text-red-400'}`;
+                                    if(col.key === 'profit' || col.key === 'commission' || col.key === 'swap') {
+                                        const value = trade[col.key as keyof Trade];
+                                        if (typeof value === 'number') {
+                                            cellClass = `font-bold ${value >= 0 ? 'text-green-400' : 'text-red-400'}`;
+                                        }
+                                    }
                                     
                                     const isComment = col.key === 'comment';
                                     const isDateColumn = col.key === 'openTime' || col.key === 'closeTime';

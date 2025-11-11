@@ -3,8 +3,10 @@ import { Trade } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import useDBStorage from '../hooks/useLocalStorage';
 
+type AugmentedTrade = Trade & { profitPercentage?: number };
+
 interface FilteredTradesTableProps {
-    trades: Trade[];
+    trades: AugmentedTrade[];
     currency: 'USD' | 'EUR';
 }
 
@@ -33,6 +35,18 @@ const calculatePips = (trade: Trade): number => {
     return priceDiff / pipValue;
 };
 
+const calculateDuration = (trade: Trade): string => {
+    if (!trade.closeTime || !trade.openTime || !trade.closeTime.getTime() || !trade.openTime.getTime()) return '-';
+    const diffMs = trade.closeTime.getTime() - trade.openTime.getTime();
+    if (diffMs < 0) return '-';
+
+    const totalMinutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    return `${hours}h ${minutes}m`;
+};
+
 const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, currency }) => {
     const { t, language } = useLanguage();
 
@@ -41,7 +55,9 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
         { key: 'size' as const, label: t('dashboard.size'), defaultVisible: true, isNumeric: true },
         { key: 'symbol' as const, label: t('dashboard.symbol'), defaultVisible: true },
         { key: 'closeTime' as const, label: t('trades_list.col_close_time'), defaultVisible: true },
+        { key: 'duration' as const, label: t('trades_list.col_duration'), defaultVisible: true, isNumeric: false },
         { key: 'profit' as const, label: t('trades_list.col_profit'), defaultVisible: true, isNumeric: true },
+        { key: 'profitPercentage' as const, label: t('trades_list.col_profit_percentage'), defaultVisible: true, isNumeric: true },
         { key: 'comment' as const, label: t('trades_list.col_comment'), defaultVisible: true },
         { key: 'pips' as const, label: t('trades_list.col_pips'), defaultVisible: false, isNumeric: true },
         { key: 'ticket' as const, label: t('trades_list.col_id'), defaultVisible: false },
@@ -57,7 +73,7 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
         return acc;
     }, {} as Record<typeof COLUMN_DEFINITIONS[number]['key'], boolean>), [COLUMN_DEFINITIONS]);
 
-    const { data: visibleColumns, setData: setVisibleColumns } = useDBStorage('filtered_trades_columns_v1', initialVisibility);
+    const { data: visibleColumns, setData: setVisibleColumns } = useDBStorage('filtered_trades_columns_v3', initialVisibility);
     const [isDropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     
@@ -151,6 +167,14 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
                                             const pips = calculatePips(trade);
                                             cellClass = pips >= 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
                                             cellContent = pips.toFixed(1);
+                                            break;
+                                        case 'duration':
+                                            cellContent = calculateDuration(trade);
+                                            break;
+                                        case 'profitPercentage':
+                                            const percentage = trade.profitPercentage ?? 0;
+                                            cellClass = percentage >= 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
+                                            cellContent = `${percentage.toFixed(2)}%`;
                                             break;
                                         case 'profit':
                                         case 'commission':

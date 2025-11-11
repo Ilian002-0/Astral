@@ -1,4 +1,3 @@
-
 {
   "nav": {
     "trades": "List of Trades",
@@ -99,7 +98,9 @@
     "col_swap": "Swap",
     "col_profit": "Profit",
     "col_comment": "Comment",
-    "col_pips": "Pips"
+    "col_pips": "Pips",
+    "col_profit_percentage": "Profit %",
+    "col_duration": "Duration"
   },
   "calendar": {
     "title": "Daily Summary",

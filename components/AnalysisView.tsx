@@ -14,6 +14,8 @@ interface AnalysisViewProps {
   currency: 'USD' | 'EUR';
 }
 
+type TradeWithProfitPercentage = Trade & { profitPercentage: number };
+
 const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
   const { language } = useLanguage();
   const formatCurrency = (value: number, options?: Intl.NumberFormatOptions) => {
@@ -142,8 +144,21 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     }
   };
 
+  const tradesWithProfitPercentage: TradeWithProfitPercentage[] = useMemo(() => {
+    let runningBalance = initialBalance;
+    // The `trades` array must be sorted chronologically by closeTime for this to work.
+    // This is guaranteed by the `processAccountData` function.
+    return trades.map(trade => {
+        const balanceBefore = runningBalance;
+        const netProfit = trade.profit + trade.commission + trade.swap;
+        runningBalance += netProfit;
+        const profitPercentage = balanceBefore !== 0 ? (netProfit / balanceBefore) * 100 : 0;
+        return { ...trade, profitPercentage };
+    });
+  }, [trades, initialBalance]);
+
   const filteredTrades = useMemo(() => {
-    let result = trades;
+    let result = tradesWithProfitPercentage;
     if (selectedSymbols.length > 0) {
       result = result.filter(trade => selectedSymbols.includes(trade.symbol));
     }
@@ -160,7 +175,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         result = result.filter(trade => trade.closeTime.getTime() <= end.getTime());
     }
     return result;
-  }, [trades, selectedSymbols, selectedComments, startDate, endDate]);
+  }, [tradesWithProfitPercentage, selectedSymbols, selectedComments, startDate, endDate]);
 
   const { chartData, filteredNetProfit } = useMemo(() => {
     if (filteredTrades.length === 0) return { chartData: [], filteredNetProfit: 0 };

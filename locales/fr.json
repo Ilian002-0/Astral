@@ -99,7 +99,9 @@
     "col_swap": "Swap",
     "col_profit": "Profit",
     "col_comment": "Commentaire",
-    "col_pips": "Pips"
+    "col_pips": "Pips",
+    "col_profit_percentage": "Gain %",
+    "col_duration": "Durée"
   },
   "calendar": {
     "title": "Résumé journalier",
