@@ -1,4 +1,5 @@
 
+
 const CACHE_NAME = 'atlas-cache-v15';
 const ASSETS_TO_CACHE = [
     '/',
@@ -373,8 +374,28 @@ const handleWeeklySummary = async () => {
 
 // For scheduled weekly notification
 self.addEventListener('message', event => {
-    if (event.data && event.data.type === 'trigger-weekly-summary') {
-         event.waitUntil(handleWeeklySummary());
+    if (!event.data) return;
+
+    switch (event.data.type) {
+        case 'SHOW_TEST_NOTIFICATION':
+            event.waitUntil(
+                self.registration.showNotification('Atlas Test Notification', {
+                    body: 'If you see this, notifications are working! Click me.',
+                    icon: 'https://i.imgur.com/gA2QYp9.png',
+                    badge: 'https://i.imgur.com/zW6T5bB.png',
+                    data: {
+                        url: `${self.location.origin}/?view=profile`
+                    },
+                    tag: 'atlas-test-notification'
+                })
+            );
+            break;
+        case 'trigger-weekly-summary':
+            event.waitUntil(handleWeeklySummary());
+            break;
+        default:
+            console.log('SW received unknown message:', event.data);
+            break;
     }
 });
 

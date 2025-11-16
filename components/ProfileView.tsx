@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleDriveBackup from './GoogleDriveBackup';
@@ -51,19 +52,13 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
              return;
         }
 
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            await registration.showNotification('Atlas Test Notification', {
-                body: 'If you see this, notifications are working! Click me.',
-                icon: 'https://i.imgur.com/gA2QYp9.png',
-                badge: 'https://i.imgur.com/zW6T5bB.png',
-                data: {
-                    url: `${window.location.origin}/?view=profile`
-                }
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'SHOW_TEST_NOTIFICATION'
             });
-        } catch (e) {
-            console.error('Error showing test notification:', e);
-            alert(`Failed to show test notification. Error: ${e instanceof Error ? e.message : String(e)}`);
+            alert("Test notification requested. Check your device's notification panel.");
+        } else {
+            alert("The app's background service isn't ready yet. Please reload the page and try again.");
         }
     };
 
