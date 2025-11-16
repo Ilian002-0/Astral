@@ -340,6 +340,29 @@ self.addEventListener('periodicsync', (event) => {
     }
 });
 
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const urlToOpen = event.notification.data?.url;
+    if (urlToOpen) {
+        event.waitUntil(
+            self.clients.matchAll({
+                type: 'window',
+                includeUncontrolled: true
+            }).then((clientList) => {
+                for (const client of clientList) {
+                    if (client.url === urlToOpen && 'focus' in client) {
+                        return client.focus();
+                    }
+                }
+                if (self.clients.openWindow) {
+                    return self.clients.openWindow(urlToOpen);
+                }
+            })
+        );
+    }
+});
+
 const handleWeeklySummary = async () => {
     console.log('Weekly summary handler called. This feature is a work in progress.');
     // In a full implementation, this would calculate the weekly performance

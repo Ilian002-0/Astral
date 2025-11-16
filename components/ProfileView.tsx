@@ -16,7 +16,7 @@ interface ProfileViewProps {
 const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, notificationSettings, onNotificationSettingsChange }) => {
     const { language, setLanguage, t } = useLanguage();
     const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
-    const [isNotificationsExpanded, setIsNotificationsExpanded] = useState(Notification.permission === 'granted');
+    const [isNotificationsExpanded, setIsNotificationsExpanded] = useState(false);
 
     const handleUpdate = () => {
         window.location.reload();
@@ -38,6 +38,27 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
             requestNotificationPermission();
         } else {
             onNotificationSettingsChange({ ...notificationSettings, [key]: value });
+        }
+    };
+
+    const handleTestNotification = async () => {
+        if (!('serviceWorker' in navigator)) {
+            alert('Service Worker not supported. Notifications cannot be sent.');
+            return;
+        }
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            await registration.showNotification('Atlas Test Notification', {
+                body: 'If you see this, notifications are working!',
+                icon: 'https://i.imgur.com/gA2QYp9.png',
+                badge: 'https://i.imgur.com/zW6T5bB.png',
+                data: {
+                    url: `${window.location.origin}/?view=profile`
+                }
+            });
+        } catch (e) {
+            console.error('Error showing test notification:', e);
+            alert('Failed to show test notification. Check console for details.');
         }
     };
 
@@ -95,6 +116,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                                     <p className="text-xs text-gray-500 mt-3 text-center italic">
                                         {t('profile.background_sync_note')}
                                     </p>
+                                    <button onClick={handleTestNotification} className="w-full mt-4 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105">
+                                        {t('profile.send_test_notification')}
+                                    </button>
                                 </>
                             )}
                         </div>
