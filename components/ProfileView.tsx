@@ -29,7 +29,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
         if (permission === 'granted') {
             // Automatically enable all notifications on first grant
             onNotificationSettingsChange({ tradeClosed: true, weeklySummary: true });
-            setIsNotificationsExpanded(true);
         }
     };
 
@@ -42,14 +41,20 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
     };
 
     const handleTestNotification = async () => {
-        if (!('serviceWorker' in navigator)) {
-            alert('Service Worker not supported. Notifications cannot be sent.');
+        if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+            alert('Notifications are not supported in this browser.');
             return;
         }
+
+        if (Notification.permission !== 'granted') {
+             alert('Notification permission has not been granted. Please enable notifications first.');
+             return;
+        }
+
         try {
             const registration = await navigator.serviceWorker.ready;
             await registration.showNotification('Atlas Test Notification', {
-                body: 'If you see this, notifications are working!',
+                body: 'If you see this, notifications are working! Click me.',
                 icon: 'https://i.imgur.com/gA2QYp9.png',
                 badge: 'https://i.imgur.com/zW6T5bB.png',
                 data: {
@@ -58,7 +63,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
             });
         } catch (e) {
             console.error('Error showing test notification:', e);
-            alert('Failed to show test notification. Check console for details.');
+            alert(`Failed to show test notification. Error: ${e instanceof Error ? e.message : String(e)}`);
         }
     };
 

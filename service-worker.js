@@ -341,26 +341,27 @@ self.addEventListener('periodicsync', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
+    const notification = event.notification;
+    const urlToOpen = new URL(notification.data?.url || '/', self.location.origin).href;
+    notification.close();
 
-    const urlToOpen = event.notification.data?.url;
-    if (urlToOpen) {
-        event.waitUntil(
-            self.clients.matchAll({
-                type: 'window',
-                includeUncontrolled: true
-            }).then((clientList) => {
-                for (const client of clientList) {
-                    if (client.url === urlToOpen && 'focus' in client) {
-                        return client.focus();
-                    }
-                }
-                if (self.clients.openWindow) {
-                    return self.clients.openWindow(urlToOpen);
-                }
-            })
-        );
-    }
+    // This looks for an existing window and focuses it.
+    event.waitUntil(clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true
+    }).then((clientList) => {
+        // If a window is already open, focus it and navigate.
+        if (clientList.length > 0) {
+            // Find a visible client if possible
+            let client = clientList.find(c => c.visibilityState === 'visible');
+            // Otherwise, just take the first one
+            if (!client) client = clientList[0];
+            
+            return client.navigate(urlToOpen).then(c => c.focus());
+        }
+        // Otherwise, open a new window.
+        return clients.openWindow(urlToOpen);
+    }));
 });
 
 const handleWeeklySummary = async () => {
