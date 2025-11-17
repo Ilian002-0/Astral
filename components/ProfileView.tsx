@@ -41,28 +41,34 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
         }
     };
 
-    const handleTestNotification = () => {
+    const handleTestNotification = async () => {
         if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-            alert('Notifications are not supported in this browser.');
+            alert(t('profile.notifications_not_supported_alert'));
             return;
         }
 
         if (Notification.permission !== 'granted') {
-             alert('Notification permission has not been granted. Please enable notifications first.');
+             alert(t('profile.notifications_not_granted_alert'));
              return;
         }
         
-        // Use navigator.serviceWorker.controller, which is a more direct and reliable way
-        // to get the service worker that controls the current page.
-        if (navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage({
-                type: 'SHOW_TEST_NOTIFICATION'
-            });
-            alert("Test notification requested. Check your device's notification panel.");
-        } else {
-            // This case can happen on the very first visit before the SW has activated,
-            // or if something went wrong during registration.
-            alert("The app's background service isn't ready yet. This can happen on first load. Please reload the page and try again.");
+        try {
+            // navigator.serviceWorker.ready waits for the service worker to be active.
+            const registration = await navigator.serviceWorker.ready;
+            
+            // registration.active is the currently active service worker.
+            if (registration.active) {
+                registration.active.postMessage({
+                    type: 'SHOW_TEST_NOTIFICATION'
+                });
+                alert(t('profile.test_notification_sent'));
+            } else {
+                // This state is less common but indicates the SW is installed but not yet active.
+                alert(t('profile.service_worker_not_active_alert'));
+            }
+        } catch (error) {
+            console.error("Error communicating with Service Worker:", error);
+            alert(t('profile.service_worker_connect_error_alert'));
         }
     };
 

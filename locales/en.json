@@ -202,7 +202,12 @@
     "no_notifications": "You have no new notifications.",
     "clear_all": "Clear All",
     "background_sync_note": "Background notifications depend on your browser's sync frequency, which can be delayed to save battery. Sync also occurs when the app starts.",
-    "send_test_notification": "Send Test Notification"
+    "send_test_notification": "Send Test Notification",
+    "test_notification_sent": "Test notification requested. Check your device's notification panel.",
+    "notifications_not_supported_alert": "Notifications are not supported in this browser.",
+    "notifications_not_granted_alert": "Notification permission has not been granted. Please enable notifications first.",
+    "service_worker_not_active_alert": "The app's background service is not active. Please try reloading the page.",
+    "service_worker_connect_error_alert": "Could not connect to the app's background service. It might still be installing. Please wait a moment and try again."
   },
   "analysis": {
     "title": "Advanced Analysis",
