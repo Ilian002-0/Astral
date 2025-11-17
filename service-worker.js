@@ -1,6 +1,5 @@
-
 // --- CONSTANTS & CONFIG ---
-const CACHE_NAME = 'atlas-cache-v23'; // Incremented cache version
+const CACHE_NAME = 'atlas-cache-v24'; // Incremented cache version
 const ASSETS_TO_CACHE = [
     '/', '/index.html', '/manifest.json', '/logo.svg',
     '/dashboard-icon.svg', '/list-icon.svg', '/calendar-icon.svg', '/goals-icon.svg',
@@ -23,7 +22,7 @@ function getDB() {
             };
             request.onsuccess = () => resolve(request.result);
             request.onerror = (e) => {
-                console.error('DB Error:', e);
+                console.error('SW DB Error:', e);
                 reject(request.error);
             };
         });
@@ -136,7 +135,6 @@ const parseCSV_SW = (content) => {
       };
     }).filter(trade => {
         if (!trade) return false;
-        // Corrected filter logic: Allow trades where closeTime is epoch (i.e., open trades)
         return !isNaN(trade.ticket) &&
                trade.openTime instanceof Date && !isNaN(trade.openTime.getTime()) && trade.openTime.getTime() !== 0 &&
                trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime());
@@ -146,11 +144,13 @@ const parseCSV_SW = (content) => {
 
 // --- SERVICE WORKER LIFECYCLE ---
 self.addEventListener('install', (e) => {
+    console.log('SW: Installing...');
     self.skipWaiting();
     e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(ASSETS_TO_CACHE)));
 });
 
 self.addEventListener('activate', (e) => {
+    console.log('SW: Activating...');
     e.waitUntil(
         caches.keys().then((names) => Promise.all(names.map((n) => n !== CACHE_NAME && caches.delete(n))))
         .then(() => self.clients.claim())
@@ -159,9 +159,8 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-    // Standard network-first, then cache fallback strategy
     e.respondWith(
-        fetch(e.request).catch(() => caches.match(e.request))
+        fetch(e.request).catch(() => caches.match(e.request).then(res => res || new Response(null, { status: 404 })))
     );
 });
 
@@ -183,16 +182,21 @@ const t = (lang, key, opts) => {
     return str;
 };
 
+// **CRITICAL FIX:** This function now correctly identifies newly closed trades.
 const findNewlyClosedTrades = (newTrades, oldTrades) => {
     const oldTradesMap = new Map(oldTrades.map(t => [t.ticket, t]));
+    
     return newTrades.filter(newTrade => {
-        // We only care about actual trades that are now closed
-        if (newTrade.type === 'balance' || newTrade.closePrice === 0) return false;
+        // We only care about actual trades that are now closed.
+        if (newTrade.type === 'balance' || newTrade.closePrice === 0) {
+            return false;
+        }
         
         const oldTrade = oldTradesMap.get(newTrade.ticket);
-        // A trade is newly closed if:
-        // 1. It didn't exist before (is a brand new, already closed trade in the file)
-        // 2. It existed before, but was open (closePrice was 0)
+        
+        // A trade is "newly closed" if:
+        // 1. It didn't exist before (it's a brand new, already closed trade).
+        // 2. Or, it existed before, but it was open (old closePrice was 0).
         return !oldTrade || oldTrade.closePrice === 0;
     });
 };
@@ -208,6 +212,42 @@ const notifyForTrades = (trades, account, lang, settings) => {
     });
 };
 
+// **NEW:** A robust function to sync a single account.
+async function syncAccount(account, lang, settings) {
+    if (!account.dataUrl) {
+        console.log(`SW: Account "${account.name}" has no data URL, skipping.`);
+        return { account, hasChanged: false };
+    }
+
+    console.log(`SW: Processing account: "${account.name}"`);
+    try {
+        const response = await fetch(account.dataUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
+        
+        const csvText = await response.text();
+        const newTrades = parseCSV_SW(csvText);
+        
+        if (newTrades.length === 0 && account.trades.length > 0) {
+            console.warn(`SW: Fetched empty or invalid file for "${account.name}". Skipping update to avoid data loss.`);
+            return { account, hasChanged: false };
+        }
+
+        const newlyClosed = findNewlyClosedTrades(newTrades, account.trades);
+        notifyForTrades(newlyClosed, account, lang, settings);
+
+        const sortedTrades = newTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+        const updatedAccount = { ...account, trades: sortedTrades, lastUpdated: new Date().toISOString() };
+        
+        console.log(`SW: Successfully synced "${account.name}". Found ${newlyClosed.length} new closed trades.`);
+        return { account: updatedAccount, hasChanged: true };
+
+    } catch (error) {
+        console.error(`SW: FAILED to sync account "${account.name}". Error:`, error.message);
+        return { account, hasChanged: false }; // Return original account on failure
+    }
+}
+
+// **REFACTORED:** The main sync logic is now more resilient.
 async function runSync() {
     console.log('SW: --- Starting background sync ---');
     await fetchTranslations();
@@ -218,51 +258,22 @@ async function runSync() {
         getDBItem('language').then(val => deepParse(val) || 'en'),
     ]);
 
-    let originalAccounts = deepParse(accountsStr) || [];
+    const originalAccounts = deepParse(accountsStr) || [];
     if (!originalAccounts.length) {
         console.log('SW: No accounts configured. Sync finished.');
         return;
     }
     const settings = deepParse(settingsStr) || { tradeClosed: true, weeklySummary: true };
-    let accountsToSave = [...originalAccounts];
-    let dataWasChanged = false;
+    
+    const syncPromises = originalAccounts.map(acc => syncAccount(acc, lang, settings));
+    const results = await Promise.all(syncPromises);
 
-    for (let i = 0; i < originalAccounts.length; i++) {
-        const account = originalAccounts[i];
-        if (!account.dataUrl) {
-            console.log(`SW: Account "${account.name}" has no data URL, skipping.`);
-            continue;
-        }
+    const updatedAccounts = results.map(r => r.account);
+    const wasAnyDataChanged = results.some(r => r.hasChanged);
 
-        console.log(`SW: Processing account: "${account.name}"`);
-        try {
-            const response = await fetch(account.dataUrl, { cache: 'no-store' });
-            if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
-            
-            const csvText = await response.text();
-            const newTrades = parseCSV_SW(csvText);
-            
-            if (newTrades.length === 0 && account.trades.length > 0) {
-                console.warn(`SW: Fetched empty file for "${account.name}". Skipping update to avoid data loss.`);
-                continue;
-            }
-
-            const newlyClosed = findNewlyClosedTrades(newTrades, account.trades);
-            notifyForTrades(newlyClosed, account, lang, settings);
-
-            const sortedTrades = newTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-            accountsToSave[i] = { ...account, trades: sortedTrades, lastUpdated: new Date().toISOString() };
-            dataWasChanged = true;
-            console.log(`SW: Successfully synced "${account.name}". Found ${newlyClosed.length} new closed trades.`);
-
-        } catch (error) {
-            console.error(`SW: FAILED to sync account "${account.name}". Error:`, error.message);
-        }
-    }
-
-    if (dataWasChanged) {
+    if (wasAnyDataChanged) {
         console.log('SW: Sync found updates. Writing new data to IndexedDB.');
-        await setDBItem('trading_accounts_v1', deepStringify(accountsToSave));
+        await setDBItem('trading_accounts_v1', deepStringify(updatedAccounts));
     } else {
         console.log('SW: Sync finished. No data was changed.');
     }
@@ -282,9 +293,17 @@ self.addEventListener('notificationclick', (e) => {
     e.notification.close();
     const urlToOpen = e.notification.data?.url || '/';
     e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        const client = clientList.find(c => c.url === urlToOpen);
-        if (client) return client.focus();
-        if (clients.openWindow) return clients.openWindow(urlToOpen);
+        // Try to find an already open client and focus it.
+        for (const client of clientList) {
+            // new URL(client.url).pathname strips any query params for a more reliable match
+            if (new URL(client.url).pathname === new URL(urlToOpen, self.location.origin).pathname && 'focus' in client) {
+                return client.focus();
+            }
+        }
+        // If no client is open, open a new window.
+        if (clients.openWindow) {
+            return clients.openWindow(urlToOpen);
+        }
     }));
 });
 
