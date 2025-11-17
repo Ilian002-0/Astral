@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppView } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import Logo from './Logo';
 
 // Icons
 const DashboardIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>;
@@ -50,10 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
     return (
         <aside className="w-64 bg-[#16152c] p-4 flex-shrink-0 flex-col border-r border-gray-700/50 hidden md:flex">
             <div className="flex items-center justify-center mb-8 px-2 h-28">
-                <div className="flex items-center justify-center text-center flex-col h-full">
-                    <img src="/logo.svg" alt="Atlas Logo" className="w-auto object-contain max-h-20" />
-                    <span className="mt-0 text-xl font-bold tracking-[5px] text-[#8B9BBD]">ATLAS</span>
-                </div>
+                <Logo layout="desktop" />
             </div>
             <nav className="flex-grow space-y-2">
                 <NavItem view="dashboard" currentView={currentView} onNavigate={onNavigate} icon={<DashboardIcon />} label={t('nav.dashboard')} />

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import useDBStorage from './hooks/useLocalStorage';
 import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, CalendarSettings } from './types';
@@ -30,6 +31,7 @@ import DashboardMetricsBottom from './components/DashboardMetricsBottom';
 import GoalsView from './components/GoalsView';
 import DayDetailModal from './components/DayDetailModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
+import Logo from './components/Logo';
 
 // Memoize components to prevent unnecessary re-renders
 const MemoizedDashboard = React.memo(Dashboard);
@@ -414,9 +416,8 @@ const App: React.FC = () => {
                         <div className="max-w-4xl mx-auto px-4 md:px-6" style={{ paddingTop: 'env(titlebar-area-height, 0)'}}>
                             <div className={`flex ${!isDesktop ? 'justify-between' : 'justify-end'} items-center h-20`}>
                                 {!isDesktop && (
-                                    <div className="flex items-center gap-2 app-region-no-drag">
-                                        <img src="/logo.svg" alt="Atlas Logo" className="h-10 w-auto object-contain" />
-                                        <span className="text-xl font-bold tracking-widest text-[#8B9BBD]">ATLAS</span>
+                                    <div className="app-region-no-drag">
+                                        <Logo layout="mobile" />
                                     </div>
                                 )}
                                 <div className="app-region-no-drag">

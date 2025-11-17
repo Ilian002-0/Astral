@@ -1,6 +1,7 @@
 
 
-const CACHE_NAME = 'atlas-cache-v17'; // Incremented cache version
+
+const CACHE_NAME = 'atlas-cache-v20'; // Incremented cache version
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -174,6 +175,7 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
+            console.log('SW: Caching app shell');
             return cache.addAll(ASSETS_TO_CACHE);
         })
     );
@@ -185,6 +187,7 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
                     if (cacheName !== CACHE_NAME) {
+                        console.log('SW: Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
@@ -199,8 +202,14 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
+    const { request } = event;
+    const url = new URL(request.url);
 
+    // Ignore external assets and specific paths like browser-sync
+    if (request.url.startsWith('http') && !request.url.startsWith(self.origin) || url.pathname.includes('browser-sync')) {
+        return;
+    }
+    
     // Handle widget-specific requests first
     if (url.pathname === '/goal-widget-template') {
         event.respondWith(handleWidgetTemplate());
@@ -210,16 +219,33 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(handleWidgetData());
         return;
     }
-    
-    // Ignore external assets
-    if (event.request.url.startsWith('https://aistudiocdn.com') || event.request.url.startsWith('https://cdn.tailwindcss.com')) {
-        return; 
-    }
 
+    // Network falling back to cache strategy
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
-        })
+        fetch(request)
+            .then(response => {
+                // Check if we received a valid response
+                if (!response || response.status !== 200 || response.type !== 'basic') {
+                    return response;
+                }
+                
+                // IMPORTANT: Clone the response. A response is a stream
+                // and because we want the browser to consume the response
+                // as well as the cache consuming the response, we need
+                // to clone it so we have two streams.
+                const responseToCache = response.clone();
+
+                caches.open(CACHE_NAME)
+                    .then(cache => {
+                        cache.put(request, responseToCache);
+                    });
+
+                return response;
+            })
+            .catch(() => {
+                // Network request failed, try to get it from the cache.
+                return caches.match(request);
+            })
     );
 });
 
