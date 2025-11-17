@@ -42,7 +42,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
     };
 
     const handleTestNotification = async () => {
-        if (!('Notification' in window)) {
+        if (!('Notification' in window) || !('serviceWorker' in navigator)) {
             alert(t('profile.notifications_not_supported_alert'));
             return;
         }
@@ -53,16 +53,25 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
         }
         
         try {
-            // Directly create a notification from the page script.
-            // This is the most reliable way to test if permissions are granted.
-            new Notification('Atlas Test Notification', {
-                body: 'If you see this, notifications are working!',
-                icon: '/logo.svg',
-                tag: 'atlas-test-notification'
+            const registration = await navigator.serviceWorker.ready;
+            if (!registration.active) {
+                alert(t('profile.service_worker_not_active_alert'));
+                return;
+            }
+    
+            // Send a message to the service worker to show the notification
+            registration.active.postMessage({
+                type: 'SHOW_TEST_NOTIFICATION',
+                payload: {
+                    title: 'Atlas Test Notification',
+                    body: t('profile.test_notification_body')
+                }
             });
+
+            alert(t('profile.test_notification_sent'));
         } catch (error) {
-            console.error("Error showing notification:", error);
-            alert("An error occurred while trying to show the test notification.");
+            console.error("Error communicating with Service Worker:", error);
+            alert(t('profile.service_worker_connect_error_alert'));
         }
     };
 

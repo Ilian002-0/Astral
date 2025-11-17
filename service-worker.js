@@ -165,6 +165,47 @@ self.addEventListener('fetch', (e) => {
 });
 
 
+// --- EVENT LISTENERS ---
+self.addEventListener('periodicsync', (e) => {
+    if (e.tag === 'account-sync') {
+        console.log('SW: Periodic sync event received.');
+        e.waitUntil(runSync());
+    }
+});
+
+self.addEventListener('notificationclick', (e) => {
+    e.notification.close();
+    const urlToOpen = e.notification.data?.url || '/';
+    e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        // Try to find an already open client and focus it.
+        for (const client of clientList) {
+            // new URL(client.url).pathname strips any query params for a more reliable match
+            if (new URL(client.url).pathname === new URL(urlToOpen, self.location.origin).pathname && 'focus' in client) {
+                return client.focus();
+            }
+        }
+        // If no client is open, open a new window.
+        if (clients.openWindow) {
+            return clients.openWindow(urlToOpen);
+        }
+    }));
+});
+
+// Handle messages from the client (e.g., to show a test notification)
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SHOW_TEST_NOTIFICATION') {
+        const { title, body } = event.data.payload;
+        event.waitUntil(
+            self.registration.showNotification(title, {
+                body: body,
+                icon: '/logo.svg',
+                tag: 'atlas-test-notification' // Use a tag to prevent multiple test notifications from stacking
+            })
+        );
+    }
+});
+
+
 // --- NOTIFICATION & SYNC LOGIC ---
 let translations = {};
 const fetchTranslations = async () => {
@@ -279,30 +320,3 @@ async function runSync() {
     }
     console.log('SW: --- Background sync complete ---');
 }
-
-
-// --- EVENT LISTENERS ---
-self.addEventListener('periodicsync', (e) => {
-    if (e.tag === 'account-sync') {
-        console.log('SW: Periodic sync event received.');
-        e.waitUntil(runSync());
-    }
-});
-
-self.addEventListener('notificationclick', (e) => {
-    e.notification.close();
-    const urlToOpen = e.notification.data?.url || '/';
-    e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        // Try to find an already open client and focus it.
-        for (const client of clientList) {
-            // new URL(client.url).pathname strips any query params for a more reliable match
-            if (new URL(client.url).pathname === new URL(urlToOpen, self.location.origin).pathname && 'focus' in client) {
-                return client.focus();
-            }
-        }
-        // If no client is open, open a new window.
-        if (clients.openWindow) {
-            return clients.openWindow(urlToOpen);
-        }
-    }));
-});
