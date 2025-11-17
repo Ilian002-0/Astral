@@ -1,7 +1,7 @@
 
 
 
-const CACHE_NAME = 'atlas-cache-v21'; // Incremented cache version
+const CACHE_NAME = 'atlas-cache-v22'; // Incremented cache version
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -194,9 +194,8 @@ self.addEventListener('activate', (event) => {
             );
         }).then(() => self.clients.claim())
         .then(() => {
-            // Run a sync check on activation to catch up on any missed notifications
-            console.log('Service worker activated. Running sync check.');
-            return handlePeriodicSync();
+            console.log('SW: Activated. Running initial sync check.');
+            return handlePeriodicSync(); // Run on activation
         })
     );
 });
@@ -205,12 +204,10 @@ self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Ignore external assets and specific paths like browser-sync
     if (request.url.startsWith('http') && !request.url.startsWith(self.origin) || url.pathname.includes('browser-sync')) {
         return;
     }
     
-    // Handle widget-specific requests first
     if (url.pathname === '/goal-widget-template') {
         event.respondWith(handleWidgetTemplate());
         return;
@@ -220,32 +217,17 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Network falling back to cache strategy
     event.respondWith(
         fetch(request)
             .then(response => {
-                // Check if we received a valid response
                 if (!response || response.status !== 200 || response.type !== 'basic') {
                     return response;
                 }
-                
-                // IMPORTANT: Clone the response. A response is a stream
-                // and because we want the browser to consume the response
-                // as well as the cache consuming the response, we need
-                // to clone it so we have two streams.
                 const responseToCache = response.clone();
-
-                caches.open(CACHE_NAME)
-                    .then(cache => {
-                        cache.put(request, responseToCache);
-                    });
-
+                caches.open(CACHE_NAME).then(cache => cache.put(request, responseToCache));
                 return response;
             })
-            .catch(() => {
-                // Network request failed, try to get it from the cache.
-                return caches.match(request);
-            })
+            .catch(() => caches.match(request))
     );
 });
 
@@ -255,12 +237,14 @@ self.addEventListener('fetch', (event) => {
 let translations = {};
 const fetchTranslations = async () => {
     try {
+        if (Object.keys(translations).length > 0) return;
         const enRes = await fetch('/locales/en.json');
         const frRes = await fetch('/locales/fr.json');
         translations['en'] = await enRes.json();
         translations['fr'] = await frRes.json();
+        console.log('SW: Translations loaded.');
     } catch (e) {
-        console.error('Failed to fetch translations for notifications', e);
+        console.error('SW: Failed to fetch translations for notifications', e);
     }
 }
 
@@ -280,79 +264,108 @@ const t = (language, key, options) => {
     return translation || key;
 };
 
-const showNotification = (title, options) => {
-    self.registration.showNotification(title, options);
+const findNewlyClosedTrades = (newTrades, oldTrades) => {
+    const oldTradesMap = new Map(oldTrades.map(t => [t.ticket, t]));
+    return newTrades.filter(newTrade => {
+        if (newTrade.type === 'balance' || newTrade.closePrice === 0) {
+            return false;
+        }
+        const oldTrade = oldTradesMap.get(newTrade.ticket);
+        // It's "newly closed" if it didn't exist before, or if it existed but was open.
+        return !oldTrade || oldTrade.closePrice === 0;
+    });
+};
+
+const notifyForTrades = (trades, account, lang, settings) => {
+    if (!settings.tradeClosed || trades.length === 0) {
+        return;
+    }
+    console.log(`SW: Found ${trades.length} new trades for ${account.name}. Sending notifications.`);
+    for (const trade of trades) {
+        const currencySymbol = account.currency === 'EUR' ? '€' : '$';
+        const title = t(lang, 'notifications.trade_closed_title');
+        const body = t(lang, 'notifications.trade_closed_body', {
+            symbol: trade.symbol,
+            profit: trade.profit.toFixed(2),
+            currency: currencySymbol
+        });
+        self.registration.showNotification(title, {
+            body,
+            tag: `trade-${trade.ticket}`,
+            icon: '/logo.svg',
+            badge: '/logo.svg',
+            data: { url: `${self.location.origin}/?view=trades` }
+        });
+    }
+};
+
+const syncAccount = async (account, settings, lang) => {
+    if (!account.dataUrl) return null;
+
+    try {
+        console.log(`SW: Syncing account: ${account.name}`);
+        const response = await fetch(account.dataUrl, { cache: 'no-store' });
+        if (!response.ok) {
+            console.error(`SW: Failed to fetch for ${account.name}: ${response.status}`);
+            return null;
+        }
+        const csvText = await response.text();
+        const newTrades = parseCSV_SW(csvText);
+        if (newTrades.length === 0) {
+            console.log(`SW: No trades found in fetched file for ${account.name}.`);
+            return null;
+        }
+
+        const newlyClosed = findNewlyClosedTrades(newTrades, account.trades);
+        notifyForTrades(newlyClosed, account, lang, settings);
+
+        // If there are any changes, prepare the updated account data.
+        if (newlyClosed.length > 0) {
+            const tradesMap = new Map(account.trades.map(t => [t.ticket, t]));
+            newTrades.forEach(t => tradesMap.set(t.ticket, t));
+            const sortedTrades = Array.from(tradesMap.values()).sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+            return { ...account, trades: sortedTrades, lastUpdated: new Date().toISOString() };
+        }
+        return null; // No updates
+    } catch (e) {
+        console.error(`SW: Error during sync for account "${account.name}":`, e);
+        return null;
+    }
 };
 
 const handlePeriodicSync = async () => {
-    console.log('Periodic sync event fired!');
+    console.log('SW: periodic sync event fired!');
     await fetchTranslations();
+
     const accountsString = await getDBItem('trading_accounts_v1');
     const settingsString = await getDBItem('notification_settings');
-    const lang = await getDBItem('language').then(res => deepParse(res) || 'en');
-
-    if (!accountsString) return;
-
+    const lang = await getDBItem('language').then(val => deepParse(val) || 'en');
+    
     const accounts = deepParse(accountsString) || [];
-    const settings = deepParse(settingsString) || { tradeClosed: true, weeklySummary: true };
-    let hasUpdates = false;
-
-    for (const account of accounts) {
-        if (!account.dataUrl) continue;
-        
-        try {
-            const response = await fetch(account.dataUrl, { cache: 'no-store' });
-            if (!response.ok) {
-                console.error(`Failed to fetch for ${account.name}: ${response.status}`);
-                continue;
-            }
-            const csvText = await response.text();
-            
-            const allFetchedTrades = parseCSV_SW(csvText);
-            if (allFetchedTrades.length === 0) continue;
-            
-            const oldTradesMap = new Map(account.trades.map(t => [t.ticket, t]));
-            const newlyClosedTrades = allFetchedTrades.filter(fetchedTrade => {
-                if (fetchedTrade.type === 'balance' || fetchedTrade.closePrice === 0) {
-                    return false;
-                }
-                const oldTrade = oldTradesMap.get(fetchedTrade.ticket);
-                // True if it's a new trade, OR if it's an old trade that was previously open.
-                return !oldTrade || oldTrade.closePrice === 0;
-            });
-
-            if (settings.tradeClosed && newlyClosedTrades.length > 0) {
-                 console.log(`Found ${newlyClosedTrades.length} new trades for ${account.name}`);
-                 for (const trade of newlyClosedTrades) {
-                    const currencySymbol = account.currency === 'EUR' ? '€' : '$';
-                    const title = t(lang, 'notifications.trade_closed_title');
-                    const body = t(lang, 'notifications.trade_closed_body', {
-                        symbol: trade.symbol,
-                        profit: trade.profit.toFixed(2),
-                        currency: currencySymbol
-                    });
-                    showNotification(title, { body, tag: `trade-${trade.ticket}` });
-                 }
-            }
-
-            // Merge trades and update account data if new trades were found
-            if (newlyClosedTrades.length > 0) {
-                const tradesMap = new Map(account.trades.map(t => [t.ticket, t]));
-                allFetchedTrades.forEach(t => tradesMap.set(t.ticket, t));
-                
-                account.trades = Array.from(tradesMap.values()).sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-                account.lastUpdated = new Date().toISOString();
-                hasUpdates = true;
-            }
-
-        } catch (e) {
-            console.error('Error during background sync for account:', account.name, e);
-        }
+    if (accounts.length === 0) {
+        console.log('SW: No accounts to sync.');
+        return;
     }
+    const settings = deepParse(settingsString) || { tradeClosed: true, weeklySummary: true };
+
+    const syncPromises = accounts.map(acc => syncAccount(acc, settings, lang));
+    const updatedAccountsData = await Promise.all(syncPromises);
+
+    let hasUpdates = false;
+    const finalAccounts = accounts.map((originalAccount, index) => {
+        const updatedVersion = updatedAccountsData[index];
+        if (updatedVersion) {
+            hasUpdates = true;
+            return updatedVersion;
+        }
+        return originalAccount;
+    });
 
     if (hasUpdates) {
-        console.log('Updating accounts in IndexedDB after sync.');
-        await setDBItem('trading_accounts_v1', deepStringify(accounts));
+        console.log('SW: Sync found updates. Saving new account data to IndexedDB.');
+        await setDBItem('trading_accounts_v1', deepStringify(finalAccounts));
+    } else {
+        console.log('SW: Sync finished, no new data found.');
     }
 };
 
@@ -364,136 +377,70 @@ self.addEventListener('periodicsync', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
     const notification = event.notification;
-    const urlToOpen = new URL(notification.data?.url || '/', self.location.origin).href;
     notification.close();
+    
+    const urlToOpen = new URL(notification.data?.url || '/', self.location.origin).href;
 
-    // This looks for an existing window and focuses it.
     event.waitUntil(clients.matchAll({
         type: 'window',
         includeUncontrolled: true
     }).then((clientList) => {
-        // If a window is already open, focus it and navigate.
-        if (clientList.length > 0) {
-            // Find a visible client if possible
-            let client = clientList.find(c => c.visibilityState === 'visible');
-            // Otherwise, just take the first one
-            if (!client) client = clientList[0];
-            
-            return client.navigate(urlToOpen).then(c => c.focus());
+        for (const client of clientList) {
+            if (client.url === urlToOpen && 'focus' in client) {
+                return client.focus();
+            }
         }
-        // Otherwise, open a new window.
-        return clients.openWindow(urlToOpen);
+        if (clients.openWindow) {
+            return clients.openWindow(urlToOpen);
+        }
     }));
 });
 
-const handleWeeklySummary = async () => {
-    console.log('Weekly summary handler called. This feature is a work in progress.');
-    // In a full implementation, this would calculate the weekly performance
-    // and show a notification if the user has opted in.
-};
-
-
-// For scheduled weekly notification
 self.addEventListener('message', event => {
     if (!event.data) return;
-
-    switch (event.data.type) {
-        case 'SHOW_TEST_NOTIFICATION':
-            event.waitUntil(
-                self.registration.showNotification('Atlas Test Notification', {
-                    body: 'If you see this, notifications are working! Click me.',
-                    icon: '/logo.svg',
-                    badge: '/logo.svg',
-                    data: {
-                        url: `${self.location.origin}/?view=profile`
-                    },
-                    tag: 'atlas-test-notification'
-                })
-            );
-            break;
-        case 'trigger-weekly-summary':
-            event.waitUntil(handleWeeklySummary());
-            break;
-        default:
-            console.log('SW received unknown message:', event.data);
-            break;
+    if (event.data.type === 'SHOW_TEST_NOTIFICATION') {
+        console.log('SW: Received request for test notification.');
+        event.waitUntil(
+            self.registration.showNotification('Atlas Test Notification', {
+                body: 'If you see this, notifications are working! Click me.',
+                icon: '/logo.svg',
+                badge: '/logo.svg',
+                data: { url: `${self.location.origin}/?view=profile` },
+                tag: 'atlas-test-notification'
+            })
+        );
     }
 });
 
 // --- PWA WIDGETS ---
 
 const GOAL_WIDGET_TEMPLATE = {
-  "type": "AdaptiveCard",
-  "version": "1.5",
-  "body": [
-    {
-      "type": "TextBlock",
-      "text": "${goalTitle}",
-      "size": "Medium",
-      "weight": "Bolder",
-      "horizontalAlignment": "Center"
-    },
-    {
-      "type": "TextBlock",
-      "text": "${progressText}",
-      "size": "ExtraLarge",
-      "weight": "Bolder",
-      "horizontalAlignment": "Center",
-      "color": "${progressColor}"
-    },
-    {
-      "type": "TextBlock",
-      "text": "Current: ${currentValue}",
-      "horizontalAlignment": "Center",
-      "spacing": "None"
-    },
-    {
-      "type": "TextBlock",
-      "text": "Target: ${targetValue}",
-      "horizontalAlignment": "Center",
-      "spacing": "None"
-    }
-  ]
+  "type": "AdaptiveCard", "version": "1.5", "body": [{"type": "TextBlock","text": "${goalTitle}","size": "Medium","weight": "Bolder","horizontalAlignment": "Center"},{"type": "TextBlock","text": "${progressText}","size": "ExtraLarge","weight": "Bolder","horizontalAlignment": "Center","color": "${progressColor}"},{"type": "TextBlock","text": "Current: ${currentValue}","horizontalAlignment": "Center","spacing": "None"},{"type": "TextBlock","text": "Target: ${targetValue}","horizontalAlignment": "Center","spacing": "None"}]
 };
 
 function handleWidgetTemplate() {
-    return new Response(JSON.stringify(GOAL_WIDGET_TEMPLATE), {
-        headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(JSON.stringify(GOAL_WIDGET_TEMPLATE), { headers: { 'Content-Type': 'application/json' } });
 }
 
 async function handleWidgetData() {
     try {
-        const currentAccountNameStr = await getDBItem('current_account_v1');
-        const accountsStr = await getDBItem('trading_accounts_v1');
-        
+        const [currentAccountNameStr, accountsStr] = await Promise.all([getDBItem('current_account_v1'), getDBItem('trading_accounts_v1')]);
         const currentAccountName = deepParse(currentAccountNameStr);
         const accounts = deepParse(accountsStr);
 
         if (!currentAccountName || !Array.isArray(accounts) || accounts.length === 0) {
             return new Response(JSON.stringify({ goalTitle: "No Account Selected" }), { headers: { 'Content-Type': 'application/json' } });
         }
-        
         const currentAccount = accounts.find(acc => acc.name === currentAccountName);
         if (!currentAccount) {
             return new Response(JSON.stringify({ goalTitle: "Account Not Found" }), { headers: { 'Content-Type': 'application/json' } });
         }
-        
         const goal = currentAccount.goals?.netProfit;
         if (!goal || !goal.enabled) {
-            return new Response(JSON.stringify({ 
-                goalTitle: "Goal Not Set",
-                progressText: "🎯",
-                currentValue: "N/A",
-                targetValue: "N/A",
-                progressColor: "Default"
-            }), { headers: { 'Content-Type': 'application/json' } });
+            return new Response(JSON.stringify({ goalTitle: "Goal Not Set", progressText: "🎯", currentValue: "N/A", targetValue: "N/A", progressColor: "Default"}), { headers: { 'Content-Type': 'application/json' } });
         }
         
-        // Simplified metric calculation for SW context
-        const closedTrades = currentAccount.trades.filter(op => op.type !== 'balance');
-        const netProfit = closedTrades.reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0);
-
+        const netProfit = currentAccount.trades.filter(op => op.type !== 'balance').reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0);
         const isMet = netProfit >= goal.target;
         const progress = goal.target > 0 ? (netProfit / goal.target) * 100 : (netProfit > 0 ? 100 : 0);
         const currencySymbol = currentAccount.currency === 'EUR' ? '€' : '$';
@@ -505,11 +452,9 @@ async function handleWidgetData() {
             targetValue: `${goal.target.toFixed(2)}${currencySymbol}`,
             progressColor: isMet ? "Good" : "Accent"
         };
-        
         return new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
-
     } catch (error) {
-        console.error('Error generating widget data:', error);
+        console.error('SW: Error generating widget data:', error);
         return new Response(JSON.stringify({ goalTitle: "Error" }), { status: 500 });
     }
 }
