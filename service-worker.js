@@ -1,16 +1,11 @@
 
 
-const CACHE_NAME = 'atlas-cache-v15';
+const CACHE_NAME = 'atlas-cache-v17'; // Incremented cache version
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
     '/manifest.json',
-    'https://i.imgur.com/TN8saNO.png', // Main app logo/favicon
-    // PWA icons from manifest
-    'https://i.imgur.com/gA2QYp9.png', // 192x192
-    'https://i.imgur.com/pB3S7Lq.png', // 512x512
-    'https://i.imgur.com/s4f3z2g.png', // 512x512 maskable
-    'https://i.imgur.com/zW6T5bB.png', // Goals/Widget Icon
+    '/logo.svg',
     // Shortcut icons from manifest
     '/dashboard-icon.svg',
     '/list-icon.svg',
@@ -381,8 +376,8 @@ self.addEventListener('message', event => {
             event.waitUntil(
                 self.registration.showNotification('Atlas Test Notification', {
                     body: 'If you see this, notifications are working! Click me.',
-                    icon: 'https://i.imgur.com/gA2QYp9.png',
-                    badge: 'https://i.imgur.com/zW6T5bB.png',
+                    icon: '/logo.svg',
+                    badge: '/logo.svg',
                     data: {
                         url: `${self.location.origin}/?view=profile`
                     },

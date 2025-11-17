@@ -415,7 +415,7 @@ const App: React.FC = () => {
                             <div className={`flex ${!isDesktop ? 'justify-between' : 'justify-end'} items-center h-20`}>
                                 {!isDesktop && (
                                     <div className="flex items-center gap-2 app-region-no-drag">
-                                        <img src="https://i.imgur.com/TN8saNO.png" alt="Atlas Logo" className="h-10 w-auto object-contain" />
+                                        <img src="/logo.svg" alt="Atlas Logo" className="h-10 w-auto object-contain" />
                                         <span className="text-xl font-bold tracking-widest text-[#8B9BBD]">ATLAS</span>
                                     </div>
                                 )}

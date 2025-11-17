@@ -8,25 +8,10 @@
   "theme_color": "#0c0b1e",
   "icons": [
     {
-      "src": "https://i.imgur.com/gA2QYp9.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "https://i.imgur.com/pB3S7Lq.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    },
-    {
-      "src": "https://i.imgur.com/s4f3z2g.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable"
-    },
-    {
-      "src": "https://i.imgur.com/zW6T5bB.png",
+      "src": "/logo.svg",
       "sizes": "any",
-      "purpose": "monochrome"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -36,7 +21,7 @@
       "description": "View trading dashboard",
       "url": "/?view=dashboard",
       "icons": [
-        { "src": "https://i.imgur.com/DiL35B4.png", "sizes": "192x192", "type": "image/png" }
+        { "src": "/dashboard-icon.svg", "sizes": "any", "type": "image/svg+xml" }
       ]
     },
     {
@@ -45,7 +30,7 @@
       "description": "View all trades",
       "url": "/?view=trades",
       "icons": [
-        { "src": "https://i.imgur.com/99be8qn.png", "sizes": "192x192", "type": "image/png" }
+        { "src": "/list-icon.svg", "sizes": "any", "type": "image/svg+xml" }
       ]
     },
     {
@@ -54,7 +39,7 @@
       "description": "View trades on a calendar",
       "url": "/?view=calendar",
       "icons": [
-        { "src": "https://i.imgur.com/eKKCWQN.png", "sizes": "192x192", "type": "image/png" }
+        { "src": "/calendar-icon.svg", "sizes": "any", "type": "image/svg+xml" }
       ]
     },
     {
@@ -63,7 +48,7 @@
       "description": "View trading goals",
       "url": "/?view=goals",
       "icons": [
-        { "src": "https://i.imgur.com/gA2QYp9.png", "sizes": "192x192", "type": "image/png" }
+        { "src": "/goals-icon.svg", "sizes": "any", "type": "image/svg+xml" }
       ]
     }
   ],
@@ -86,7 +71,7 @@
       "tag": "goal-progress-widget",
       "template": "goal-widget-template",
       "data": "/widget-goal-data.json",
-      "icons": [{ "src": "https://i.imgur.com/zW6T5bB.png", "sizes": "any" }]
+      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
   ],
   "window_controls_overlay": {

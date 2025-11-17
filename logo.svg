@@ -1,15 +1,3 @@
-<svg role="img" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-labelledby="logoTitle" preserveAspectRatio="xMidYMid meet">
-  <title id="logoTitle">Atlas App Logo</title>
-  <defs>
-    <linearGradient id="peakGradient" x1="0.5" y1="0" x2="0.5" y2="1">
-      <stop offset="0%" stop-color="#8B9BBD" />
-      <stop offset="100%" stop-color="#404B69" />
-    </linearGradient>
-    <linearGradient id="accentGradient" x1="0.5" y1="0" x2="0.5" y2="1">
-      <stop offset="0%" stop-color="#34d399" />
-      <stop offset="100%" stop-color="#2dd4bf" />
-    </linearGradient>
-  </defs>
-  <path d="M50 10 L10 90 H35 L50 60 L65 90 H90 Z" fill="url(#peakGradient)" />
-  <path d="M50 10 L65 90 H50 Z" fill="url(#accentGradient)" />
+<svg fill="#8B9BBD" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <path d="M26.865 24l-10.865 4.24-10.865-4.24-1.802 3.125 12.667 4.875 12.667-4.875zM16 0c-6.995 0-12.667 5.672-12.667 12.667s5.672 12.667 12.667 12.667c6.995 0 12.667-5.672 12.667-12.667s-5.672-12.667-12.667-12.667zM16 21.438c-4.839 0-8.755-3.922-8.755-8.755 0-4.839 3.917-8.76 8.755-8.76s8.755 3.922 8.755 8.76c0 4.833-3.917 8.755-8.755 8.755z"/>
 </svg>
