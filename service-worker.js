@@ -306,15 +306,3 @@ self.addEventListener('notificationclick', (e) => {
         }
     }));
 });
-
-self.addEventListener('message', (e) => {
-    if (e.data?.type === 'SHOW_TEST_NOTIFICATION') {
-        console.log('SW: Received request for test notification.');
-        e.waitUntil(self.registration.showNotification('Atlas Test Notification', {
-            body: 'If you see this, notifications are working!',
-            icon: '/logo.svg',
-            data: { url: `${self.location.origin}/?view=profile` },
-            tag: 'atlas-test-notification'
-        }));
-    }
-});

@@ -42,7 +42,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
     };
 
     const handleTestNotification = async () => {
-        if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+        if (!('Notification' in window)) {
             alert(t('profile.notifications_not_supported_alert'));
             return;
         }
@@ -53,22 +53,16 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
         }
         
         try {
-            // navigator.serviceWorker.ready waits for the service worker to be active.
-            const registration = await navigator.serviceWorker.ready;
-            
-            // registration.active is the currently active service worker.
-            if (registration.active) {
-                registration.active.postMessage({
-                    type: 'SHOW_TEST_NOTIFICATION'
-                });
-                alert(t('profile.test_notification_sent'));
-            } else {
-                // This state is less common but indicates the SW is installed but not yet active.
-                alert(t('profile.service_worker_not_active_alert'));
-            }
+            // Directly create a notification from the page script.
+            // This is the most reliable way to test if permissions are granted.
+            new Notification('Atlas Test Notification', {
+                body: 'If you see this, notifications are working!',
+                icon: '/logo.svg',
+                tag: 'atlas-test-notification'
+            });
         } catch (error) {
-            console.error("Error communicating with Service Worker:", error);
-            alert(t('profile.service_worker_connect_error_alert'));
+            console.error("Error showing notification:", error);
+            alert("An error occurred while trying to show the test notification.");
         }
     };
 
