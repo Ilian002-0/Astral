@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleDriveBackup from './GoogleDriveBackup';
@@ -56,16 +53,17 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
         
         try {
             const registration = await navigator.serviceWorker.ready;
-            if (registration.active) {
+            // Check if the service worker is active and controlling the page
+            if (registration && registration.active) {
                 registration.active.postMessage({
                     type: 'SHOW_TEST_NOTIFICATION'
                 });
                 alert("Test notification requested. Check your device's notification panel.");
             } else {
-                 alert("The app's background service isn't ready yet. Please reload the page and try again.");
+                 alert("The app's background service isn't ready yet. This can happen on first load. Please reload the page and try again.");
             }
         } catch (error) {
-            console.error("Service worker not ready:", error);
+            console.error("Service worker not ready or accessible:", error);
             alert("Could not communicate with the background service. Please try reloading the page.");
         }
     };
