@@ -71,8 +71,10 @@ const deepStringify = (obj) => JSON.stringify(obj, dateReplacer);
 const parseCSV_SW = (content) => {
     const lines = content.split('\n').filter(line => line.trim() !== '');
     if (lines.length < 2) return [];
+    
     const headerLine = lines[0];
     const separator = headerLine.includes('\t') ? '\t' : ',';
+
     const header = headerLine.split(separator).map(h => h.trim().toLowerCase().replace(/"/g, ''));
     const colMap = {};
     header.forEach((h, i) => {
@@ -89,22 +91,56 @@ const parseCSV_SW = (content) => {
         if (h === 'profit') colMap['profit'] = i;
         if (h === 'comment') colMap['comment'] = i;
     });
-    const parseDecimal = (v) => (typeof v !== 'string' || v.trim() === '' ? 0 : parseFloat(v.replace(/"/g, '').trim().replace(',', '.')));
+    
+    const parseDecimal = (value) => {
+        if (typeof value !== 'string' || value.trim() === '') return 0;
+        return parseFloat(value.replace(/"/g, '').trim().replace(',', '.'));
+    };
+    
+    const getCleanString = (index, data) => (data[index] || '').trim().replace(/"/g, '');
+    const parseMT5Date = (dateStr) => (dateStr && dateStr.trim() ? new Date(dateStr.replace(/"/g, '').replace(/\./g, '-').trim()) : new Date(0));
+
     return lines.slice(1).map(line => {
-        const data = line.split(separator === ',' ? /,(?=(?:(?:[^"]*"){2})*[^"]*$)/ : /\t/);
-        if (data.length <= Math.max(...Object.values(colMap))) return null;
-        const getCleanString = (i) => (data[i] || '').trim().replace(/"/g, '');
-        const parseMT5Date = (d) => (d && d.trim() ? new Date(d.replace(/"/g, '').replace(/\./g, '-').trim()) : new Date(0));
-        const type = getCleanString(colMap['type']);
-        const profit = parseDecimal(data[colMap['profit']]);
-        if (type === 'balance') {
-            const opTime = parseMT5Date(data[colMap['openTime']]);
-            return isNaN(opTime.getTime()) || opTime.getTime() === 0 ? null : { ticket: parseInt(getCleanString(colMap['ticket']), 10) || opTime.getTime(), openTime: opTime, type: 'balance', size: 0, symbol: 'Balance', openPrice: 0, closeTime: opTime, closePrice: 1, commission: 0, swap: 0, profit, comment: getCleanString(colMap['comment']) || (profit > 0 ? 'Deposit' : 'Withdrawal') };
-        }
-        const openTime = parseMT5Date(data[colMap['openTime']]);
-        const closeTime = parseMT5Date(data[colMap['closeTime']]);
-        return isNaN(profit) || isNaN(openTime.getTime()) || openTime.getTime() === 0 || isNaN(closeTime.getTime()) || closeTime.getTime() === 0 ? null : { ticket: parseInt(getCleanString(colMap['ticket']), 10), openTime, type, size: parseDecimal(data[colMap['size']]), symbol: getCleanString(colMap['symbol']), openPrice: parseDecimal(data[colMap['openPrice']]), closeTime, closePrice: parseDecimal(data[colMap['closePrice']]), commission: parseDecimal(data[colMap['commission']]), swap: parseDecimal(data[colMap['swap']]), profit, comment: getCleanString(colMap['comment']) };
-    }).filter(Boolean);
+      const data = line.split(separator === ',' ? /,(?=(?:(?:[^"]*"){2})*[^"]*$)/ : /\t/);
+      if (data.length <= Math.max(...Object.values(colMap))) return null;
+
+      const type = getCleanString(colMap['type'], data);
+      const profit = parseDecimal(data[colMap['profit']]);
+      
+      if (type === 'balance') {
+        const opTime = parseMT5Date(data[colMap['openTime']]);
+        if (isNaN(opTime.getTime()) || opTime.getTime() === 0) return null;
+        return {
+          ticket: parseInt(getCleanString(colMap['ticket'], data), 10) || opTime.getTime(),
+          openTime: opTime, type: 'balance', size: 0, symbol: 'Balance',
+          openPrice: 0, closeTime: opTime, closePrice: 1, commission: 0, swap: 0, profit: profit,
+          comment: getCleanString(colMap['comment'], data) || (profit > 0 ? 'Deposit' : 'Withdrawal')
+        };
+      }
+
+      if (isNaN(profit)) return null;
+
+      return {
+        ticket: parseInt(getCleanString(colMap['ticket'], data), 10),
+        openTime: parseMT5Date(data[colMap['openTime']]),
+        type: type,
+        size: parseDecimal(data[colMap['size']]),
+        symbol: getCleanString(colMap['symbol'], data),
+        openPrice: parseDecimal(data[colMap['openPrice']]),
+        closeTime: parseMT5Date(data[colMap['closeTime']]),
+        closePrice: parseDecimal(data[colMap['closePrice']]),
+        commission: parseDecimal(data[colMap['commission']]),
+        swap: parseDecimal(data[colMap['swap']]),
+        profit: profit,
+        comment: colMap['comment'] !== undefined ? getCleanString(colMap['comment'], data) : ''
+      };
+    }).filter(trade => {
+        if (!trade) return false;
+        // Corrected filter logic: Allow trades where closeTime is epoch (i.e., open trades)
+        return !isNaN(trade.ticket) &&
+               trade.openTime instanceof Date && !isNaN(trade.openTime.getTime()) && trade.openTime.getTime() !== 0 &&
+               trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime());
+    });
 };
 
 
@@ -150,8 +186,13 @@ const t = (lang, key, opts) => {
 const findNewlyClosedTrades = (newTrades, oldTrades) => {
     const oldTradesMap = new Map(oldTrades.map(t => [t.ticket, t]));
     return newTrades.filter(newTrade => {
+        // We only care about actual trades that are now closed
         if (newTrade.type === 'balance' || newTrade.closePrice === 0) return false;
+        
         const oldTrade = oldTradesMap.get(newTrade.ticket);
+        // A trade is newly closed if:
+        // 1. It didn't exist before (is a brand new, already closed trade in the file)
+        // 2. It existed before, but was open (closePrice was 0)
         return !oldTrade || oldTrade.closePrice === 0;
     });
 };

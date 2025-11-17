@@ -55,7 +55,7 @@ export const parseCSV = (content: string): Trade[] => {
       const profit = parseDecimal(data[colMap['profit']]);
       
       const parseMT5Date = (dateStr: string) => {
-        if (!dateStr || dateStr.trim() === '') return new Date(0); // Return epoch for invalid dates
+        if (!dateStr || dateStr.trim() === '') return new Date(0); // Return epoch for invalid/empty dates (e.g., open trades)
         return new Date(dateStr.replace(/"/g, '').replace(/\./g, '-').trim());
       };
 
@@ -95,5 +95,13 @@ export const parseCSV = (content: string): Trade[] => {
         profit: profit,
         comment: colMap['comment'] !== undefined ? getCleanString(colMap['comment']) : ''
       };
-    }).filter((trade): trade is Trade => trade !== null && !isNaN(trade.ticket) && trade.openTime instanceof Date && !isNaN(trade.openTime.getTime()) && trade.openTime.getTime() !== 0 && trade.closeTime instanceof Date && !isNaN(trade.closeTime.getTime()) && trade.closeTime.getTime() !== 0);
+    }).filter((trade): trade is Trade => 
+        trade !== null && 
+        !isNaN(trade.ticket) && 
+        trade.openTime instanceof Date && 
+        !isNaN(trade.openTime.getTime()) && 
+        trade.openTime.getTime() !== 0 && // Open time must be valid
+        trade.closeTime instanceof Date && 
+        !isNaN(trade.closeTime.getTime()) // Allow close time to be epoch for open trades
+    );
   };
