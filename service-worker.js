@@ -1,7 +1,7 @@
 
 
 
-const CACHE_NAME = 'atlas-cache-v20'; // Incremented cache version
+const CACHE_NAME = 'atlas-cache-v21'; // Incremented cache version
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
