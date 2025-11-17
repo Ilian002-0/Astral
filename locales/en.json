@@ -239,5 +239,11 @@
     "show_on_chart": "Show on chart",
     "profit_target_label": "Profit Target",
     "drawdown_target_label": "Drawdown Limit"
+  },
+  "notifications": {
+    "trade_closed_title": "Trade Closed",
+    "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}",
+    "weekly_summary_title": "Weekly Performance Summary",
+    "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)"
   }
 }

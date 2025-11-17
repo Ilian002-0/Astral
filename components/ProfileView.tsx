@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleDriveBackup from './GoogleDriveBackup';
@@ -40,7 +41,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
         }
     };
 
-    const handleTestNotification = async () => {
+    const handleTestNotification = () => {
         if (!('serviceWorker' in navigator) || !('Notification' in window)) {
             alert('Notifications are not supported in this browser.');
             return;
@@ -51,20 +52,17 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
              return;
         }
         
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            // Check if the service worker is active and controlling the page
-            if (registration && registration.active) {
-                registration.active.postMessage({
-                    type: 'SHOW_TEST_NOTIFICATION'
-                });
-                alert("Test notification requested. Check your device's notification panel.");
-            } else {
-                 alert("The app's background service isn't ready yet. This can happen on first load. Please reload the page and try again.");
-            }
-        } catch (error) {
-            console.error("Service worker not ready or accessible:", error);
-            alert("Could not communicate with the background service. Please try reloading the page.");
+        // Use navigator.serviceWorker.controller, which is a more direct and reliable way
+        // to get the service worker that controls the current page.
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'SHOW_TEST_NOTIFICATION'
+            });
+            alert("Test notification requested. Check your device's notification panel.");
+        } else {
+            // This case can happen on the very first visit before the SW has activated,
+            // or if something went wrong during registration.
+            alert("The app's background service isn't ready yet. This can happen on first load. Please reload the page and try again.");
         }
     };
 
