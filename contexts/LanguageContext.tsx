@@ -1,6 +1,4 @@
-
-import React, { createContext, useContext, ReactNode } from 'react';
-import useDBStorage from '../hooks/useLocalStorage';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
 
 type Language = 'en' | 'fr';
@@ -13,17 +11,37 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+const LANGUAGE_KEY = 'atlas_language_v1';
+
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { data: language, setData: setLanguage, isLoading: isLanguageLoading } = useDBStorage<Language>('language', 'en');
+  // Initialize from localStorage immediately to avoid async flicker
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(LANGUAGE_KEY);
+        if (saved === 'fr' || saved === 'en') {
+            return saved;
+        }
+    }
+    return 'en';
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem(LANGUAGE_KEY, lang);
+  };
 
   const t = (key: string, options?: { [key: string]: string | number }) => {
     const currentLang = (language in translations) ? language : 'en';
     const dict = translations[currentLang as keyof typeof translations];
     
-    if (!dict) return key;
+    // Fallback to EN if dict is missing for some reason
+    const fallbackDict = translations['en'];
+    const safeDict = dict || fallbackDict;
+
+    if (!safeDict) return key;
 
     const keyParts = key.split('.');
-    let translation: any = dict;
+    let translation: any = safeDict;
 
     for (const part of keyParts) {
       if (translation && typeof translation === 'object' && translation[part] !== undefined) {
@@ -43,10 +61,6 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const value = { language, setLanguage, t };
-  
-  if (isLanguageLoading) {
-    return null; 
-  }
 
   return (
     <LanguageContext.Provider value={value}>

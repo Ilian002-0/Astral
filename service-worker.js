@@ -1,6 +1,6 @@
 
 // --- CONSTANTS & CONFIG ---
-const CACHE_NAME = 'atlas-cache-v25'; // Incremented cache version
+const CACHE_NAME = 'atlas-cache-v26'; // Incremented cache version to force logo update
 const ASSETS_TO_CACHE = [
     '/', '/index.html', '/manifest.json', '/logo.svg',
     '/dashboard-icon.svg', '/list-icon.svg', '/calendar-icon.svg', '/goals-icon.svg',
@@ -207,6 +207,8 @@ self.addEventListener('message', (event) => {
 
 
 // --- NOTIFICATION & SYNC LOGIC ---
+// Hardcoded English translations for background sync notifications as a fallback
+// Ideally, this should pull from the shared translations file if possible, or pass lang in the sync event.
 const translations = {
   en: {
     "notifications": { "trade_closed_title": "Trade Closed", "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}", "weekly_summary_title": "Weekly Performance Summary", "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)" },
@@ -292,11 +294,23 @@ async function runSync() {
     try {
         console.log('SW: --- Starting background sync ---');
         
-        const [accountsStr, settingsStr, lang] = await Promise.all([
+        // Use a simpler key retrieval if IndexedDB usage is tricky in some contexts, but sticking to getDBItem here for consistency with main app storage.
+        // Note: We manually parse the "language" from IDB which might be stored as a JSON string.
+        const [accountsStr, settingsStr, langStr] = await Promise.all([
             getDBItem('trading_accounts_v1'),
             getDBItem('notification_settings'),
-            getDBItem('language').then(val => deepParse(val) || 'en'),
+            getDBItem('language'), // This might be "en" or "\"en\""
         ]);
+        
+        // Handle potential double serialization of simple strings in IDB
+        let lang = 'en';
+        if (langStr) {
+            try {
+                lang = JSON.parse(langStr);
+            } catch (e) {
+                lang = langStr; // fallback if it wasn't a JSON string
+            }
+        }
 
         const originalAccounts = deepParse(accountsStr) || [];
         if (!originalAccounts.length) {
