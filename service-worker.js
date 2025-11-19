@@ -290,33 +290,38 @@ async function syncAccount(account, lang, settings) {
 
 // **REFACTORED:** The main sync logic is now more resilient.
 async function runSync() {
-    console.log('SW: --- Starting background sync ---');
-    await fetchTranslations();
-    
-    const [accountsStr, settingsStr, lang] = await Promise.all([
-        getDBItem('trading_accounts_v1'),
-        getDBItem('notification_settings'),
-        getDBItem('language').then(val => deepParse(val) || 'en'),
-    ]);
+    try {
+        console.log('SW: --- Starting background sync ---');
+        await fetchTranslations();
+        
+        const [accountsStr, settingsStr, lang] = await Promise.all([
+            getDBItem('trading_accounts_v1'),
+            getDBItem('notification_settings'),
+            getDBItem('language').then(val => deepParse(val) || 'en'),
+        ]);
 
-    const originalAccounts = deepParse(accountsStr) || [];
-    if (!originalAccounts.length) {
-        console.log('SW: No accounts configured. Sync finished.');
-        return;
+        const originalAccounts = deepParse(accountsStr) || [];
+        if (!originalAccounts.length) {
+            console.log('SW: No accounts configured. Sync finished.');
+            return;
+        }
+        const settings = deepParse(settingsStr) || { tradeClosed: true, weeklySummary: true };
+        
+        const syncPromises = originalAccounts.map(acc => syncAccount(acc, lang, settings));
+        const results = await Promise.all(syncPromises);
+
+        const updatedAccounts = results.map(r => r.account);
+        const wasAnyDataChanged = results.some(r => r.hasChanged);
+
+        if (wasAnyDataChanged) {
+            console.log('SW: Sync found updates. Writing new data to IndexedDB.');
+            await setDBItem('trading_accounts_v1', deepStringify(updatedAccounts));
+        } else {
+            console.log('SW: Sync finished. No data was changed.');
+        }
+    } catch (error) {
+        console.error('SW: A critical error occurred during runSync:', error);
+    } finally {
+        console.log('SW: --- Background sync complete ---');
     }
-    const settings = deepParse(settingsStr) || { tradeClosed: true, weeklySummary: true };
-    
-    const syncPromises = originalAccounts.map(acc => syncAccount(acc, lang, settings));
-    const results = await Promise.all(syncPromises);
-
-    const updatedAccounts = results.map(r => r.account);
-    const wasAnyDataChanged = results.some(r => r.hasChanged);
-
-    if (wasAnyDataChanged) {
-        console.log('SW: Sync found updates. Writing new data to IndexedDB.');
-        await setDBItem('trading_accounts_v1', deepStringify(updatedAccounts));
-    } else {
-        console.log('SW: Sync finished. No data was changed.');
-    }
-    console.log('SW: --- Background sync complete ---');
 }

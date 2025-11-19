@@ -1,73 +1,10 @@
 
 
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import useDBStorage from '../hooks/useLocalStorage';
 
 type Translations = { [key: string]: any };
 type Language = 'en' | 'fr';
-
-const enTranslations: Translations = {
-  "nav": { "trades": "List of Trades", "trades_short": "Trades", "calendar": "Calendar", "dashboard": "Dashboard", "profile": "Profile", "analysis": "Analysis", "goals": "Goals" },
-  "common": { "currency": "${{value}}", "currency_plus": "+${{value}}", "currency_minus": "-${{value}}", "percentage": "{{value}}%", "close": "Close", "cancel": "Cancel", "save": "Save", "error": "Error", "today": "Today", "share": "Share" },
-  "errors": { "fetch_failed": "Could not fetch the data. This might be a network issue or a CORS problem. Please ensure the URL is a direct, public link to a CSV file (e.g., from Google Sheets 'Publish to the web').", "offline": "You are not connected to the network. The data shown may not be up to date." },
-  "app": { "welcome": "Welcome!", "add_account_prompt": "Please add an account to visualize your trading data.", "add_first_account_button": "Add Your First Account" },
-  "header": { "last_update": "Last update", "seconds_ago": "a few seconds ago", "profit_today": "Today's Profit", "profit_yesterday": "Yesterday's Profit", "profit_x_days_ago": "Result {{count}} days ago", "sync_now": "Sync Now", "syncing": "Syncing...", "today_total_pnl": "Today's Total P/L", "floating_pnl": "Floating P/L" },
-  "dashboard": { "balance_chart_title": "Equity Curve", "advanced_analysis": "Advanced Analysis", "chart_no_data": "Not enough data to display the chart for the selected period.", "daily_results_table_title": "Daily Results", "date": "Date", "result": "Result", "total_result": "Total result", "recent_trades_table_title": "Last trades", "id": "ID", "dates": "Dates", "type": "Type", "symbol": "Symbol", "size": "Size", "winning_trades": "Winning Trades", "losing_trades": "Losing Trades", "time_range": { "today": "Today", "week": "Last 7 Days", "month": "Last 30 Days", "all": "All Time" }, "total_capital": "Total Capital" },
-  "metrics": { "total_profit": "Net Profit (Closed)", "floating_pnl": "Floating P/L", "profit_factor": "Profit factor", "max_drawdown": "Max drawdown", "total_balance": "Total balance", "total_deposits": "Total deposits", "average_win": "Average win", "average_loss": "Average loss", "win_rate": "Win rate", "total_orders": "Total closed trades", "float": "Float", "orders": "{{count}} orders" },
-  "open_trades": { "title": "Open Trades", "total_floating_pnl": "Total Floating P/L" },
-  "trades_list": { "title": "All Closed Trades ({{count}})", "search_placeholder": "Search trades...", "customize_columns": "Customize Columns", "no_trades_found": "No trades found.", "col_id": "ID", "col_open_time": "Open Time", "col_type": "Type", "col_size": "Size", "col_symbol": "Symbol", "col_open_price": "Open Price", "col_close_time": "Close", "col_close_price": "Close Price", "col_commission": "Commission", "col_swap": "Swap", "col_profit": "Profit", "col_comment": "Comment", "col_pips": "Pips", "col_profit_percentage": "Profit %", "col_duration": "Duration" },
-  "calendar": { "title": "Daily Summary", "weekly_summary": "Weekly Summary", "week": "Week {{number}}", "pnl": "PnL: {{value}}", "no_trades": "No trades", "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat", "sun": "Sun", "trade": "trade", "trades": "trades", "day": "day", "days": "days", "monthly_total": "Monthly Total", "hide_weekends": "Hide weekends", "show_weekends": "Show weekends" },
-  "day_modal": { "title": "Trades for {{date}}", "net_profit": "Net Profit", "total_lot_size": "Total Lot Size", "daily_return": "Daily Return %", "symbol": "Symbol", "type": "Type", "size": "Size", "profit": "Profit" },
-  "account_action_modal": { "title": "Account Actions", "subtitle": "What would you like to do?", "add_new": "Add a New Account", "update_current": "Update Current Account", "delete_current": "Delete Current Account" },
-  "add_account_modal": { "title": "Add New Account", "title_update": "Update Account", "subtitle": "Provide account details and upload the trade history CSV.", "subtitle_update": "Update account details and upload new trades.", "account_name": "Account Name", "account_name_placeholder": "e.g., My Main Account", "initial_balance": "Initial Balance ({{currency}})", "initial_balance_placeholder": "e.g., 100000", "file_loaded": "File loaded:", "trades_found": "{{count}} trades found.", "trades_to_add": "{{count}} new trades will be added.", "trades_updated": "{{count}} existing trades will be updated.", "clear_file": "Clear file", "save_button": "Save Account", "save_button_update": "Update Account", "data_source": "Data Source", "file_upload": "File Upload", "live_url": "Live Data URL", "csv_url": "Live Data URL", "csv_url_placeholder": "e.g., Published Google Sheet or direct CSV link", "url_helper_text": "For Google Sheets: Go to File > Share > Publish to the web, select 'Comma-separated values (.csv)', and copy the generated link." },
-  "delete_confirmation": { "title": "Confirm Deletion", "message": "Are you sure you want to delete the account '{{accountName}}'? This action cannot be undone.", "confirm_button": "Yes, Delete" },
-  "file_upload": { "title": "Upload Your MT5 Trade History", "subtitle": "Drag & drop your CSV file here, or click to select a file.", "drop_prompt": "Drop it like it's hot!", "click_prompt": "Click or Drag File Here" },
-  "profile": { "title": "Profile & Settings", "language": "Language", "english": "English", "french": "French", "backup_title": "Data Backup", "backup_description": "Connect your Google account to back up all your accounts, trades, and settings to Google Drive.", "connect_google": "Connect Google Account", "backup_button": "Backup to Google Drive", "backup_loading": "Backing up...", "backup_success": "Backup Successful!", "backup_retry": "Retry Backup", "backup_no_client_id": "Google Client ID is not configured. Backup is unavailable.", "feature_coming_soon": "Functionality coming soon.", "free_to_use": "Atlas is free to use.", "data_privacy": "Your data is stored locally on your device.", "update_title": "Application Update", "update_description": "Force the application to check for the latest version.", "update_button": "Check for Updates", "notifications_title": "Notifications", "notifications_description": "Manage background notifications for your accounts.", "enable_notifications": "Enable Notifications", "notifications_denied": "Notifications are blocked. Please enable them in your browser settings.", "trade_closed_notifications": "Trade Closed Alerts", "weekly_summary_notifications": "Weekly Summary", "notification_center_title": "Notification Center", "no_notifications": "You have no new notifications.", "clear_all": "Clear All", "background_sync_note": "Background notifications depend on your browser's sync frequency, which can be delayed to save battery. Sync also occurs when the app starts.", "send_test_notification": "Send Test Notification", "test_notification_sent": "Test notification requested. Check your device's notification panel.", "test_notification_body": "If you see this, notifications are working!", "notifications_not_supported_alert": "Notifications are not supported in this browser.", "notifications_not_granted_alert": "Notification permission has not been granted. Please enable notifications first.", "service_worker_not_active_alert": "The app's background service is not active. Please try reloading the page.", "service_worker_connect_error_alert": "Could not connect to the app's background service. It might still be installing. Please wait a moment and try again." },
-  "notifications": { "trade_closed_title": "Trade Closed", "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}", "weekly_summary_title": "Weekly Performance Summary", "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)" },
-  "analysis": { "title": "Advanced Analysis", "filter_symbols_title": "Filter by Symbol", "filter_symbols_placeholder": "All Symbols", "filter_comments_title": "Filter by Comment", "filter_comments_placeholder": "All Comments", "select_all": "Select All", "clear_all": "Clear All", "filtered_trades_title": "Filtered Trades", "filtered_profit_title": "Filtered Net Profit", "back_to_dashboard": "Back to Dashboard", "item_name_symbols": "symbols", "item_name_comments": "comments", "start_date": "Start Date", "end_date": "End Date" },
-  "goals": { "title": "Trading Goals", "subtitle": "Set your targets and track your progress.", "edit_goals": "Edit Goals", "save_goals": "Save Goals", "cancel": "Cancel", "metric_netProfit": "Net Profit ($)", "metric_winRate": "Win Rate (%)", "metric_profitFactor": "Profit Factor", "metric_maxDrawdown": "Max Drawdown (%)", "current": "Current", "target": "Target", "not_set": "Not Set", "enable_goal": "Enable Goal", "goal_met": "Goal Met!", "less_is_better": "lower is better", "show_on_chart": "Show on chart", "profit_target_label": "Profit Target", "drawdown_target_label": "Drawdown Limit" }
-};
-
-const frTranslations: Translations = {
-  "nav": { "trades": "Liste des Trades", "trades_short": "Trades", "calendar": "Calendrier", "dashboard": "Dashboard", "profile": "Profil", "analysis": "Analyse", "goals": "Objectifs" },
-  "common": { "currency": "{{value}} $", "currency_plus": "+{{value}} $", "currency_minus": "-{{value}} $", "percentage": "{{value}} %", "close": "Fermer", "cancel": "Annuler", "save": "Enregistrer", "error": "Erreur", "today": "Aujourd'hui", "share": "Partager" },
-  "errors": { "fetch_failed": "Impossible de récupérer les données. Il peut s'agir d'un problème de réseau ou de CORS. Veuillez vous assurer que l'URL est un lien public direct vers un fichier CSV (par exemple, depuis Google Sheets 'Publier sur le web').", "offline": "Vous n'êtes pas connecté au réseau. Les données affichées peuvent ne pas être à jour." },
-  "app": { "welcome": "Bienvenue !", "add_account_prompt": "Veuillez ajouter un compte pour visualiser vos données de trading.", "add_first_account_button": "Ajouter votre premier compte" },
-  "header": { "last_update": "Dernière mise à jour", "seconds_ago": "il y a quelques secondes", "profit_today": "Profit d'aujourd'hui", "profit_yesterday": "Profit d'hier", "profit_x_days_ago": "Résultat il y a {{count}} jours", "sync_now": "Synchroniser", "syncing": "Synchronisation...", "today_total_pnl": "P/L Total du Jour", "floating_pnl": "P/L Flottant" },
-  "dashboard": { "balance_chart_title": "Courbe de capitaux propres", "advanced_analysis": "Analyse Avancée", "chart_no_data": "Pas assez de données pour afficher le graphique pour la période sélectionnée.", "daily_results_table_title": "Résultats journaliers", "date": "Date", "result": "Profit", "total_result": "Résultat total", "recent_trades_table_title": "Derniers trades", "id": "ID", "dates": "Dates", "type": "Type", "symbol": "Symbole", "size": "Taille", "winning_trades": "Trades Gagnants", "losing_trades": "Trades Perdants", "time_range": { "today": "Aujourd'hui", "week": "7 derniers jours", "month": "30 derniers jours", "all": "Toute la période" }, "total_capital": "Total Capital" },
-  "metrics": { "total_profit": "Profit Net (Clôturé)", "floating_pnl": "P/L Flottant", "profit_factor": "Facteur de profit", "max_drawdown": "Drawdown max", "total_balance": "Solde total", "total_deposits": "Dépôts totaux", "average_win": "Gain moyen", "average_loss": "Perte moyenne", "win_rate": "Taux de réussite", "total_orders": "Trades clôturés totaux", "float": "Flottant", "orders": "{{count}} ordres" },
-  "open_trades": { "title": "Trades Ouverts", "total_floating_pnl": "P/L Flottant Total" },
-  "trades_list": { "title": "Tous les Trades Clôturés ({{count}})", "search_placeholder": "Rechercher des trades...", "customize_columns": "Personnaliser les colonnes", "no_trades_found": "Aucun trade trouvé.", "col_id": "ID", "col_open_time": "Heure d'ouverture", "col_type": "Type", "col_size": "Taille", "col_symbol": "Symbole", "col_open_price": "Prix d'ouverture", "col_close_time": "Clôture", "col_close_price": "Prix de fermeture", "col_commission": "Commission", "col_swap": "Swap", "col_profit": "Profit", "col_comment": "Commentaire", "col_pips": "Pips", "col_profit_percentage": "Gain %", "col_duration": "Durée" },
-  "calendar": { "title": "Résumé journalier", "weekly_summary": "Résumé hebdomadaire", "week": "Semaine {{number}}", "pnl": "PnL: {{value}}", "no_trades": "Aucun trade", "mon": "Lu", "tue": "Ma", "wed": "Me", "thu": "Je", "fri": "Ve", "sat": "Sa", "sun": "Di", "trade": "trade", "trades": "trades", "day": "jour", "days": "jours", "monthly_total": "Total Mensuel", "hide_weekends": "Cacher les weekends", "show_weekends": "Afficher les weekends" },
-  "day_modal": { "title": "Trades pour le {{date}}", "net_profit": "Profit Net", "total_lot_size": "Taille Totale du Lot", "daily_return": "Rendement Journalier %", "symbol": "Symbole", "type": "Type", "size": "Taille", "profit": "Profit" },
-  "account_action_modal": { "title": "Actions de Compte", "subtitle": "Que souhaitez-vous faire ?", "add_new": "Ajouter un nouveau compte", "update_current": "Mettre à jour le compte actuel", "delete_current": "Supprimer le Compte Actuel" },
-  "add_account_modal": { "title": "Ajouter un nouveau compte", "title_update": "Mettre à jour le Compte", "subtitle": "Fournissez les détails du compte et téléchargez le CSV de l'historique des trades.", "subtitle_update": "Mettez à jour les détails du compte et téléchargez de nouveaux trades.", "account_name": "Nom du compte", "account_name_placeholder": "ex: Mon compte principal", "initial_balance": "Solde initial ({{currency}})", "initial_balance_placeholder": "ex: 100000", "file_loaded": "Fichier chargé :", "trades_found": "{{count}} trades trouvés.", "trades_to_add": "{{count}} nouveaux trades seront ajoutés.", "trades_updated": "{{count}} trades existants seront mis à jour.", "clear_file": "Retirer le fichier", "save_button": "Enregistrer le compte", "save_button_update": "Mettre à jour le Compte", "data_source": "Source de Données", "file_upload": "Fichier Local", "live_url": "URL Active", "csv_url": "URL des Données en Direct", "csv_url_placeholder": "ex: Lien Google Sheet publié ou CSV direct", "url_helper_text": "Pour Google Sheets : Allez dans Fichier > Partager > Publier sur le web, sélectionnez 'Valeurs séparées par des virgules (.csv)', et copiez le lien généré." },
-  "delete_confirmation": { "title": "Confirmer la Suppression", "message": "Êtes-vous sûr de vouloir supprimer le compte '{{accountName}}' ? Cette action est irréversible.", "confirm_button": "Oui, Supprimer" },
-  "file_upload": { "title": "Téléchargez votre historique de trading MT5", "subtitle": "Glissez-déposez votre fichier CSV ici, ou cliquez pour sélectionner un fichier.", "drop_prompt": "Lâchez-le ici !", "click_prompt": "Cliquez ou glissez un fichier ici" },
-  "profile": { "title": "Profil & Paramètres", "language": "Langue", "english": "Anglais", "french": "Français", "backup_title": "Sauvegarde des Données", "backup_description": "Connectez votre compte Google pour sauvegarder tous vos comptes, trades et paramètres sur Google Drive.", "connect_google": "Connecter le Compte Google", "backup_button": "Sauvegarder sur Google Drive", "backup_loading": "Sauvegarde en cours...", "backup_success": "Sauvegarde Réussie !", "backup_retry": "Réessayer la Sauvegarde", "backup_no_client_id": "L'ID client Google n'est pas configuré. La sauvegarde est indisponible.", "feature_coming_soon": "Fonctionnalité à venir.", "free_to_use": "Atlas est gratuit.", "data_privacy": "Vos données sont stockées localement sur votre appareil.", "update_title": "Mise à jour de l'application", "update_description": "Forcer l'application à rechercher la dernière version.", "update_button": "Vérifier les mises à jour", "notifications_title": "Notifications", "notifications_description": "Gérez les notifications en arrière-plan pour vos comptes.", "enable_notifications": "Activer les Notifications", "notifications_denied": "Les notifications sont bloquées. Veuillez les activer dans les paramètres de votre navigateur.", "trade_closed_notifications": "Alertes de Trade Clôturé", "weekly_summary_notifications": "Résumé Hebdomadaire", "notification_center_title": "Centre de Notifications", "no_notifications": "Vous n'avez aucune nouvelle notification.", "clear_all": "Tout effacer", "background_sync_note": "Les notifications en arrière-plan dépendent de la fréquence de synchronisation de votre navigateur, qui peut être retardée pour économiser la batterie. La synchronisation a également lieu au démarrage de l'application.", "send_test_notification": "Envoyer une notification de test", "test_notification_sent": "Notification de test demandée. Vérifiez le panneau de notifications de votre appareil.", "test_notification_body": "Si vous voyez ceci, les notifications fonctionnent !", "notifications_not_supported_alert": "Les notifications ne sont pas supportées par ce navigateur.", "notifications_not_granted_alert": "La permission pour les notifications n'a pas été accordée. Veuillez d'abord activer les notifications.", "service_worker_not_active_alert": "Le service d'arrière-plan de l'application n'est pas actif. Veuillez essayer de recharger la page.", "service_worker_connect_error_alert": "Impossible de se connecter au service d'arrière-plan. Il est peut-être en cours d'installation. Veuillez patienter et réessayer." },
-  "notifications": { "trade_closed_title": "Trade Clôturé", "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}", "weekly_summary_title": "Résumé Hebdomadaire des Performances", "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)" },
-  "analysis": { "title": "Analyse Avancée", "filter_symbols_title": "Filtrer par Symbole", "filter_symbols_placeholder": "Tous les symboles", "filter_comments_title": "Filtrer par Commentaire", "filter_comments_placeholder": "Tous les commentaires", "select_all": "Tout sélectionner", "clear_all": "Tout effacer", "filtered_trades_title": "Trades Filtrés", "filtered_profit_title": "Profit Net Filtré", "back_to_dashboard": "Retour au Tableau de Bord", "item_name_symbols": "symboles", "item_name_comments": "commentaires", "start_date": "Date de début", "end_date": "Date de fin" },
-    "goals": {
-    "title": "Objectifs de Trading",
-    "subtitle": "Définissez vos cibles et suivez vos progrès.",
-    "edit_goals": "Modifier les Objectifs",
-    "save_goals": "Enregistrer les Objectifs",
-    "cancel": "Annuler",
-    "metric_netProfit": "Profit Net ($)",
-    "metric_winRate": "Taux de Réussite (%)",
-    "metric_profitFactor": "Facteur de Profit",
-    "metric_maxDrawdown": "Drawdown Max (%)",
-    "current": "Actuel",
-    "target": "Cible",
-    "not_set": "Non défini",
-    "enable_goal": "Activer l'objectif",
-    "goal_met": "Objectif atteint !",
-    "less_is_better": "plus bas c'est mieux",
-    "show_on_chart": "Afficher sur le graphique",
-    "profit_target_label": "Objectif de Profit",
-    "drawdown_target_label": "Limite de Drawdown"
-  }
-};
 
 interface LanguageContextType {
   language: Language;
@@ -75,37 +12,54 @@ interface LanguageContextType {
   t: (key: string, options?: { [key: string]: string | number }) => string;
 }
 
-const translations: Record<Language, Translations> = {
-    en: enTranslations,
-    fr: frTranslations,
-};
-
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { data: language, setData: setLanguage, isLoading } = useDBStorage<Language>('language', 'en');
+  const { data: language, setData: setLanguage, isLoading: isLanguageLoading } = useDBStorage<Language>('language', 'en');
+  const [translations, setTranslations] = useState<Translations | null>(null);
+  const [isTranslationsLoading, setIsTranslationsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTranslations = async () => {
+      setIsTranslationsLoading(true);
+      try {
+        const response = await fetch(`/locales/${language}.json`);
+        if (!response.ok) {
+          throw new Error(`Failed to load translations for ${language}`);
+        }
+        const data = await response.json();
+        setTranslations(data);
+      } catch (error) {
+        console.error(error);
+        // Fallback to English if the selected language fails to load
+        if (language !== 'en') {
+            const fallbackResponse = await fetch('/locales/en.json');
+            if (fallbackResponse.ok) {
+                setTranslations(await fallbackResponse.json());
+            }
+        }
+      } finally {
+        setIsTranslationsLoading(false);
+      }
+    };
+
+    if (!isLanguageLoading) {
+        fetchTranslations();
+    }
+  }, [language, isLanguageLoading]);
+
 
   const t = (key: string, options?: { [key: string]: string | number }) => {
+    if (!translations) return key;
+
     const keyParts = key.split('.');
-    let translation: any = translations[language] || translations['en'];
+    let translation: any = translations;
 
     for (const part of keyParts) {
       if (translation && typeof translation === 'object' && translation[part] !== undefined) {
         translation = translation[part];
       } else {
-        let fallbackTranslation = translations['en'];
-        let found = true;
-        for (const enPart of keyParts) {
-            if (fallbackTranslation && typeof fallbackTranslation === 'object' && fallbackTranslation[enPart] !== undefined) {
-                fallbackTranslation = fallbackTranslation[enPart];
-            } else {
-                found = false;
-                break;
-            }
-        }
-        if (found) translation = fallbackTranslation;
-        else return key;
-        break;
+        return key; // Return the key itself if not found
       }
     }
 
@@ -119,9 +73,10 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const value = { language, setLanguage, t };
-
-  if (isLoading) {
-    return null; // Don't render app until language preference is loaded
+  
+  // Wait until both the language preference and the translation file are loaded
+  if (isLanguageLoading || isTranslationsLoading) {
+    return null; 
   }
 
   return (
