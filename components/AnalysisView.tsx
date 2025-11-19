@@ -77,15 +77,14 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const chartRef = useRef<HTMLDivElement>(null);
   const lastActiveIndex = useRef<number | null>(null);
 
-  const { allSymbols, allComments, minDate, maxDate } = useMemo(() => {
-    if (trades.length === 0) return { allSymbols: [], allComments: [], minDate: '', maxDate: '' };
-    const symbolSet = new Set<string>();
+  // Calculate static metadata (min/max dates, all comments)
+  const { allComments, minDate, maxDate } = useMemo(() => {
+    if (trades.length === 0) return { allComments: [], minDate: '', maxDate: '' };
     const commentSet = new Set<string>();
     let minTimestamp = trades[0].closeTime.getTime();
     let maxTimestamp = trades[0].closeTime.getTime();
 
     trades.forEach(trade => {
-      symbolSet.add(trade.symbol);
       if (trade.comment) commentSet.add(trade.comment);
       if (trade.closeTime.getTime() < minTimestamp) minTimestamp = trade.closeTime.getTime();
       if (trade.closeTime.getTime() > maxTimestamp) maxTimestamp = trade.closeTime.getTime();
@@ -94,12 +93,29 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     const toISODateString = (date: Date) => date.toISOString().split('T')[0];
 
     return {
-        allSymbols: Array.from(symbolSet).sort(),
         allComments: Array.from(commentSet).sort(),
         minDate: toISODateString(new Date(minTimestamp)),
         maxDate: toISODateString(new Date(maxTimestamp))
     }
   }, [trades]);
+
+  // Calculate available symbols dynamically based on selected comments
+  const availableSymbols = useMemo(() => {
+    const symbolSet = new Set<string>();
+    
+    if (selectedComments.length > 0) {
+        trades.forEach(trade => {
+            if (trade.comment && selectedComments.includes(trade.comment)) {
+                symbolSet.add(trade.symbol);
+            }
+        });
+    } else {
+        trades.forEach(trade => {
+            symbolSet.add(trade.symbol);
+        });
+    }
+    return Array.from(symbolSet).sort();
+  }, [trades, selectedComments]);
 
   useEffect(() => {
     setStartDate(minDate);
@@ -267,7 +283,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-[#16152c] rounded-2xl border border-gray-700/50">
             <MultiSelectDropdown 
-                options={allSymbols}
+                options={availableSymbols}
                 selectedOptions={selectedSymbols}
                 onChange={setSelectedSymbols}
                 placeholder={t('analysis.filter_symbols_placeholder')}
