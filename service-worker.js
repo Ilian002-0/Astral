@@ -1,9 +1,9 @@
+
 // --- CONSTANTS & CONFIG ---
-const CACHE_NAME = 'atlas-cache-v24'; // Incremented cache version
+const CACHE_NAME = 'atlas-cache-v25'; // Incremented cache version
 const ASSETS_TO_CACHE = [
     '/', '/index.html', '/manifest.json', '/logo.svg',
     '/dashboard-icon.svg', '/list-icon.svg', '/calendar-icon.svg', '/goals-icon.svg',
-    '/locales/en.json', '/locales/fr.json',
 ];
 const DB_NAME = 'atlas-db';
 const DB_VERSION = 1;
@@ -207,14 +207,13 @@ self.addEventListener('message', (event) => {
 
 
 // --- NOTIFICATION & SYNC LOGIC ---
-let translations = {};
-const fetchTranslations = async () => {
-    if (Object.keys(translations).length) return;
-    try {
-        const [enRes, frRes] = await Promise.all([fetch('/locales/en.json'), fetch('/locales/fr.json')]);
-        translations = { en: await enRes.json(), fr: await frRes.json() };
-        console.log('SW: Translations loaded.');
-    } catch (e) { console.error('SW: Failed to fetch translations', e); }
+const translations = {
+  en: {
+    "notifications": { "trade_closed_title": "Trade Closed", "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}", "weekly_summary_title": "Weekly Performance Summary", "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)" },
+  },
+  fr: {
+    "notifications": { "trade_closed_title": "Trade Clôturé", "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}", "weekly_summary_title": "Résumé Hebdomadaire des Performances", "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)" },
+  }
 };
 
 const t = (lang, key, opts) => {
@@ -292,7 +291,6 @@ async function syncAccount(account, lang, settings) {
 async function runSync() {
     try {
         console.log('SW: --- Starting background sync ---');
-        await fetchTranslations();
         
         const [accountsStr, settingsStr, lang] = await Promise.all([
             getDBItem('trading_accounts_v1'),

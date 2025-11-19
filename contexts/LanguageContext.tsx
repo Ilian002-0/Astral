@@ -1,9 +1,8 @@
 
-
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import useDBStorage from '../hooks/useLocalStorage';
+import { translations } from '../utils/translations';
 
-type Translations = { [key: string]: any };
 type Language = 'en' | 'fr';
 
 interface LanguageContextType {
@@ -16,44 +15,15 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { data: language, setData: setLanguage, isLoading: isLanguageLoading } = useDBStorage<Language>('language', 'en');
-  const [translations, setTranslations] = useState<Translations | null>(null);
-  const [isTranslationsLoading, setIsTranslationsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchTranslations = async () => {
-      setIsTranslationsLoading(true);
-      try {
-        const response = await fetch(`/locales/${language}.json`);
-        if (!response.ok) {
-          throw new Error(`Failed to load translations for ${language}`);
-        }
-        const data = await response.json();
-        setTranslations(data);
-      } catch (error) {
-        console.error(error);
-        // Fallback to English if the selected language fails to load
-        if (language !== 'en') {
-            const fallbackResponse = await fetch('/locales/en.json');
-            if (fallbackResponse.ok) {
-                setTranslations(await fallbackResponse.json());
-            }
-        }
-      } finally {
-        setIsTranslationsLoading(false);
-      }
-    };
-
-    if (!isLanguageLoading) {
-        fetchTranslations();
-    }
-  }, [language, isLanguageLoading]);
-
 
   const t = (key: string, options?: { [key: string]: string | number }) => {
-    if (!translations) return key;
+    const currentLang = (language in translations) ? language : 'en';
+    const dict = translations[currentLang as keyof typeof translations];
+    
+    if (!dict) return key;
 
     const keyParts = key.split('.');
-    let translation: any = translations;
+    let translation: any = dict;
 
     for (const part of keyParts) {
       if (translation && typeof translation === 'object' && translation[part] !== undefined) {
@@ -74,8 +44,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const value = { language, setLanguage, t };
   
-  // Wait until both the language preference and the translation file are loaded
-  if (isLanguageLoading || isTranslationsLoading) {
+  if (isLanguageLoading) {
     return null; 
   }
 
