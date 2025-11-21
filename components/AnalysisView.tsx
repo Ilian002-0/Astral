@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { Trade, ChartDataPoint, Account } from '../types';
@@ -77,15 +78,13 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const chartRef = useRef<HTMLDivElement>(null);
   const lastActiveIndex = useRef<number | null>(null);
 
-  // Calculate static metadata (min/max dates, all comments)
-  const { allComments, minDate, maxDate } = useMemo(() => {
-    if (trades.length === 0) return { allComments: [], minDate: '', maxDate: '' };
-    const commentSet = new Set<string>();
+  // Calculate static metadata (min/max dates)
+  const { minDate, maxDate } = useMemo(() => {
+    if (trades.length === 0) return { minDate: '', maxDate: '' };
     let minTimestamp = trades[0].closeTime.getTime();
     let maxTimestamp = trades[0].closeTime.getTime();
 
     trades.forEach(trade => {
-      if (trade.comment) commentSet.add(trade.comment);
       if (trade.closeTime.getTime() < minTimestamp) minTimestamp = trade.closeTime.getTime();
       if (trade.closeTime.getTime() > maxTimestamp) maxTimestamp = trade.closeTime.getTime();
     });
@@ -93,7 +92,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     const toISODateString = (date: Date) => date.toISOString().split('T')[0];
 
     return {
-        allComments: Array.from(commentSet).sort(),
         minDate: toISODateString(new Date(minTimestamp)),
         maxDate: toISODateString(new Date(maxTimestamp))
     }
@@ -103,19 +101,47 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const availableSymbols = useMemo(() => {
     const symbolSet = new Set<string>();
     
-    if (selectedComments.length > 0) {
-        trades.forEach(trade => {
-            if (trade.comment && selectedComments.includes(trade.comment)) {
-                symbolSet.add(trade.symbol);
-            }
-        });
-    } else {
-        trades.forEach(trade => {
-            symbolSet.add(trade.symbol);
-        });
-    }
+    const sourceTrades = selectedComments.length > 0 
+        ? trades.filter(t => t.comment && selectedComments.includes(t.comment))
+        : trades;
+
+    sourceTrades.forEach(trade => {
+        symbolSet.add(trade.symbol);
+    });
     return Array.from(symbolSet).sort();
   }, [trades, selectedComments]);
+
+  // Calculate available comments dynamically based on selected symbols
+  const availableComments = useMemo(() => {
+    const commentSet = new Set<string>();
+    
+    const sourceTrades = selectedSymbols.length > 0 
+        ? trades.filter(t => selectedSymbols.includes(t.symbol))
+        : trades;
+
+    sourceTrades.forEach(trade => {
+        if (trade.comment) commentSet.add(trade.comment);
+    });
+    
+    return Array.from(commentSet).sort();
+  }, [trades, selectedSymbols]);
+
+  // Ensure selected items are valid according to available options (prevents ghost selections)
+  useEffect(() => {
+      const validSymbols = new Set(availableSymbols);
+      setSelectedSymbols(prev => {
+          const next = prev.filter(s => validSymbols.has(s));
+          return next.length === prev.length ? prev : next;
+      });
+  }, [availableSymbols]);
+
+  useEffect(() => {
+      const validComments = new Set(availableComments);
+      setSelectedComments(prev => {
+          const next = prev.filter(c => validComments.has(c));
+          return next.length === prev.length ? prev : next;
+      });
+  }, [availableComments]);
 
   useEffect(() => {
     setStartDate(minDate);
@@ -291,7 +317,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 itemNamePlural={t('analysis.item_name_symbols')}
             />
             <MultiSelectDropdown 
-                options={allComments}
+                options={availableComments}
                 selectedOptions={selectedComments}
                 onChange={setSelectedComments}
                 placeholder={t('analysis.filter_comments_placeholder')}
