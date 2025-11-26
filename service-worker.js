@@ -1,6 +1,8 @@
 
+importScripts('https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js');
+
 // --- CONSTANTS & CONFIG ---
-const CACHE_NAME = 'atlas-cache-v26'; // Incremented cache version to force logo update
+const CACHE_NAME = 'atlas-cache-v28'; // Incremented cache version
 const ASSETS_TO_CACHE = [
     '/', '/index.html', '/manifest.json', '/logo.svg',
     '/dashboard-icon.svg', '/list-icon.svg', '/calendar-icon.svg', '/goals-icon.svg',
@@ -64,6 +66,60 @@ const dateReviver = (key, value) => {
 const dateReplacer = (key, value) => (value instanceof Date ? value.toISOString() : value);
 const deepParse = (jsonString) => (jsonString ? JSON.parse(jsonString, dateReviver) : null);
 const deepStringify = (obj) => JSON.stringify(obj, dateReplacer);
+
+// --- PACKING UTILITIES (Inlined for SW) ---
+const packTrade = (trade) => [
+    trade.ticket, trade.openTime.getTime(), trade.type, trade.size, trade.symbol,
+    trade.openPrice, trade.closeTime.getTime(), trade.closePrice, trade.commission,
+    trade.swap, trade.profit, trade.comment || ''
+];
+
+const unpackTrade = (row) => ({
+    ticket: row[0], openTime: new Date(row[1]), type: row[2], size: row[3],
+    symbol: row[4], openPrice: row[5], closeTime: new Date(row[6]),
+    closePrice: row[7], commission: row[8], swap: row[9], profit: row[10],
+    comment: row[11]
+});
+
+const packAccounts = (accounts) => accounts.map(account => ({
+    ...account,
+    isPacked: true,
+    packedTrades: account.trades.map(packTrade),
+    trades: undefined // Remove expanded trades
+}));
+
+const unpackAccounts = (data) => {
+    if (!Array.isArray(data)) return [];
+    return data.map(item => {
+        if (!item.isPacked && item.trades) return item; // Already unpacked
+        if (item.isPacked && item.packedTrades) {
+            return {
+                ...item,
+                trades: item.packedTrades.map(unpackTrade),
+                packedTrades: undefined
+            };
+        }
+        return item;
+    });
+};
+
+// --- SMART PARSE (Handles Compressed, Packed & Legacy Data) ---
+const smartParse = (raw, isAccountsKey = false) => {
+    if (!raw) return null;
+    let parsed = null;
+    
+    const decompressed = LZString.decompressFromUTF16(raw);
+    if (decompressed) {
+        try { parsed = deepParse(decompressed); } catch (e) {}
+    } else {
+        try { parsed = deepParse(raw); } catch (e) {}
+    }
+
+    if (isAccountsKey && parsed && Array.isArray(parsed)) {
+        return unpackAccounts(parsed);
+    }
+    return parsed;
+};
 
 
 // --- CSV PARSER (MIRRORS MAIN APP) ---
@@ -207,8 +263,6 @@ self.addEventListener('message', (event) => {
 
 
 // --- NOTIFICATION & SYNC LOGIC ---
-// Hardcoded English translations for background sync notifications as a fallback
-// Ideally, this should pull from the shared translations file if possible, or pass lang in the sync event.
 const translations = {
   en: {
     "notifications": { "trade_closed_title": "Trade Closed", "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}", "weekly_summary_title": "Weekly Performance Summary", "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)" },
@@ -257,11 +311,9 @@ const notifyForTrades = (trades, account, lang, settings) => {
 // **NEW:** A robust function to sync a single account.
 async function syncAccount(account, lang, settings) {
     if (!account.dataUrl) {
-        console.log(`SW: Account "${account.name}" has no data URL, skipping.`);
         return { account, hasChanged: false };
     }
 
-    console.log(`SW: Processing account: "${account.name}"`);
     try {
         const response = await fetch(account.dataUrl, { cache: 'no-store' });
         if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
@@ -270,7 +322,6 @@ async function syncAccount(account, lang, settings) {
         const newTrades = parseCSV_SW(csvText);
         
         if (newTrades.length === 0 && account.trades.length > 0) {
-            console.warn(`SW: Fetched empty or invalid file for "${account.name}". Skipping update to avoid data loss.`);
             return { account, hasChanged: false };
         }
 
@@ -280,7 +331,6 @@ async function syncAccount(account, lang, settings) {
         const sortedTrades = newTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
         const updatedAccount = { ...account, trades: sortedTrades, lastUpdated: new Date().toISOString() };
         
-        console.log(`SW: Successfully synced "${account.name}". Found ${newlyClosed.length} new closed trades.`);
         return { account: updatedAccount, hasChanged: true };
 
     } catch (error) {
@@ -289,35 +339,29 @@ async function syncAccount(account, lang, settings) {
     }
 }
 
-// **REFACTORED:** The main sync logic is now more resilient.
+// **REFACTORED:** The main sync logic is now more resilient and handles compressed data.
 async function runSync() {
     try {
         console.log('SW: --- Starting background sync ---');
         
-        // Use a simpler key retrieval if IndexedDB usage is tricky in some contexts, but sticking to getDBItem here for consistency with main app storage.
-        // Note: We manually parse the "language" from IDB which might be stored as a JSON string.
-        const [accountsStr, settingsStr, langStr] = await Promise.all([
+        const [accountsRaw, settingsRaw, langRaw] = await Promise.all([
             getDBItem('trading_accounts_v1'),
             getDBItem('notification_settings'),
-            getDBItem('language'), // This might be "en" or "\"en\""
+            getDBItem('language'), 
         ]);
         
-        // Handle potential double serialization of simple strings in IDB
         let lang = 'en';
-        if (langStr) {
-            try {
-                lang = JSON.parse(langStr);
-            } catch (e) {
-                lang = langStr; // fallback if it wasn't a JSON string
-            }
+        const parsedLang = smartParse(langRaw);
+        if (parsedLang && (parsedLang === 'fr' || parsedLang === 'en')) {
+            lang = parsedLang;
         }
 
-        const originalAccounts = deepParse(accountsStr) || [];
+        const originalAccounts = smartParse(accountsRaw, true) || []; // Pass true to unpack trades
         if (!originalAccounts.length) {
             console.log('SW: No accounts configured. Sync finished.');
             return;
         }
-        const settings = deepParse(settingsStr) || { tradeClosed: true, weeklySummary: true };
+        const settings = smartParse(settingsRaw) || { tradeClosed: true, weeklySummary: true };
         
         const syncPromises = originalAccounts.map(acc => syncAccount(acc, lang, settings));
         const results = await Promise.all(syncPromises);
@@ -326,8 +370,12 @@ async function runSync() {
         const wasAnyDataChanged = results.some(r => r.hasChanged);
 
         if (wasAnyDataChanged) {
-            console.log('SW: Sync found updates. Writing new data to IndexedDB.');
-            await setDBItem('trading_accounts_v1', deepStringify(updatedAccounts));
+            console.log('SW: Sync found updates. Packing, Compressing and writing new data to IndexedDB.');
+            // Pack accounts before stringifying
+            const packedAccounts = packAccounts(updatedAccounts);
+            const str = deepStringify(packedAccounts);
+            const compressed = LZString.compressToUTF16(str);
+            await setDBItem('trading_accounts_v1', compressed);
         } else {
             console.log('SW: Sync finished. No data was changed.');
         }

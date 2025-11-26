@@ -1,4 +1,7 @@
+
 import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
+import LZString from 'lz-string';
+import { packAccounts, unpackAccounts } from '../utils/dataOptimizer';
 
 // --- IndexedDB Helpers ---
 const DB_NAME = 'atlas-db';
@@ -82,10 +85,42 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
         getDBItem<string>(key).then(storedValue => {
             if (isMounted) {
                 if (storedValue) {
-                   setDataState(deepParse(storedValue) ?? initialValue);
+                    // Try to decompress first
+                    let parsed = null;
+                    const decompressed = LZString.decompressFromUTF16(storedValue);
+                    
+                    if (decompressed) {
+                         // If decompression returned a string, try parsing it as JSON
+                        try {
+                            parsed = deepParse(decompressed);
+                        } catch (e) {
+                            console.warn(`Decompressed data for key "${key}" is not valid JSON.`);
+                        }
+                    }
+
+                    // If decompression returned null or parsing failed, assume it's legacy uncompressed data
+                    if (!parsed) {
+                        try {
+                             parsed = deepParse(storedValue);
+                        } catch(e) {
+                             console.error(`Failed to parse data for key "${key}"`, e);
+                        }
+                    }
+
+                    // --- STRUCTURAL UNPACKING ---
+                    // If this is the accounts key, check if data is packed (array of arrays)
+                    if (key === 'trading_accounts_v1' && Array.isArray(parsed)) {
+                         // @ts-ignore - We know T is Account[] here effectively
+                         parsed = unpackAccounts(parsed);
+                    }
+
+                   setDataState(parsed ?? initialValue);
                 } else {
-                   // If nothing is in the DB, store the initial value.
-                   setDBItem(key, deepStringify(initialValue));
+                   // If nothing is in the DB, store the initial value (compressed).
+                   // We don't pack initialValue here assuming it's empty, but consistency is good.
+                   const stringified = deepStringify(initialValue);
+                   const compressed = LZString.compressToUTF16(stringified);
+                   setDBItem(key, compressed);
                    setDataState(initialValue);
                 }
                 setIsLoading(false);
@@ -102,7 +137,18 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
         setDataState(currentState => {
             const valueToStore = value instanceof Function ? value(currentState) : value;
             try {
-                setDBItem(key, deepStringify(valueToStore));
+                let preparedValue = valueToStore;
+
+                // --- STRUCTURAL PACKING ---
+                // If storing accounts, convert to optimized column format before stringifying
+                if (key === 'trading_accounts_v1' && Array.isArray(valueToStore)) {
+                    // @ts-ignore
+                    preparedValue = packAccounts(valueToStore);
+                }
+
+                const stringified = deepStringify(preparedValue);
+                const compressed = LZString.compressToUTF16(stringified);
+                setDBItem(key, compressed);
             } catch (error) {
                 console.error(`Error setting IndexedDB key “${key}”:`, error);
             }

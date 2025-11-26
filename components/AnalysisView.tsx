@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { Trade, ChartDataPoint, Account } from '../types';
@@ -338,7 +337,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
             <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
                 {chartData.length > 1 ? (
-                <ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%">
                     <AreaChart 
                         data={chartData} 
                         margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}

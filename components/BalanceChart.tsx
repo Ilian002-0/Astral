@@ -316,7 +316,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
       </div>
       <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
         {hasAnyData ? (
-          <ResponsiveContainer key={timeRange}>
+          <ResponsiveContainer key={timeRange} width="100%" height="100%">
             <AreaChart
               data={filteredData}
               onMouseMove={handleChartMouseMove}

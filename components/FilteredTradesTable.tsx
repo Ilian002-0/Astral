@@ -3,6 +3,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Trade } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import useDBStorage from '../hooks/useLocalStorage';
+import { TableVirtuoso } from 'react-virtuoso';
 
 type AugmentedTrade = Trade & { profitPercentage?: number };
 
@@ -47,6 +48,12 @@ const calculateDuration = (trade: Trade): string => {
     
     return `${hours}h ${minutes}m`;
 };
+
+// Define table components outside to ensure referential stability
+const VirtuosoTable = (props: any) => <table {...props} className="w-full text-sm text-left border-collapse" style={{borderSpacing: 0}} />;
+const VirtuosoTableHead = React.forwardRef((props: any, ref: any) => <thead {...props} ref={ref} className="text-xs text-gray-400 uppercase border-b border-gray-700 sticky top-0 bg-[#16152c] z-10" />);
+// Destructure item and context to avoid passing them to the DOM element, preventing React warnings
+const VirtuosoTableRow = ({ item, context, ...props }: any) => <tr {...props} className="text-xs hover:bg-gray-800/50 border-b border-gray-800" />;
 
 const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, currency }) => {
     const { t, language } = useLanguage();
@@ -146,18 +153,29 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
                     )}
                 </div>
             </div>
-            <div className="overflow-x-auto max-h-[500px]">
-                <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-gray-400 uppercase border-b border-gray-700 sticky top-0 bg-[#16152c]">
-                        <tr>
-                            {activeColumns.map(col => (
-                                <th key={col.key} scope="col" className={`px-2 py-3 whitespace-nowrap ${col.isNumeric ? 'text-right' : ''}`}>{col.label}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                        {trades.map((trade) => (
-                             <tr key={trade.ticket} className="text-xs hover:bg-gray-800/50">
+            <div className="w-full">
+                 {trades.length === 0 ? (
+                    <div className="text-center py-10 text-gray-500">
+                        <p>{t('trades_list.no_trades_found')}</p>
+                    </div>
+                ) : (
+                    <TableVirtuoso
+                        style={{ height: 500 }}
+                        data={trades}
+                        components={{
+                             Table: VirtuosoTable,
+                             TableHead: VirtuosoTableHead,
+                             TableRow: VirtuosoTableRow
+                        }}
+                        fixedHeaderContent={() => (
+                            <tr className="bg-[#16152c]">
+                                {activeColumns.map(col => (
+                                    <th key={col.key} scope="col" className={`px-2 py-3 whitespace-nowrap bg-[#16152c] ${col.isNumeric ? 'text-right' : ''}`}>{col.label}</th>
+                                ))}
+                            </tr>
+                        )}
+                        itemContent={(index, trade) => (
+                            <>
                                 {activeColumns.map(col => {
                                     const isBuy = trade.type.toLowerCase() === 'buy';
                                     let cellClass = 'text-white';
@@ -201,14 +219,9 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
                                         </td>
                                     );
                                 })}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                 {trades.length === 0 && (
-                    <div className="text-center py-10 text-gray-500">
-                        <p>{t('trades_list.no_trades_found')}</p>
-                    </div>
+                            </>
+                        )}
+                    />
                 )}
             </div>
         </div>

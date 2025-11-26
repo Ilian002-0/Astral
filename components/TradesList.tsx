@@ -1,7 +1,9 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Trade } from '../types';
 import useDBStorage from '../hooks/useLocalStorage';
 import { useLanguage } from '../contexts/LanguageContext';
+import { TableVirtuoso } from 'react-virtuoso';
 
 interface TradesListProps {
   trades: Trade[];
@@ -21,6 +23,12 @@ const calculateDuration = (trade: Trade): string => {
     
     return `${hours}h ${minutes}m`;
 };
+
+// Define Table Components outside of the render function to prevent re-mounting on every render
+const VirtuosoTable = (props: any) => <table {...props} className="w-full text-sm text-left border-collapse" style={{borderSpacing: 0}} />;
+const VirtuosoTableHead = React.forwardRef((props: any, ref: any) => <thead {...props} ref={ref} className="text-xs text-gray-400 uppercase bg-[#16152c] sticky top-0 z-10" />);
+// Destructure item and context to avoid passing them to the DOM element, preventing React warnings
+const VirtuosoTableRow = ({ item, context, ...props }: any) => <tr {...props} className="border-b border-gray-800 hover:bg-gray-800/50 align-top" />;
 
 const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     const { t, language } = useLanguage();
@@ -117,8 +125,8 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     const activeColumns = COLUMN_DEFINITIONS.filter(col => visibleColumns[col.key]);
 
     return (
-        <div className="bg-[#16152c] rounded-2xl shadow-lg border border-gray-700/50">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4 px-4 sm:px-6 pt-4 sm:pt-6">
+        <div className="bg-[#16152c] rounded-2xl shadow-lg border border-gray-700/50 flex flex-col h-full">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4 px-4 sm:px-6 pt-4 sm:pt-6 flex-shrink-0">
                 <h2 className="text-xl font-bold text-white">{t('trades_list.title', { count: filteredTrades.length })}</h2>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <input
@@ -147,23 +155,30 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                 </div>
             </div>
 
-            <div className="w-full overflow-x-auto">
-                <table className="min-w-full text-sm text-left">
-                    <thead className="text-xs text-gray-400 uppercase border-b-2 border-gray-700">
-                        <tr>
-                            {activeColumns.map(col => (
-                                <th key={col.key} scope="col" className="px-2 sm:px-4 py-3 whitespace-nowrap">{col.label}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredTrades.map((trade, index) => (
-                            <tr 
-                                key={trade.ticket} 
-                                className="border-b border-gray-800 text-xs hover:bg-gray-800/50 animate-fade-in-up align-top"
-                                style={{ animationDelay: `${index * 20}ms`, opacity: 0 }}
-                            >
-                               {activeColumns.map(col => {
+            <div className="flex-1 min-h-0 px-1 pb-2">
+                 {filteredTrades.length === 0 ? (
+                    <div className="text-center py-10 px-4 sm:px-6 text-gray-500">
+                        <p>{t('trades_list.no_trades_found')}</p>
+                    </div>
+                ) : (
+                     <TableVirtuoso
+                        style={{ height: 'calc(100vh - 220px)' }}
+                        data={filteredTrades}
+                        components={{
+                             Table: VirtuosoTable,
+                             TableHead: VirtuosoTableHead,
+                             TableRow: VirtuosoTableRow
+                        }}
+                        fixedHeaderContent={() => (
+                            <tr className="bg-[#16152c] border-b-2 border-gray-700">
+                                {activeColumns.map(col => (
+                                    <th key={col.key} scope="col" className="px-2 sm:px-4 py-3 whitespace-nowrap bg-[#16152c]">{col.label}</th>
+                                ))}
+                            </tr>
+                        )}
+                        itemContent={(index, trade) => (
+                            <>
+                                {activeColumns.map(col => {
                                     const isBuy = trade.type.toLowerCase() === 'buy';
                                     let cellClass = 'text-white';
                                     if(col.key === 'type') cellClass = `font-bold uppercase ${isBuy ? 'text-cyan-400' : 'text-orange-400'}`;
@@ -199,17 +214,12 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                                             {formatValue(trade, col.key)}
                                         </td>
                                     );
-                               })}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                })}
+                            </>
+                        )}
+                     />
+                )}
             </div>
-            {filteredTrades.length === 0 && (
-                <div className="text-center py-10 px-4 sm:px-6 text-gray-500">
-                    <p>{t('trades_list.no_trades_found')}</p>
-                </div>
-            )}
         </div>
     );
 };

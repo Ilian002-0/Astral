@@ -48,7 +48,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, f
         {isLessBetter && <p className="text-xs text-gray-500">(lower is better)</p>}
       </div>
       <div className="relative w-32 h-32 mx-auto my-4">
-        <ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
             innerRadius="80%"
             outerRadius="100%"

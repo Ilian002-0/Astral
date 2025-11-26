@@ -1,325 +1,177 @@
-
-
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import useDBStorage from './hooks/useLocalStorage';
-import { Account, AppView, ProcessedData, Trade, Goals, NotificationSettings, CalendarSettings } from './types';
-import { processAccountData } from './utils/calculations';
-import { parseCSV } from './utils/csvParser';
+import React, { useState, useMemo, useCallback, Suspense, useEffect } from 'react';
+import { Account, AppView, Trade, CalendarSettings, NotificationSettings } from './types';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
 import usePullToRefresh from './hooks/usePullToRefresh';
+import useDBStorage from './hooks/useLocalStorage';
 import { useLanguage } from './contexts/LanguageContext';
-import { triggerHaptic } from './utils/haptics';
 
+// Custom Hooks
+import { useAccountManager } from './hooks/useAccountManager';
+import { useSync } from './hooks/useSync';
+import { usePWA } from './hooks/usePWA';
+import { useTradeData } from './hooks/useTradeData';
 
-// Components
+// Static Imports (Layout & critical UI)
 import Header from './components/Header';
-import Dashboard from './components/Dashboard';
-import BalanceChart from './components/BalanceChart';
-import RecentTradesTable from './components/RecentTradesTable';
-import OpenTradesTable from './components/OpenTradesTable';
-import AddAccountModal from './components/AddAccount';
 import AccountSelector from './components/AccountSelector';
 import BottomNav from './components/BottomNav';
 import Sidebar from './components/Sidebar';
-import TradesList from './components/TradesList';
-import CalendarView from './components/CalendarView';
-import ProfileView from './components/ProfileView';
-import AnalysisView from './components/AnalysisView';
-import AccountActionModal from './components/AccountActionModal';
-import DashboardMetricsBottom from './components/DashboardMetricsBottom';
-import GoalsView from './components/GoalsView';
-import DayDetailModal from './components/DayDetailModal';
-import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 import Logo from './components/Logo';
 
-// Memoize components to prevent unnecessary re-renders
-const MemoizedDashboard = React.memo(Dashboard);
-const MemoizedTradesList = React.memo(TradesList);
-const MemoizedCalendarView = React.memo(CalendarView);
-const MemoizedAnalysisView = React.memo(AnalysisView);
-const MemoizedGoalsView = React.memo(GoalsView);
-const MemoizedProfileView = React.memo(ProfileView);
+// Dynamic Imports (Lazy Loading)
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const BalanceChart = React.lazy(() => import('./components/BalanceChart'));
+const RecentTradesTable = React.lazy(() => import('./components/RecentTradesTable'));
+const OpenTradesTable = React.lazy(() => import('./components/OpenTradesTable'));
+const DashboardMetricsBottom = React.lazy(() => import('./components/DashboardMetricsBottom'));
+
+const TradesList = React.lazy(() => import('./components/TradesList'));
+const CalendarView = React.lazy(() => import('./components/CalendarView'));
+const ProfileView = React.lazy(() => import('./components/ProfileView'));
+const AnalysisView = React.lazy(() => import('./components/AnalysisView'));
+const GoalsView = React.lazy(() => import('./components/GoalsView'));
+
+const AddAccountModal = React.lazy(() => import('./components/AddAccount'));
+const AccountActionModal = React.lazy(() => import('./components/AccountActionModal'));
+const DayDetailModal = React.lazy(() => import('./components/DayDetailModal'));
+const DeleteConfirmationModal = React.lazy(() => import('./components/DeleteConfirmationModal'));
+
 
 const SyncIcon: React.FC<{ isSyncing?: boolean }> = ({ isSyncing }) => (
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  className={`h-6 w-6 text-gray-300 ${isSyncing ? 'animate-spin' : ''}`}
-  fill="none"
-  viewBox="0 0 24 24"
-  stroke="currentColor"
-  strokeWidth={2}
->
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    d="M3 11.9998C3 7.02919 7.02944 2.99976 12 2.99976C14.8273 2.99976 17.35 4.30342 19 6.34242"
-  />
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    d="M19.5 2.99976L19.5 6.99976L15.5 6.99976"
-  />
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    d="M21 11.9998C21 16.9703 16.9706 20.9998 12 20.9998C9.17273 20.9998 6.64996 19.6961 5 17.6571"
-  />
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    d="M4.5 20.9998L4.5 16.9998L8.5 16.9998"
-  />
-</svg>
+    <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 text-gray-300 ${isSyncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 11.9998C3 7.02919 7.02944 2.99976 12 2.99976C14.8273 2.99976 17.35 4.30342 19 6.34242" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 2.99976L19.5 6.99976L15.5 6.99976" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.9998C21 16.9703 16.9706 20.9998 12 20.9998C9.17273 20.9998 6.64996 19.6961 5 17.6571" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 20.9998L4.5 16.9998L8.5 16.9998" />
+    </svg>
 );
 
+const Loader = () => (
+    <div className="flex h-full w-full items-center justify-center min-h-[200px]">
+        <div className="animate-spin h-8 w-8 border-4 border-cyan-600 border-t-transparent rounded-full"></div>
+    </div>
+);
 
 const App: React.FC = () => {
-    const { data: accounts, setData: setAccounts, isLoading: isLoadingAccounts } = useDBStorage<Account[]>('trading_accounts_v1', []);
-    const { data: currentAccountName, setData: setCurrentAccountName, isLoading: isLoadingCurrentAccount } = useDBStorage<string | null>('current_account_v1', null);
+    // 1. Core Data Management
+    const { 
+        accounts, 
+        currentAccount, 
+        currentAccountName, 
+        setCurrentAccountName, 
+        isLoading, 
+        saveAccount, 
+        deleteAccount, 
+        saveGoals,
+        updateAccountTrades
+    } = useAccountManager();
+
+    // 2. Settings & UI State
     const { data: notificationSettings, setData: setNotificationSettings } = useDBStorage<NotificationSettings>('notification_settings', { tradeClosed: true, weeklySummary: true });
     const { data: calendarSettings, setData: setCalendarSettings } = useDBStorage<CalendarSettings>('calendar_settings_v1', { hideWeekends: false });
     
+    const [view, setView] = useState<AppView>('dashboard');
     const [isAddAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [isAccountActionModalOpen, setAccountActionModalOpen] = useState(false);
     const [isDeleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'add' | 'update'>('add');
     
-    const [view, setView] = useState<AppView>('dashboard');
-    const [error, setError] = useState<string | null>(null);
-    const [isSyncing, setIsSyncing] = useState(false);
-    const isSyncingRef = useRef(isSyncing);
-    isSyncingRef.current = isSyncing;
-
-    const [installPrompt, setInstallPrompt] = useState<any>(null);
+    // Calendar transitions
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
     const [transitioningDay, setTransitioningDay] = useState<string | null>(null);
 
-    const [launchedFileContent, setLaunchedFileContent] = useState<{trades: Trade[], fileName: string} | null>(null);
+    // 3. Derived Data Processing
+    const processedData = useTradeData(currentAccount);
 
+    // 4. Synchronization Logic
+    const { isSyncing, syncError, refreshAccount, setSyncError } = useSync(accounts, updateAccountTrades);
+    
+    // 5. PWA Integration
+    const { 
+        installPrompt, 
+        launchedFileContent, 
+        pwaError, 
+        setLaunchedFileContent, 
+        setPwaError,
+        handleInstallClick 
+    } = usePWA({ setView, setAddAccountModalOpen, setModalMode });
+
+    // Combine errors
+    const displayError = syncError || pwaError;
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { t } = useLanguage();
+
+    // 6. Preload Lazy Components
+    useEffect(() => {
+        const preloadTimer = setTimeout(() => {
+            // Main Views
+            import('./components/Dashboard');
+            import('./components/TradesList');
+            import('./components/CalendarView');
+            import('./components/GoalsView');
+            import('./components/ProfileView');
+            import('./components/AnalysisView');
+
+            // Dashboard Components
+            import('./components/BalanceChart');
+            import('./components/RecentTradesTable');
+            import('./components/OpenTradesTable');
+            import('./components/DashboardMetricsBottom');
+
+            // Modals
+            import('./components/AddAccount');
+            import('./components/AccountActionModal');
+            import('./components/DayDetailModal');
+            import('./components/DeleteConfirmationModal');
+        }, 1500); // Wait 1.5s after mount to avoid blocking initial render
+
+        return () => clearTimeout(preloadTimer);
+    }, []);
     
-    const isLoading = isLoadingAccounts || isLoadingCurrentAccount;
-
-    const currentAccount = useMemo(() => {
-        if (isLoading) return null;
-        return accounts.find(acc => acc.name === currentAccountName) || null;
-    }, [accounts, currentAccountName, isLoading]);
-
-    const refreshData = useCallback(async (accountToSync: Account) => {
-        if (!accountToSync.dataUrl || isSyncingRef.current) return;
-        setIsSyncing(true);
-        setError(null);
-        try {
-            const response = await fetch(accountToSync.dataUrl, { cache: 'reload' });
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const csvText = await response.text();
-            const newTrades = parseCSV(csvText);
-            setAccounts(prevAccounts => 
-                prevAccounts.map(acc => {
-                    if (acc.name === accountToSync.name) {
-                        const sortedTrades = newTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-                        return { ...acc, trades: sortedTrades, lastUpdated: new Date().toISOString() };
-                    }
-                    return acc;
-                })
-            );
-        } catch (err) {
-            if (!navigator.onLine) setError(t('errors.offline'));
-            else setError(t('errors.fetch_failed'));
-        } finally {
-            setIsSyncing(false);
-        }
-    }, [t, setAccounts]);
-
+    // Pull to Refresh Handler
     const handleRefresh = useCallback(() => {
-        if (currentAccount && currentAccount.dataUrl) refreshData(currentAccount);
-    }, [currentAccount, refreshData]);
+        if (currentAccount) refreshAccount(currentAccount);
+    }, [currentAccount, refreshAccount]);
 
     const { pullToRefreshRef, isRefreshing, pullDistance } = usePullToRefresh(handleRefresh);
     const PULL_THRESHOLD = 80;
 
-
-    // --- PWA & NOTIFICATIONS SETUP ---
-    useEffect(() => {
-        // 1. Register periodic background sync
-        const registerPeriodicSync = async () => {
-            const registration = await navigator.serviceWorker.ready;
-            try {
-                // @ts-ignore
-                await registration.periodicSync.register('account-sync', {
-                    minInterval: 6 * 60 * 1000, // 6 minutes
-                });
-                console.log('Periodic sync registered!');
-            } catch (e) {
-                console.error('Periodic background sync could not be registered.', e);
+    // Handlers for Account Modals
+    const handleSaveAccountWrapper = (data: any, mode: 'add' | 'update') => {
+        try {
+            saveAccount(data, mode);
+            setAddAccountModalOpen(false);
+            if (mode === 'update' && data.dataUrl) {
+                // Trigger sync immediately after update if URL provided
+                const updatedAcc = accounts.find(a => a.name === data.name);
+                if (updatedAcc) refreshAccount({ ...updatedAcc, ...data });
             }
-        };
-        if ('serviceWorker' in navigator && 'PeriodicSyncManager' in window) {
-            registerPeriodicSync();
+        } catch (e: any) {
+            // Pass error back to modal via a transient error state or alert
+            // For now, setting main error
+            setPwaError(e.message);
         }
-
-        // 2. Handle PWA installation prompt events
-        const beforeInstallHandler = (e: Event) => {
-            e.preventDefault();
-            setInstallPrompt(e);
-        };
-        const appInstalledHandler = () => {
-            setInstallPrompt(null);
-        };
-        window.addEventListener('beforeinstallprompt', beforeInstallHandler);
-        window.addEventListener('appinstalled', appInstalledHandler);
-
-        // 3. Handle navigation from app shortcuts
-        const params = new URLSearchParams(window.location.search);
-        const viewParam = params.get('view') as AppView;
-        if (viewParam && ['dashboard', 'trades', 'calendar', 'goals', 'profile'].includes(viewParam)) {
-            setView(viewParam);
-        }
-
-        // 4. Handle file open events
-        if ('launchQueue' in window) {
-            (window as any).launchQueue.setConsumer(async (launchParams: { files: any[] }) => {
-                if (!launchParams.files || launchParams.files.length === 0) return;
-                try {
-                    const fileHandle = launchParams.files[0];
-                    const file = await fileHandle.getFile();
-                    const content = await file.text();
-                    const trades = parseCSV(content);
-                    setLaunchedFileContent({ trades, fileName: file.name });
-                    setModalMode('add');
-                    setAddAccountModalOpen(true);
-                } catch (e) {
-                    setError(e instanceof Error ? e.message : 'Failed to handle launched file.');
-                }
-            });
-        }
-        
-        // Cleanup listeners
-        return () => {
-            window.removeEventListener('beforeinstallprompt', beforeInstallHandler);
-            window.removeEventListener('appinstalled', appInstalledHandler);
-        };
-    }, []);
-    
-    const handleInstallClick = () => {
-        if (!installPrompt) return;
-        installPrompt.prompt();
-        installPrompt.userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed' }) => {
-            if (choiceResult.outcome === 'accepted') {
-                setInstallPrompt(null);
-            }
-        });
     };
     
-    useEffect(() => {
-        if (isLoading) return;
-        const accountExists = accounts.some(acc => acc.name === currentAccountName);
-        if (!currentAccountName && accounts.length > 0) {
-            setCurrentAccountName(accounts[0].name);
-        } else if (currentAccountName && !accountExists && accounts.length > 0) {
-            setCurrentAccountName(accounts[0].name);
-        } else if (accounts.length === 0) {
-            setCurrentAccountName(null);
-        }
-    }, [accounts, currentAccountName, setCurrentAccountName, isLoading]);
-
-    const processedData: ProcessedData | null = useMemo(() => {
-        if (!currentAccount) return null;
-        try {
-            return processAccountData(currentAccount);
-        } catch (e) {
-            console.error(e);
-            setError("Error processing account data.");
-            return null;
-        }
-    }, [currentAccount]);
-    
-    const hasRunInitialSync = useRef(false);
-    useEffect(() => {
-        if (isLoading || hasRunInitialSync.current || accounts.length === 0) return;
-        const syncAll = async () => {
-            const accountsToSync = accounts.filter(acc => acc.dataUrl);
-            if (accountsToSync.length > 0) {
-                await Promise.all(accountsToSync.map(acc => refreshData(acc)));
-            }
-        };
-        syncAll();
-        hasRunInitialSync.current = true;
-    }, [accounts, refreshData, isLoading]);
-
-    const saveAccount = useCallback((
-        accountData: { name: string; trades: Trade[]; initialBalance: number; currency: 'USD' | 'EUR', dataUrl?: string }, 
-        mode: 'add' | 'update'
-    ) => {
-        setError(null);
-        setAccounts(prevAccounts => {
-            if (mode === 'add') {
-                if (prevAccounts.some(acc => acc.name === accountData.name)) {
-                    setError(`An account with the name "${accountData.name}" already exists.`);
-                    return prevAccounts;
-                }
-                const sortedTrades = accountData.trades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-                const newAccount: Account = { ...accountData, trades: sortedTrades, goals: {}, lastUpdated: new Date().toISOString() };
-                const newAccounts = [...prevAccounts, newAccount];
-                setCurrentAccountName(newAccount.name);
-                triggerHaptic('success');
-                return newAccounts;
-            } else { // 'update'
-                triggerHaptic('success');
-                return prevAccounts.map(acc => {
-                    if (acc.name === accountData.name) {
-                        let updatedTrades = acc.trades;
-                        // If trades were passed, it's a file update, so merge them.
-                        if (accountData.trades.length > 0) {
-                            const tradesMap = new Map(acc.trades.map(t => [t.ticket, t]));
-                            accountData.trades.forEach(t => tradesMap.set(t.ticket, t));
-                            updatedTrades = Array.from(tradesMap.values()).sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-                        }
-                        return { ...acc, ...accountData, trades: updatedTrades, lastUpdated: new Date().toISOString() };
-                    }
-                    return acc;
-                });
-            }
-        });
-        setAddAccountModalOpen(false);
-    
-        if (mode === 'update' && accountData.dataUrl) {
-            const updatedAccount = accounts.find(acc => acc.name === accountData.name);
-            if (updatedAccount) {
-                refreshData({ ...updatedAccount, ...accountData });
-            }
-        }
-    }, [accounts, setAccounts, setCurrentAccountName, refreshData]);
-    
-    const deleteAccount = useCallback(() => {
-        if (!currentAccountName) return;
-        setAccounts(prev => prev.filter(acc => acc.name !== currentAccountName));
+    const handleDeleteWrapper = () => {
+        deleteAccount();
         setDeleteConfirmModalOpen(false);
-        triggerHaptic('heavy');
-    }, [currentAccountName, setAccounts]);
+    };
 
     const handleOpenAccountActions = () => setAccountActionModalOpen(true);
     const handleAddClick = () => { setModalMode('add'); setAddAccountModalOpen(true); setAccountActionModalOpen(false); };
     const handleUpdateClick = () => { setModalMode('update'); setAddAccountModalOpen(true); setAccountActionModalOpen(false); };
     const handleDeleteClick = () => { setDeleteConfirmModalOpen(true); setAccountActionModalOpen(false); };
-    
-    const saveGoals = useCallback((goals: Goals) => {
-        if (!currentAccountName) return;
-        setAccounts(prev => prev.map(acc => acc.name === currentAccountName ? { ...acc, goals } : acc));
-        triggerHaptic('success');
-    }, [currentAccountName, setAccounts]);
 
-    // --- View Transition Handlers for Calendar Modal ---
+    // View Transition Handlers
     const handleDayClick = (date: Date) => {
         // @ts-ignore
         if (!document.startViewTransition) {
             setSelectedCalendarDate(date);
             return;
         }
-        const dayId = getDayIdentifier(date);
-        setTransitioningDay(dayId);
+        setTransitioningDay(getDayIdentifier(date));
         // @ts-ignore
         document.startViewTransition(() => {
             setSelectedCalendarDate(date);
@@ -337,8 +189,6 @@ const App: React.FC = () => {
         const transition = document.startViewTransition(() => {
             setSelectedCalendarDate(null);
         });
-
-        // Using .then() for wider compatibility, as .finally() was causing errors in some environments.
         transition.finished.then(() => {
             setTransitioningDay(null);
         });
@@ -354,11 +204,9 @@ const App: React.FC = () => {
         return { trades: dailyTrades, date: selectedCalendarDate, startOfDayBalance };
     }, [selectedCalendarDate, processedData, currentAccount?.initialBalance]);
 
+    // View Renderer
     const renderView = () => {
-        if (isLoading) {
-            // This is shown while the DB is being read for the first time
-            return <div className="app-loader" style={{ position: 'relative', height: '50vh' }}></div>;
-        }
+        if (isLoading) return <div className="app-loader" style={{ position: 'relative', height: '50vh' }}></div>;
 
         if (!currentAccount || !processedData) {
             return (
@@ -372,37 +220,39 @@ const App: React.FC = () => {
             );
         }
 
+        const commonProps = { currency: currentAccount.currency || 'USD' };
+
         switch(view) {
             case 'dashboard':
                 return (
                      <div className="space-y-6">
                         <div className="animate-fade-in-up">
-                            <Header metrics={processedData.metrics} accountName={currentAccount.name} lastUpdated={currentAccount.lastUpdated} onRefresh={handleRefresh} isSyncing={isSyncing} currency={currentAccount.currency || 'USD'} />
+                            <Header metrics={processedData.metrics} accountName={currentAccount.name} lastUpdated={currentAccount.lastUpdated} onRefresh={handleRefresh} isSyncing={isSyncing} {...commonProps} />
                         </div>
                         <div className="animate-fade-in-up animation-delay-200">
-                            <MemoizedDashboard metrics={processedData.metrics} currency={currentAccount.currency || 'USD'} />
+                            <Dashboard metrics={processedData.metrics} {...commonProps} />
                         </div>
                         <div className="animate-fade-in-up animation-delay-300">
-                           <BalanceChart data={processedData.chartData} onAdvancedAnalysisClick={() => setView('analysis')} initialBalance={currentAccount.initialBalance} currency={currentAccount.currency || 'USD'} goals={currentAccount.goals || {}} />
+                           <BalanceChart data={processedData.chartData} onAdvancedAnalysisClick={() => setView('analysis')} initialBalance={currentAccount.initialBalance} goals={currentAccount.goals || {}} {...commonProps} />
                         </div>
                          {processedData.openTrades.length > 0 && (
                             <div className="animate-fade-in-up animation-delay-400">
-                                <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} currency={currentAccount.currency || 'USD'} />
+                                <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} {...commonProps} />
                             </div>
                         )}
                         <div className="animate-fade-in-up animation-delay-500">
-                            <RecentTradesTable trades={processedData.recentTrades} currency={currentAccount.currency || 'USD'} />
+                            <RecentTradesTable trades={processedData.recentTrades} {...commonProps} />
                         </div>
                         <div className="animate-fade-in-up animation-delay-600">
-                           <DashboardMetricsBottom metrics={processedData.metrics} currency={currentAccount.currency || 'USD'}/>
+                           <DashboardMetricsBottom metrics={processedData.metrics} {...commonProps} />
                         </div>
                     </div>
                 );
-            case 'trades': return <MemoizedTradesList trades={processedData.closedTrades} currency={currentAccount.currency || 'USD'} />;
-            case 'calendar': return <MemoizedCalendarView trades={processedData.closedTrades} onDayClick={handleDayClick} currency={currentAccount.currency || 'USD'} transitioningDay={transitioningDay} calendarSettings={calendarSettings} />;
-            case 'analysis': return <MemoizedAnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} currency={currentAccount.currency || 'USD'} />;
-            case 'goals': return <MemoizedGoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} currency={currentAccount.currency || 'USD'} />;
-            case 'profile': return <MemoizedProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} notificationSettings={notificationSettings} onNotificationSettingsChange={setNotificationSettings} />;
+            case 'trades': return <TradesList trades={processedData.closedTrades} {...commonProps} />;
+            case 'calendar': return <CalendarView trades={processedData.closedTrades} onDayClick={handleDayClick} transitioningDay={transitioningDay} calendarSettings={calendarSettings} {...commonProps} />;
+            case 'analysis': return <AnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} {...commonProps} />;
+            case 'goals': return <GoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} {...commonProps} />;
+            case 'profile': return <ProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} notificationSettings={notificationSettings} onNotificationSettingsChange={setNotificationSettings} />;
             default: return null;
         }
     };
@@ -428,7 +278,7 @@ const App: React.FC = () => {
                     </header>
                     
                     <div className="flex-1 relative overflow-y-hidden">
-                        {/* Custom Pull-to-Refresh Indicator */}
+                        {/* Pull-to-Refresh Indicator (Mobile Only) */}
                         {!isDesktop && (
                             <div
                                 className="absolute top-0 left-0 right-0 flex justify-center items-center z-0 pointer-events-none"
@@ -439,13 +289,7 @@ const App: React.FC = () => {
                                     opacity: isRefreshing ? 1 : Math.min(pullDistance / PULL_THRESHOLD, 1),
                                 }}
                             >
-                                <div 
-                                    className="p-3 bg-gray-800 rounded-full shadow-lg"
-                                    style={{ 
-                                        transform: `rotate(${pullDistance * 2}deg) scale(${isRefreshing ? 1 : Math.min(pullDistance / PULL_THRESHOLD, 1)})`,
-                                        transition: 'transform 0.3s'
-                                    }}
-                                >
+                                <div className="p-3 bg-gray-800 rounded-full shadow-lg" style={{ transform: `rotate(${pullDistance * 2}deg) scale(${isRefreshing ? 1 : Math.min(pullDistance / PULL_THRESHOLD, 1)})`, transition: 'transform 0.3s' }}>
                                     <SyncIcon isSyncing={isRefreshing} />
                                 </div>
                             </div>
@@ -460,55 +304,60 @@ const App: React.FC = () => {
                             }}
                         >
                              <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-24 md:pb-6">
-                                {error && <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">{error}</div>}
-                                {renderView()}
+                                {displayError && (
+                                    <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
+                                        {displayError}
+                                        <button className="ml-2 float-right font-bold" onClick={() => { setSyncError(null); setPwaError(null); }}>&times;</button>
+                                    </div>
+                                )}
+                                <Suspense fallback={<Loader />}>
+                                    {renderView()}
+                                </Suspense>
                             </div>
                         </main>
-                        
                     </div>
                     {!isDesktop && <BottomNav hasAccount={!!currentAccount} currentView={view} onNavigate={setView} calendarSettings={calendarSettings} onCalendarSettingsChange={setCalendarSettings} />}
                 </div>
             </div>
             
-            {/* Modals */}
-            <AddAccountModal 
-                isOpen={isAddAccountModalOpen} 
-                onClose={() => setAddAccountModalOpen(false)} 
-                onSaveAccount={saveAccount}
-                mode={modalMode}
-                accountToUpdate={currentAccount}
-                launchedFileContent={launchedFileContent}
-                onLaunchedFileConsumed={() => setLaunchedFileContent(null)}
-            />
-            <AccountActionModal 
-                isOpen={isAccountActionModalOpen}
-                onClose={() => setAccountActionModalOpen(false)}
-                onAddAccount={handleAddClick}
-                onUpdateAccount={handleUpdateClick}
-                onDeleteAccount={handleDeleteClick}
-                canUpdate={!!currentAccount}
-                canDelete={!!currentAccount}
-            />
-            {dayDetailModalData && (
-                 <DayDetailModal 
-                    isOpen={!!selectedCalendarDate} 
-                    onClose={handleCloseDayModal} 
-                    {...dayDetailModalData}
-                    currency={currentAccount.currency || 'USD'}
-                    transitioningDay={transitioningDay}
+            {/* Modals wrapped in Suspense */}
+            <Suspense fallback={null}>
+                <AddAccountModal 
+                    isOpen={isAddAccountModalOpen} 
+                    onClose={() => setAddAccountModalOpen(false)} 
+                    onSaveAccount={handleSaveAccountWrapper}
+                    mode={modalMode}
+                    accountToUpdate={currentAccount}
+                    launchedFileContent={launchedFileContent}
+                    onLaunchedFileConsumed={() => setLaunchedFileContent(null)}
                 />
-            )}
-            <DeleteConfirmationModal 
-                isOpen={isDeleteConfirmModalOpen}
-                onClose={() => setDeleteConfirmModalOpen(false)}
-                onConfirm={deleteAccount}
-                accountName={currentAccount?.name || ''}
-            />
-
-            {error && <div className="fixed bottom-4 right-4 bg-red-800 text-white p-4 rounded-lg shadow-lg animate-fade-in-up">{error}</div>}
+                <AccountActionModal 
+                    isOpen={isAccountActionModalOpen}
+                    onClose={() => setAccountActionModalOpen(false)}
+                    onAddAccount={handleAddClick}
+                    onUpdateAccount={handleUpdateClick}
+                    onDeleteAccount={handleDeleteClick}
+                    canUpdate={!!currentAccount}
+                    canDelete={!!currentAccount}
+                />
+                {dayDetailModalData && (
+                    <DayDetailModal 
+                        isOpen={!!selectedCalendarDate} 
+                        onClose={handleCloseDayModal} 
+                        {...dayDetailModalData}
+                        currency={currentAccount?.currency || 'USD'}
+                        transitioningDay={transitioningDay}
+                    />
+                )}
+                <DeleteConfirmationModal 
+                    isOpen={isDeleteConfirmModalOpen}
+                    onClose={() => setDeleteConfirmModalOpen(false)}
+                    onConfirm={handleDeleteWrapper}
+                    accountName={currentAccount?.name || ''}
+                />
+            </Suspense>
         </>
     );
 };
 
-// FIX: Add default export for the App component.
 export default App;
