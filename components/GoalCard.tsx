@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts';
 
@@ -48,7 +49,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, f
         {isLessBetter && <p className="text-xs text-gray-500">(lower is better)</p>}
       </div>
       <div className="relative w-32 h-32 mx-auto my-4">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
           <RadialBarChart
             innerRadius="80%"
             outerRadius="100%"

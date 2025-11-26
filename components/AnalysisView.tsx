@@ -1,5 +1,9 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
+import { 
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label,
+    BarChart, Bar, PieChart, Pie, Cell, Legend
+} from 'recharts';
 import { Trade, ChartDataPoint, Account } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import MultiSelectDropdown from './MultiSelectDropdown';
@@ -15,6 +19,10 @@ interface AnalysisViewProps {
 }
 
 type TradeWithProfitPercentage = Trade & { profitPercentage: number };
+
+const COLORS = ['#22d3ee', '#34d399', '#f472b6', '#a78bfa', '#fb923c', '#94a3b8']; // Cyan, Emerald, Pink, Violet, Orange, Gray
+const BUY_COLOR = '#22d3ee'; // Cyan
+const SELL_COLOR = '#fb923c'; // Orange
 
 const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
   const { language } = useLanguage();
@@ -42,6 +50,32 @@ const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
   }
 
   if (active && payload && payload.length) {
+    // Handling different chart types in tooltip
+    if (payload[0].payload.month) {
+        // Monthly Bar Chart
+        const { month, profit } = payload[0].payload;
+        return (
+             <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
+                <p className="font-bold text-white mb-1">{month}</p>
+                <p className={`font-semibold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {formatCurrency(profit, { signDisplay: 'always' })}
+                </p>
+            </div>
+        );
+    }
+    
+    if (payload[0].name && payload[0].value !== undefined && !payload[0].payload.date) {
+        // Pie Chart
+        const { name, value } = payload[0];
+        return (
+            <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-2 rounded-lg shadow-xl text-xs">
+                <span className="text-gray-300">{name}: </span>
+                <span className="font-bold text-white">{value} trades</span>
+            </div>
+        );
+    }
+
+    // Area Chart (Equity)
     const dataPoint: ChartDataPoint = payload[0].payload;
     const { trade, balance, timestamp } = dataPoint;
 
@@ -147,6 +181,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     setEndDate(maxDate);
   }, [minDate, maxDate]);
   
+  // Mobile touch handling for tooltips
   useEffect(() => {
     const node = chartRef.current;
     if (node && isMobile) {
@@ -188,7 +223,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const tradesWithProfitPercentage: TradeWithProfitPercentage[] = useMemo(() => {
     let runningBalance = initialBalance;
     // The `trades` array must be sorted chronologically by closeTime for this to work.
-    // This is guaranteed by the `processAccountData` function.
     return trades.map(trade => {
         const balanceBefore = runningBalance;
         const netProfit = trade.profit + trade.commission + trade.swap;
@@ -218,6 +252,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     return result;
   }, [tradesWithProfitPercentage, selectedSymbols, selectedComments, startDate, endDate]);
 
+  // --- DATA PREPARATION FOR CHARTS ---
+
+  // 1. Equity Curve Data
   const { chartData, filteredNetProfit } = useMemo(() => {
     if (filteredTrades.length === 0) return { chartData: [], filteredNetProfit: 0 };
     
@@ -247,6 +284,63 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
     return { chartData: data, filteredNetProfit: netProfit };
   }, [filteredTrades, initialBalance]);
+
+  // 2. Monthly Performance Data
+  const monthlyData = useMemo(() => {
+      const map = new Map<string, number>();
+      filteredTrades.forEach(t => {
+          const key = `${t.closeTime.getFullYear()}-${String(t.closeTime.getMonth() + 1).padStart(2, '0')}`;
+          const net = t.profit + t.commission + t.swap;
+          map.set(key, (map.get(key) || 0) + net);
+      });
+      
+      return Array.from(map.entries())
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([key, value]) => {
+              const [y, m] = key.split('-');
+              const date = new Date(parseInt(y), parseInt(m) - 1, 1);
+              return {
+                  month: date.toLocaleDateString(language, { month: 'short', year: '2-digit' }),
+                  profit: value
+              };
+          });
+  }, [filteredTrades, language]);
+
+  // 3. Symbol Distribution Data (Pie)
+  const symbolData = useMemo(() => {
+      const map = new Map<string, number>();
+      filteredTrades.forEach(t => {
+          map.set(t.symbol, (map.get(t.symbol) || 0) + 1); // Counting volume
+      });
+      
+      const sorted = Array.from(map.entries())
+          .sort((a, b) => b[1] - a[1]);
+      
+      // Take top 5, group rest as "Others"
+      if (sorted.length <= 5) {
+          return sorted.map(([name, value]) => ({ name, value }));
+      }
+      
+      const top5 = sorted.slice(0, 5).map(([name, value]) => ({ name, value }));
+      const others = sorted.slice(5).reduce((sum, [, val]) => sum + val, 0);
+      
+      return [...top5, { name: t('common.others') || 'Others', value: others }];
+  }, [filteredTrades, t]);
+
+  // 4. Buy/Sell Ratio Data (Pie)
+  const buySellData = useMemo(() => {
+      let buys = 0;
+      let sells = 0;
+      filteredTrades.forEach(t => {
+          const type = t.type.toLowerCase();
+          if (type.includes('buy')) buys++;
+          else if (type.includes('sell')) sells++;
+      });
+      return [
+          { name: 'Buy', value: buys },
+          { name: 'Sell', value: sells }
+      ].filter(d => d.value > 0);
+  }, [filteredTrades]);
   
   const xDomain = useMemo(() => {
       if (!chartData || chartData.length < 2) return [0, 1];
@@ -265,24 +359,18 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     let max = Math.max(...balances);
 
     if (min === max) {
-        const padding = Math.abs(min * 0.01) || 10; // 1% padding or 10 units
+        const padding = Math.abs(min * 0.01) || 10;
         return [min - padding, max + padding];
     }
 
     const padding = (max - min) * 0.1;
-    
     return [min - padding, max + padding];
   }, [chartData]);
 
   const yAxisTickFormatter = (value: any) => {
     const num = Number(value);
     if (isNaN(num)) return value;
-    
-    return new Intl.NumberFormat(language, {
-      notation: 'compact',
-      compactDisplay: 'short',
-      maximumFractionDigits: 1
-    }).format(num);
+    return new Intl.NumberFormat(language, { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 }).format(num);
   };
   
   const formatCurrency = (value: number) => {
@@ -333,11 +421,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
             </div>
         </div>
 
-        {/* Chart */}
+        {/* 1. Equity Chart */}
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+            <h3 className="text-lg font-semibold text-white mb-4">Equity Curve</h3>
             <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
                 {chartData.length > 1 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart 
                         data={chartData} 
                         margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
@@ -380,6 +469,83 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 <p className={`text-3xl font-bold ${netProfitColor}`}>{formatCurrency(filteredNetProfit)}</p>
             </div>
         </div>
+        
+        {/* 2. Additional Analysis Charts (Bar & Pie) */}
+        {filteredTrades.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Monthly Performance Bar Chart */}
+            <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50 lg:col-span-2">
+                <h3 className="text-lg font-semibold text-white mb-4">Monthly Performance</h3>
+                <div style={{ width: '100%', height: 300 }}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" vertical={false} />
+                            <XAxis dataKey="month" stroke="#888" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} axisLine={false} tickLine={false} />
+                            <Tooltip content={<CustomTooltip currency={currency} />} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
+                            <Bar dataKey="profit" radius={[4, 4, 0, 0]}>
+                                {monthlyData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#4ade80' : '#f87171'} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Symbol Distribution Pie Chart */}
+            <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+                <h3 className="text-lg font-semibold text-white mb-4">Trade Volume by Symbol</h3>
+                <div style={{ width: '100%', height: 300 }}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <PieChart>
+                            <Pie
+                                data={symbolData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {symbolData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
+                                ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip currency={currency} />} />
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Buy/Sell Ratio Pie Chart */}
+            <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+                <h3 className="text-lg font-semibold text-white mb-4">Buy vs Sell Ratio</h3>
+                <div style={{ width: '100%', height: 300 }}>
+                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <PieChart>
+                            <Pie
+                                data={buySellData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {buySellData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.name === 'Buy' ? BUY_COLOR : SELL_COLOR} stroke="rgba(0,0,0,0)" />
+                                ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip currency={currency} />} />
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+        </div>
+        )}
 
         {/* Filtered Trades Table */}
         <FilteredTradesTable trades={filteredTrades} currency={currency} />

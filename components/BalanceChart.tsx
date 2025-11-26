@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts';
 import { ChartDataPoint, Goals } from '../types';
@@ -316,7 +317,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
       </div>
       <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
         {hasAnyData ? (
-          <ResponsiveContainer key={timeRange} width="100%" height="100%">
+          <ResponsiveContainer key={timeRange} width="100%" height="100%" minWidth={0} minHeight={0}>
             <AreaChart
               data={filteredData}
               onMouseMove={handleChartMouseMove}
