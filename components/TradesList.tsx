@@ -24,29 +24,29 @@ const calculateDuration = (trade: Trade): string => {
     return `${hours}h ${minutes}m`;
 };
 
-// Define Table Components outside of the render function to prevent re-mounting on every render
-const VirtuosoTable = (props: any) => <table {...props} className="w-full text-sm text-left border-collapse" style={{borderSpacing: 0}} />;
+// Define Table Components outside of the render function
+const VirtuosoTable = (props: any) => <table {...props} className="w-full text-xs text-left border-collapse table-fixed" style={{borderSpacing: 0}} />;
 const VirtuosoTableHead = React.forwardRef((props: any, ref: any) => <thead {...props} ref={ref} className="text-xs text-gray-400 uppercase bg-[#16152c] sticky top-0 z-10" />);
-// Destructure item and context to avoid passing them to the DOM element, preventing React warnings
-const VirtuosoTableRow = ({ item, context, ...props }: any) => <tr {...props} className="border-b border-gray-800 hover:bg-gray-800/50 align-top" />;
+// Changed align-top to align-middle for better aesthetics
+const VirtuosoTableRow = ({ item, context, ...props }: any) => <tr {...props} className="border-b border-gray-800 hover:bg-gray-800/50 align-middle h-14" />;
 
 const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     const { t, language } = useLanguage();
 
-    const COLUMN_DEFINITIONS: { key: TradeKeys; label: string; defaultVisible: boolean; }[] = useMemo(() => [
-        { key: 'ticket', label: t('trades_list.col_id'), defaultVisible: true },
-        { key: 'openTime', label: t('trades_list.col_open_time'), defaultVisible: false },
-        { key: 'type', label: t('trades_list.col_type'), defaultVisible: true },
-        { key: 'size', label: t('trades_list.col_size'), defaultVisible: true },
-        { key: 'symbol', label: t('trades_list.col_symbol'), defaultVisible: true },
-        { key: 'openPrice', label: t('trades_list.col_open_price'), defaultVisible: false },
-        { key: 'closeTime', label: t('trades_list.col_close_time'), defaultVisible: true },
-        { key: 'duration', label: t('trades_list.col_duration'), defaultVisible: true },
-        { key: 'closePrice', label: t('trades_list.col_close_price'), defaultVisible: false },
-        { key: 'commission', label: t('trades_list.col_commission'), defaultVisible: false },
-        { key: 'swap', label: t('trades_list.col_swap'), defaultVisible: false },
-        { key: 'profit', label: t('trades_list.col_profit'), defaultVisible: true },
-        { key: 'comment', label: t('trades_list.col_comment'), defaultVisible: false },
+    const COLUMN_DEFINITIONS: { key: TradeKeys; label: string; defaultVisible: boolean; width?: string }[] = useMemo(() => [
+        { key: 'ticket', label: t('trades_list.col_id'), defaultVisible: true, width: '10%' },
+        { key: 'openTime', label: t('trades_list.col_open_time'), defaultVisible: false, width: '20%' },
+        { key: 'type', label: t('trades_list.col_type'), defaultVisible: true, width: '15%' },
+        { key: 'size', label: t('trades_list.col_size'), defaultVisible: true, width: '15%' },
+        { key: 'symbol', label: t('trades_list.col_symbol'), defaultVisible: true, width: '20%' },
+        { key: 'openPrice', label: t('trades_list.col_open_price'), defaultVisible: false, width: '15%' },
+        { key: 'closeTime', label: t('trades_list.col_close_time'), defaultVisible: true, width: '25%' }, // Increased width for date
+        { key: 'duration', label: t('trades_list.col_duration'), defaultVisible: true, width: '15%' },
+        { key: 'closePrice', label: t('trades_list.col_close_price'), defaultVisible: false, width: '15%' },
+        { key: 'commission', label: t('trades_list.col_commission'), defaultVisible: false, width: '15%' },
+        { key: 'swap', label: t('trades_list.col_swap'), defaultVisible: false, width: '10%' },
+        { key: 'profit', label: t('trades_list.col_profit'), defaultVisible: true, width: '20%' },
+        { key: 'comment', label: t('trades_list.col_comment'), defaultVisible: false, width: '20%' },
     ], [t]);
 
     const initialVisibility = useMemo(() => COLUMN_DEFINITIONS.reduce((acc, col) => {
@@ -76,8 +76,12 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
         return `${sign}${symbol}${absNumberPart}`;
     };
 
-    const formatDate = (date: Date) => {
-        return date.toLocaleString(language, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+    const formatDateOnly = (date: Date) => {
+        return date.toLocaleDateString(language, { month: 'short', day: 'numeric', year: '2-digit' });
+    };
+
+    const formatTimeOnly = (date: Date) => {
+        return date.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
     const formatValue = (trade: Trade, key: TradeKeys) => {
@@ -86,7 +90,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
         }
         const value = trade[key as keyof Trade];
         if (value instanceof Date) {
-            return formatDate(value);
+            return formatDateOnly(value);
         }
         if (key === 'profit' || key === 'commission' || key === 'swap') {
             return formatCurrency(value as number);
@@ -134,7 +138,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                         placeholder={t('trades_list.search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full sm:w-48 px-3 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
+                        className="w-full sm:w-48 px-3 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition text-sm"
                     />
                     <div className="relative" ref={dropdownRef}>
                         <button onClick={() => setDropdownOpen(!isDropdownOpen)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg">
@@ -146,7 +150,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                                 {COLUMN_DEFINITIONS.map(col => (
                                     <label key={col.key} className="flex items-center space-x-2 p-2 hover:bg-gray-700 rounded-md cursor-pointer">
                                         <input type="checkbox" checked={visibleColumns[col.key]} onChange={() => handleColumnToggle(col.key)} className="form-checkbox h-4 w-4 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600"/>
-                                        <span>{col.label}</span>
+                                        <span className="text-sm">{col.label}</span>
                                     </label>
                                 ))}
                             </div>
@@ -172,7 +176,14 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                         fixedHeaderContent={() => (
                             <tr className="bg-[#16152c] border-b-2 border-gray-700">
                                 {activeColumns.map(col => (
-                                    <th key={col.key} scope="col" className="px-2 sm:px-4 py-3 whitespace-nowrap bg-[#16152c]">{col.label}</th>
+                                    <th 
+                                        key={col.key} 
+                                        scope="col" 
+                                        className="px-2 py-3 whitespace-nowrap bg-[#16152c] first:pl-4 last:pr-4"
+                                        style={{ width: col.width }}
+                                    >
+                                        {col.label}
+                                    </th>
                                 ))}
                             </tr>
                         )}
@@ -195,12 +206,11 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                                     if (isDateColumn) {
                                         const dateValue = trade[col.key] as Date;
                                         return (
-                                            <td key={col.key} className="px-2 sm:px-4 py-3 text-white leading-tight">
-                                                <div className="sm:hidden">
-                                                    <div>{dateValue.toLocaleDateString(language, { month: 'short', day: 'numeric', year: '2-digit' })}</div>
-                                                    <div className="text-gray-500">{dateValue.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+                                            <td key={col.key} className="px-2 py-2 text-white first:pl-4 last:pr-4">
+                                                <div className="flex flex-col justify-center">
+                                                    <span className="font-medium whitespace-nowrap">{formatDateOnly(dateValue)}</span>
+                                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">{formatTimeOnly(dateValue)}</span>
                                                 </div>
-                                                <span className="hidden sm:inline whitespace-nowrap">{formatDate(dateValue)}</span>
                                             </td>
                                         );
                                     }
@@ -208,7 +218,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                                     return (
                                         <td 
                                             key={col.key} 
-                                            className={`px-2 sm:px-4 py-3 whitespace-nowrap ${cellClass} ${isComment ? 'max-w-xs truncate' : ''}`}
+                                            className={`px-2 py-2 whitespace-nowrap ${cellClass} ${isComment ? 'max-w-xs truncate' : ''} first:pl-4 last:pr-4`}
                                             title={isComment ? trade.comment : undefined}
                                         >
                                             {formatValue(trade, col.key)}

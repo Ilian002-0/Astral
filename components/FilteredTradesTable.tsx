@@ -20,12 +20,9 @@ const calculatePips = (trade: Trade): number => {
     
     let pipValue;
     if (decimalIndex === -1) {
-        // e.g. US30 index price like 39000. A "pip" is a full point.
         pipValue = 1.0; 
     } else {
         const numDecimals = priceString.length - decimalIndex - 1;
-        // JPY pairs (e.g., 150.123), Gold (e.g. 2300.12) have 2 or 3 decimals. Pip is 0.01.
-        // Standard FX pairs (e.g., 1.23456) have 4 or 5 decimals. Pip is 0.0001.
         pipValue = (numDecimals <= 3) ? 0.01 : 0.0001;
     }
 
@@ -49,11 +46,11 @@ const calculateDuration = (trade: Trade): string => {
     return `${hours}h ${minutes}m`;
 };
 
-// Define table components outside to ensure referential stability
-const VirtuosoTable = (props: any) => <table {...props} className="w-full text-sm text-left border-collapse" style={{borderSpacing: 0}} />;
+// Defined outside render for performance
+const VirtuosoTable = (props: any) => <table {...props} className="w-full text-xs text-left border-collapse table-fixed" style={{borderSpacing: 0}} />;
 const VirtuosoTableHead = React.forwardRef((props: any, ref: any) => <thead {...props} ref={ref} className="text-xs text-gray-400 uppercase border-b border-gray-700 sticky top-0 bg-[#16152c] z-10" />);
-// Destructure item and context to avoid passing them to the DOM element, preventing React warnings
-const VirtuosoTableRow = ({ item, context, ...props }: any) => <tr {...props} className="text-xs hover:bg-gray-800/50 border-b border-gray-800" />;
+// Align-middle for better centering
+const VirtuosoTableRow = ({ item, context, ...props }: any) => <tr {...props} className="text-xs hover:bg-gray-800/50 border-b border-gray-800 align-middle h-12" />;
 
 const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, currency }) => {
     const { t, language } = useLanguage();
@@ -116,18 +113,19 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
         return `${sign}${symbol}${absNumberPart}`;
     };
     
-    const formatDate = (date: Date) => {
-        return date.toLocaleString(language, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+    const formatDateOnly = (date: Date) => {
+        return date.toLocaleDateString(language, { month: 'short', day: 'numeric', year: '2-digit' });
+    };
+
+    const formatTimeOnly = (date: Date) => {
+        return date.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
     const renderDate = (date: Date) => {
         return (
-            <div className="leading-tight">
-                <div className="sm:hidden">
-                    <div>{date.toLocaleDateString(language, { month: 'short', day: 'numeric', year: '2-digit' })}</div>
-                    <div className="text-gray-400">{date.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
-                </div>
-                <span className="hidden sm:inline whitespace-nowrap">{formatDate(date)}</span>
+            <div className="flex flex-col justify-center">
+                <span className="font-medium whitespace-nowrap">{formatDateOnly(date)}</span>
+                <span className="text-[10px] text-gray-500 whitespace-nowrap">{formatTimeOnly(date)}</span>
             </div>
         );
     };
@@ -146,7 +144,7 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
                             {COLUMN_DEFINITIONS.map(col => (
                                 <label key={col.key} className="flex items-center space-x-2 p-2 hover:bg-gray-700 rounded-md cursor-pointer">
                                     <input type="checkbox" checked={visibleColumns?.[col.key]} onChange={() => handleColumnToggle(col.key)} className="form-checkbox h-4 w-4 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600"/>
-                                    <span className="text-gray-300">{col.label}</span>
+                                    <span className="text-gray-300 text-sm">{col.label}</span>
                                 </label>
                             ))}
                         </div>
@@ -214,7 +212,7 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
                                     }
 
                                     return (
-                                        <td key={col.key} className={`px-2 py-3 ${cellClass} ${col.isNumeric ? 'text-right' : ''} ${col.key === 'comment' ? 'truncate max-w-[100px] sm:max-w-xs' : 'whitespace-nowrap'}`} title={col.key === 'comment' ? trade.comment : undefined}>
+                                        <td key={col.key} className={`px-2 py-2 ${cellClass} ${col.isNumeric ? 'text-right' : ''} ${col.key === 'comment' ? 'truncate max-w-[100px] sm:max-w-xs' : 'whitespace-nowrap'}`} title={col.key === 'comment' ? trade.comment : undefined}>
                                             {cellContent}
                                         </td>
                                     );

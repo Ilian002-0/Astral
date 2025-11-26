@@ -1,26 +1,26 @@
 
-
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { triggerHaptic } from '../utils/haptics';
 
 const PULL_THRESHOLD = 80; // Pixels to pull down before refresh is triggered
 
-const usePullToRefresh = (onRefresh: () => void) => {
+const usePullToRefresh = (onRefresh: () => void, disabled: boolean = false) => {
     const pullToRefreshRef = useRef<HTMLElement>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [pullStart, setPullStart] = useState<number | null>(null);
     const [pullDistance, setPullDistance] = useState(0);
 
     const handleTouchStart = useCallback((e: TouchEvent) => {
+        if (disabled) return;
         const element = pullToRefreshRef.current;
         // Only start the pull gesture if the user is at the very top of the scrollable area
         if (element && element.scrollTop === 0) {
             setPullStart(e.touches[0].clientY);
         }
-    }, []);
+    }, [disabled]);
 
     const handleTouchMove = useCallback((e: TouchEvent) => {
-        if (pullStart === null) return;
+        if (disabled || pullStart === null) return;
 
         const touchY = e.touches[0].clientY;
         const distance = touchY - pullStart;
@@ -32,9 +32,10 @@ const usePullToRefresh = (onRefresh: () => void) => {
             e.preventDefault();
             setPullDistance(distance);
         }
-    }, [pullStart]);
+    }, [pullStart, disabled]);
 
     const handleTouchEnd = useCallback(async () => {
+        if (disabled) return;
         if (pullDistance > PULL_THRESHOLD) {
             setIsRefreshing(true);
             try {
@@ -49,7 +50,7 @@ const usePullToRefresh = (onRefresh: () => void) => {
         // Reset state after every touch end
         setPullStart(null);
         setPullDistance(0);
-    }, [pullDistance, onRefresh]);
+    }, [pullDistance, onRefresh, disabled]);
 
     useEffect(() => {
         const element = pullToRefreshRef.current;

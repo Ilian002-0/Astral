@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, Suspense, useEffect } from 'react';
 import { Account, AppView, Trade, CalendarSettings, NotificationSettings } from './types';
 import { getDayIdentifier } from './utils/calendar';
@@ -134,7 +135,9 @@ const App: React.FC = () => {
         if (currentAccount) refreshAccount(currentAccount);
     }, [currentAccount, refreshAccount]);
 
-    const { pullToRefreshRef, isRefreshing, pullDistance } = usePullToRefresh(handleRefresh);
+    // Disable pull to refresh on TradesList and AnalysisView as they have internal scrolling
+    const disablePTR = view === 'trades' || view === 'analysis';
+    const { pullToRefreshRef, isRefreshing, pullDistance } = usePullToRefresh(handleRefresh, disablePTR);
     const PULL_THRESHOLD = 80;
 
     // Handlers for Account Modals
@@ -279,7 +282,7 @@ const App: React.FC = () => {
                     
                     <div className="flex-1 relative overflow-y-hidden">
                         {/* Pull-to-Refresh Indicator (Mobile Only) */}
-                        {!isDesktop && (
+                        {!isDesktop && !disablePTR && (
                             <div
                                 className="absolute top-0 left-0 right-0 flex justify-center items-center z-0 pointer-events-none"
                                 style={{
@@ -303,7 +306,7 @@ const App: React.FC = () => {
                                 transition: pullDistance === 0 && !isRefreshing ? 'transform 0.3s' : 'none',
                             }}
                         >
-                             <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-24 md:pb-6">
+                             <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-24 md:pb-6 h-full">
                                 {displayError && (
                                     <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
                                         {displayError}
