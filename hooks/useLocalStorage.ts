@@ -70,6 +70,14 @@ const deepStringify = (obj: any) => {
     return JSON.stringify(obj, dateReplacer);
 };
 
+// Helper to check if a string looks like valid JSON to avoid parsing compressed garbage
+const isJsonCandidate = (str: string) => {
+    if (!str || typeof str !== 'string') return false;
+    const trimmed = str.trim();
+    const first = trimmed.charAt(0);
+    return first === '{' || first === '[' || first === '"' || first === 't' || first === 'f' || first === 'n' || (first >= '0' && first <= '9') || first === '-';
+};
+
 interface DBStorage<T> {
     data: T;
     setData: (value: T | ((prevState: T) => T)) => void;
@@ -85,11 +93,12 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
         getDBItem<string>(key).then(storedValue => {
             if (isMounted) {
                 if (storedValue) {
-                    // Try to decompress first
-                    let parsed = null;
+                    let parsed: any = undefined;
+
+                    // 1. Try to decompress
                     const decompressed = LZString.decompressFromUTF16(storedValue);
                     
-                    if (decompressed) {
+                    if (decompressed !== null) {
                          // If decompression returned a string, try parsing it as JSON
                         try {
                             parsed = deepParse(decompressed);
@@ -98,26 +107,43 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
                         }
                     }
 
-                    // If decompression returned null or parsing failed, assume it's legacy uncompressed data
-                    if (!parsed) {
-                        try {
-                             parsed = deepParse(storedValue);
-                        } catch(e) {
-                             console.error(`Failed to parse data for key "${key}"`, e);
+                    // 2. If parsed is still strictly undefined, it means:
+                    //    a) Decompression failed (decompressed was null)
+                    //    b) OR parsing the decompressed string failed/threw error
+                    //    In this case, assume it's legacy uncompressed data, BUT check if it looks like JSON first.
+                    if (parsed === undefined) {
+                        if (isJsonCandidate(storedValue)) {
+                            try {
+                                parsed = deepParse(storedValue);
+                            } catch(e) {
+                                console.error(`Failed to parse legacy data for key "${key}"`, e);
+                            }
+                        } else {
+                            // If it's not JSON candidate and decompression failed, it might be corrupted or in an unknown format.
+                            // We do NOT call JSON.parse here to avoid "Unexpected token" errors.
                         }
                     }
 
-                    // --- STRUCTURAL UNPACKING ---
-                    // If this is the accounts key, check if data is packed (array of arrays)
-                    if (key === 'trading_accounts_v1' && Array.isArray(parsed)) {
-                         // @ts-ignore - We know T is Account[] here effectively
-                         parsed = unpackAccounts(parsed);
+                    // 3. Process the result if we have a valid parsed value (including null)
+                    if (parsed !== undefined) {
+                        // --- STRUCTURAL UNPACKING ---
+                        // If this is the accounts key, check if data is packed (array of arrays)
+                        if (key === 'trading_accounts_v1' && Array.isArray(parsed)) {
+                             // @ts-ignore - We know T is Account[] here effectively
+                             parsed = unpackAccounts(parsed);
+                        }
+                        
+                        // Handle the case where deepParse returns null but T might not allow null.
+                        // However, for current_account_v1, T is string | null, so it's fine.
+                        // We cast to T to satisfy TS.
+                        setDataState(parsed as T);
+                    } else {
+                         // If we failed to parse anything, default to initialValue
+                         setDataState(initialValue);
                     }
 
-                   setDataState(parsed ?? initialValue);
                 } else {
                    // If nothing is in the DB, store the initial value (compressed).
-                   // We don't pack initialValue here assuming it's empty, but consistency is good.
                    const stringified = deepStringify(initialValue);
                    const compressed = LZString.compressToUTF16(stringified);
                    setDBItem(key, compressed);

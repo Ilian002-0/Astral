@@ -13,6 +13,15 @@ import { useSync } from './hooks/useSync';
 import { usePWA } from './hooks/usePWA';
 import { useTradeData } from './hooks/useTradeData';
 
+// Skeletons
+import { 
+    DashboardSkeleton, 
+    TradesListSkeleton, 
+    CalendarSkeleton, 
+    AnalysisSkeleton, 
+    GenericSkeleton 
+} from './components/Skeletons';
+
 // Static Imports (Layout & critical UI)
 import Header from './components/Header';
 import AccountSelector from './components/AccountSelector';
@@ -46,12 +55,6 @@ const SyncIcon: React.FC<{ isSyncing?: boolean }> = ({ isSyncing }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.9998C21 16.9703 16.9706 20.9998 12 20.9998C9.17273 20.9998 6.64996 19.6961 5 17.6571" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 20.9998L4.5 16.9998L8.5 16.9998" />
     </svg>
-);
-
-const Loader = () => (
-    <div className="flex h-full w-full items-center justify-center min-h-[200px]">
-        <div className="animate-spin h-8 w-8 border-4 border-cyan-600 border-t-transparent rounded-full"></div>
-    </div>
 );
 
 const App: React.FC = () => {
@@ -207,13 +210,24 @@ const App: React.FC = () => {
         return { trades: dailyTrades, date: selectedCalendarDate, startOfDayBalance };
     }, [selectedCalendarDate, processedData, currentAccount?.initialBalance]);
 
-    // View Renderer
+    // View Renderer with Skeletons
     const renderView = () => {
-        if (isLoading) return <div className="app-loader" style={{ position: 'relative', height: '50vh' }}></div>;
+        // Show Skeleton if global loading or if we have an account but data isn't processed yet
+        if (isLoading || (currentAccount && !processedData)) {
+            switch(view) {
+                case 'dashboard': return <DashboardSkeleton />;
+                case 'trades': return <TradesListSkeleton />;
+                case 'calendar': return <CalendarSkeleton />;
+                case 'analysis': return <AnalysisSkeleton />;
+                case 'goals': return <GenericSkeleton />;
+                case 'profile': return <GenericSkeleton />;
+                default: return <DashboardSkeleton />;
+            }
+        }
 
         if (!currentAccount || !processedData) {
             return (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-fade-in">
                     <h1 className="text-3xl font-bold text-white mb-4">{t('app.welcome')}</h1>
                     <p className="text-gray-400 mb-8">{t('app.add_account_prompt')}</p>
                     <button onClick={handleAddClick} className="px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">
@@ -260,6 +274,17 @@ const App: React.FC = () => {
         }
     };
     
+    // Determine the skeleton fallback for Suspense based on current view
+    const getSuspenseFallback = () => {
+         switch(view) {
+            case 'dashboard': return <DashboardSkeleton />;
+            case 'trades': return <TradesListSkeleton />;
+            case 'calendar': return <CalendarSkeleton />;
+            case 'analysis': return <AnalysisSkeleton />;
+            default: return <GenericSkeleton />;
+        }
+    };
+
     return (
         <>
             <div className="flex h-screen overflow-hidden">
@@ -313,7 +338,7 @@ const App: React.FC = () => {
                                         <button className="ml-2 float-right font-bold" onClick={() => { setSyncError(null); setPwaError(null); }}>&times;</button>
                                     </div>
                                 )}
-                                <Suspense fallback={<Loader />}>
+                                <Suspense fallback={getSuspenseFallback()}>
                                     {renderView()}
                                 </Suspense>
                             </div>
