@@ -328,6 +328,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   }, [filteredTrades, t]);
 
   // 4. Buy/Sell Ratio Data (Pie)
+  // REFACTOR: Use 'type' field for consistent coloring, and 'name' field for translated display
   const buySellData = useMemo(() => {
       let buys = 0;
       let sells = 0;
@@ -337,10 +338,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
           else if (type.includes('sell')) sells++;
       });
       return [
-          { name: 'Buy', value: buys },
-          { name: 'Sell', value: sells }
+          { name: t('analysis.buy'), type: 'buy', value: buys },
+          { name: t('analysis.sell'), type: 'sell', value: sells }
       ].filter(d => d.value > 0);
-  }, [filteredTrades]);
+  }, [filteredTrades, t]);
   
   const xDomain = useMemo(() => {
       if (!chartData || chartData.length < 2) return [0, 1];
@@ -423,7 +424,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
         {/* 1. Equity Chart */}
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
-            <h3 className="text-lg font-semibold text-white mb-4">Equity Curve</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">{t('dashboard.balance_chart_title')}</h3>
             <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
                 {chartData.length > 1 ? (
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -475,7 +476,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Monthly Performance Bar Chart */}
             <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50 lg:col-span-2">
-                <h3 className="text-lg font-semibold text-white mb-4">Monthly Performance</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">{t('analysis.monthly_performance')}</h3>
                 <div style={{ width: '100%', height: 300 }}>
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -495,7 +496,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
             {/* Symbol Distribution Pie Chart */}
             <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
-                <h3 className="text-lg font-semibold text-white mb-4">Trade Volume by Symbol</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">{t('analysis.trade_volume_by_symbol')}</h3>
                 <div style={{ width: '100%', height: 300 }}>
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <PieChart>
@@ -521,7 +522,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
             {/* Buy/Sell Ratio Pie Chart */}
             <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
-                <h3 className="text-lg font-semibold text-white mb-4">Buy vs Sell Ratio</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">{t('analysis.buy_vs_sell_ratio')}</h3>
                 <div style={{ width: '100%', height: 300 }}>
                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <PieChart>
@@ -535,7 +536,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                                 dataKey="value"
                             >
                                 {buySellData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.name === 'Buy' ? BUY_COLOR : SELL_COLOR} stroke="rgba(0,0,0,0)" />
+                                    <Cell key={`cell-${index}`} fill={entry.type === 'buy' ? BUY_COLOR : SELL_COLOR} stroke="rgba(0,0,0,0)" />
                                 ))}
                             </Pie>
                             <Tooltip content={<CustomTooltip currency={currency} />} />
