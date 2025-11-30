@@ -561,18 +561,24 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
             </div>
 
             {/* Behavioral Bias Card (Replaces Pie Chart) */}
-            <div className="bg-[#16152c] p-6 rounded-2xl shadow-lg border border-gray-700/50 flex flex-col justify-between">
-                <div className="relative h-32 flex items-center justify-between px-4 mb-4">
+            <div className="bg-[#16152c] p-6 lg:p-4 rounded-2xl shadow-lg border border-gray-700/50 flex flex-col justify-center">
+                {/* Restored Header */}
+                <div className="flex justify-between items-center mb-4 lg:mb-2">
+                    <h3 className="text-gray-400 font-medium text-sm sm:text-base">Behavioral Bias</h3>
+                    <h3 className="text-white font-bold text-sm sm:text-base">Total Trades: {biasStats.total}</h3>
+                </div>
+
+                <div className="relative h-32 lg:h-24 flex items-center justify-between px-4 mb-4 lg:mb-2">
                     {/* Centered Text */}
                     <div className="absolute inset-0 flex items-center justify-center z-10">
                         <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg text-center">{biasStats.biasLabel}</h2>
                     </div>
 
-                    {/* Bear Image (Behind Text if needed, controlled by Z-index on Text) */}
+                    {/* Bear Image */}
                     <img 
                         src="https://i.imgur.com/07RKkwK.png" 
                         alt="Bear"
-                        className={`h-24 w-24 sm:h-32 sm:w-32 object-contain transition-all duration-500 z-0 ${
+                        className={`h-24 w-24 sm:h-32 sm:w-32 lg:h-20 lg:w-20 object-contain transition-all duration-500 z-0 ${
                             isBearDominant
                             ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(251,146,60,0.5)]' 
                             : 'opacity-40 grayscale scale-100'
@@ -583,7 +589,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                     <img 
                         src="https://i.imgur.com/D83p1q4.png" 
                         alt="Bull" 
-                        className={`h-24 w-24 sm:h-32 sm:w-32 object-contain transition-all duration-500 z-0 ${
+                        className={`h-24 w-24 sm:h-32 sm:w-32 lg:h-20 lg:w-20 object-contain transition-all duration-500 z-0 ${
                             isBullDominant
                             ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]' 
                             : 'opacity-40 grayscale scale-100'
@@ -592,7 +598,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 </div>
 
                 {/* Divergent Progress Bar (Center is 0%) */}
-                <div className="relative w-full h-8 flex items-center mb-2">
+                <div className="relative w-full h-8 lg:h-6 flex items-center mb-2 lg:mb-1">
                     {/* Middle Marker (0%) */}
                     <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-500 z-20 -translate-x-1/2"></div>
 

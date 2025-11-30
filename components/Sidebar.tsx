@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AppView } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -33,9 +34,9 @@ const NavItem: React.FC<{
     return (
         <button
             onClick={() => onNavigate(view)}
-            className={`flex items-center w-full px-4 py-3 transition-colors duration-200 rounded-lg ${
+            className={`flex items-center w-full px-4 py-3 transition-all duration-200 rounded-lg ${
                 isActive 
-                ? 'bg-cyan-500 text-white shadow-lg' 
+                ? 'bg-cyan-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)]' 
                 : 'text-gray-400 hover:bg-gray-700 hover:text-white'
             }`}
         >

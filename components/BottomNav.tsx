@@ -39,7 +39,9 @@ const NavButton: React.FC<{
         <button
             onClick={handleClick}
             className={`flex flex-col items-center justify-center p-2 transition-colors w-1/5 ${isActive ? 'text-cyan-400 font-bold' : 'text-gray-500 hover:text-white'}`}>
-            {children}
+            <div className={isActive ? 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]' : ''}>
+                {children}
+            </div>
             <span className="text-xs mt-1 text-center">{label}</span>
         </button>
     );
@@ -98,6 +100,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendar
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isMenuOpen]);
 
+    const isCalendarActive = currentView === 'calendar';
+
     return (
         <footer className="fixed bottom-0 left-0 right-0 z-10">
             {isMenuOpen && (
@@ -141,8 +145,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate, calendar
                             onMouseUp={handleCalendarPressEnd}
                             onMouseLeave={handleCalendarPressEnd}
                             onContextMenu={(e) => e.preventDefault()}
-                            className={`flex flex-col items-center justify-center p-2 transition-colors w-full ${currentView === 'calendar' ? 'text-cyan-400 font-bold' : 'text-gray-500 hover:text-white'}`}>
-                            <CalendarIcon />
+                            className={`flex flex-col items-center justify-center p-2 transition-colors w-full ${isCalendarActive ? 'text-cyan-400 font-bold' : 'text-gray-500 hover:text-white'}`}>
+                            <div className={isCalendarActive ? 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]' : ''}>
+                                <CalendarIcon />
+                            </div>
                             <span className="text-xs mt-1 text-center">{t('nav.calendar')}</span>
                         </button>
                     </div>

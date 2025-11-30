@@ -38,11 +38,36 @@
         outline: none; /* Removes default focus rings */
       }
 
+      /* Button Glow Effects on Click (Neon vibe) */
+      button {
+        transition: transform 0.1s, box-shadow 0.2s;
+      }
+      /* Cyan Buttons (Primary) */
+      .bg-cyan-600:active, .bg-cyan-500:active {
+        box-shadow: 0 0 20px rgba(34, 211, 238, 0.6), 0 0 5px rgba(34, 211, 238, 0.8);
+        border-color: rgba(34, 211, 238, 0.8);
+      }
+      /* Green Buttons (Success) */
+      .bg-green-600:active {
+        box-shadow: 0 0 20px rgba(74, 222, 128, 0.6), 0 0 5px rgba(74, 222, 128, 0.8);
+      }
+      /* Red Buttons (Danger) */
+      .bg-red-600:active, .bg-red-800:active {
+        box-shadow: 0 0 20px rgba(248, 113, 113, 0.6), 0 0 5px rgba(248, 113, 113, 0.8);
+      }
+      /* Gray Buttons (Secondary) */
+      .bg-gray-600:active, .bg-gray-700:active, .bg-gray-800:active {
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+      }
+
       /* Specific overrides to ensure no outlines persist on charts */
       .recharts-wrapper:focus,
       .recharts-surface:focus,
       .recharts-sector:focus,
       .recharts-layer:focus {
+        outline: none !important;
+      }
+      *:focus {
         outline: none !important;
       }
 
@@ -291,4 +316,3 @@
     </script>
   </body>
 </html>
-    
