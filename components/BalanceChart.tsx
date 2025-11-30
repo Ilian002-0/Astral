@@ -121,14 +121,26 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const drawdownGoal = goals?.maxDrawdown;
 
   useEffect(() => {
-    // Delay setting isMounted to ensuring the parent container has been rendered and sized
-    // Increased delay to 200ms to allow animations to finish and container to have stable dimensions
-    const timer = setTimeout(() => {
-        if (chartRef.current) {
-            setIsMounted(true);
+    if (!chartRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            if (width > 0 && height > 0) {
+                requestAnimationFrame(() => {
+                    setIsMounted(true);
+                });
+                resizeObserver.disconnect();
+            }
         }
-    }, 200);
+    });
+
+    resizeObserver.observe(chartRef.current);
+
+    return () => resizeObserver.disconnect();
+  }, []);
     
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
@@ -136,7 +148,6 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
-        clearTimeout(timer);
         document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);

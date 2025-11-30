@@ -31,6 +31,21 @@
         -ms-user-select: text; /* Internet Explorer/Edge */
         user-select: text; /* Standard */
       }
+      
+      /* Global settings for native-like interaction on mobile */
+      * {
+        -webkit-tap-highlight-color: transparent; /* Removes gray highlight box on tap */
+        outline: none; /* Removes default focus rings */
+      }
+
+      /* Specific overrides to ensure no outlines persist on charts */
+      .recharts-wrapper:focus,
+      .recharts-surface:focus,
+      .recharts-sector:focus,
+      .recharts-layer:focus {
+        outline: none !important;
+      }
+
       /* PWA Window Controls Overlay Draggable Regions */
       .app-region-drag {
         -webkit-app-region: drag;
@@ -276,3 +291,4 @@
     </script>
   </body>
 </html>
+    

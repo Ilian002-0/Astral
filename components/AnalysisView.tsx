@@ -113,9 +113,23 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const lastActiveIndex = useRef<number | null>(null);
 
   useEffect(() => {
-    // Increased delay to 200ms to allow animations to finish and container to have stable dimensions
-    const timer = setTimeout(() => setIsMounted(true), 200);
-    return () => clearTimeout(timer);
+    if (!chartRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            if (width > 0 && height > 0) {
+                requestAnimationFrame(() => {
+                    setIsMounted(true);
+                });
+                resizeObserver.disconnect();
+            }
+        }
+    });
+
+    resizeObserver.observe(chartRef.current);
+
+    return () => resizeObserver.disconnect();
   }, []);
 
   // Calculate static metadata (min/max dates)
@@ -408,7 +422,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24 md:pb-12">
         <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-white">{t('analysis.title')}</h2>
             <button onClick={onBackToDashboard} className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-all">
@@ -548,16 +562,13 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
             {/* Behavioral Bias Card (Replaces Pie Chart) */}
             <div className="bg-[#16152c] p-6 rounded-2xl shadow-lg border border-gray-700/50 flex flex-col justify-between">
-                <div className="flex justify-between items-start mb-6">
-                    <span className="text-gray-400 font-medium">Behavioral Bias</span>
-                    <span className="text-white font-bold">Total Trades: {biasStats.total}</span>
-                </div>
-
-                <div className="relative flex justify-between items-center px-4 mb-4 h-32">
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                        <h2 className="text-2xl sm:text-3xl font-bold text-white text-center drop-shadow-lg">{biasStats.biasLabel}</h2>
+                <div className="relative h-32 flex items-center justify-between px-4 mb-4">
+                    {/* Centered Text */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg text-center">{biasStats.biasLabel}</h2>
                     </div>
 
+                    {/* Bear Image (Behind Text if needed, controlled by Z-index on Text) */}
                     <img 
                         src="https://i.imgur.com/07RKkwK.png" 
                         alt="Bear"
@@ -568,6 +579,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                         }`} 
                     />
                     
+                    {/* Bull Image */}
                     <img 
                         src="https://i.imgur.com/D83p1q4.png" 
                         alt="Bull" 
@@ -585,7 +597,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                     <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-500 z-20 -translate-x-1/2"></div>
 
                     {/* Left Side (Sell) */}
-                    {/* Background is striped. Inner div is solid fill. */}
                     <div className="w-1/2 relative h-full bg-gray-800/30 rounded-l-full overflow-hidden flex justify-end" style={stripeStyle}>
                          <div 
                             className={`h-full transition-all duration-500 ${isBearDominant ? 'bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.6)]' : 'bg-orange-600/70'} rounded-l-full`}
@@ -594,7 +605,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                     </div>
 
                     {/* Right Side (Buy) */}
-                    {/* Background is striped. Inner div is solid fill. */}
                     <div className="w-1/2 relative h-full bg-gray-800/30 rounded-r-full overflow-hidden flex justify-start" style={stripeStyle}>
                         <div 
                             className={`h-full transition-all duration-500 ${isBullDominant ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.6)]' : 'bg-cyan-600/70'} rounded-r-full`}
@@ -608,7 +618,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                         {biasStats.sells} ({biasStats.sellPct.toFixed(1)}%)
                     </div>
                     
-                    {/* Absolute centered 0% label */}
                     <div className="absolute left-1/2 top-0 -translate-x-1/2 text-xs text-gray-500">
                         0%
                     </div>

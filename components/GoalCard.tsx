@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts';
 
 interface GoalCardProps {
@@ -13,11 +13,26 @@ interface GoalCardProps {
 
 const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, formatValue, isLessBetter = false, isPercent = false }) => {
   const [isMounted, setIsMounted] = useState(false);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Increased delay to 200ms to allow animations to finish and container to have stable dimensions
-    const timer = setTimeout(() => setIsMounted(true), 200);
-    return () => clearTimeout(timer);
+    if (!chartContainerRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            if (width > 0 && height > 0) {
+                requestAnimationFrame(() => {
+                    setIsMounted(true);
+                });
+                resizeObserver.disconnect();
+            }
+        }
+    });
+
+    resizeObserver.observe(chartContainerRef.current);
+
+    return () => resizeObserver.disconnect();
   }, []);
 
   const { progress, color, isMet } = useMemo(() => {
@@ -55,7 +70,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, f
         <h3 className="text-lg font-semibold text-white truncate">{title}</h3>
         {isLessBetter && <p className="text-xs text-gray-500">(lower is better)</p>}
       </div>
-      <div className="relative w-32 h-32 mx-auto my-4">
+      <div className="relative w-32 h-32 mx-auto my-4" ref={chartContainerRef}>
         {isMounted && (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <RadialBarChart
