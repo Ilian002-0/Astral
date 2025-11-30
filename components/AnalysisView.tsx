@@ -159,7 +159,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     return Array.from(commentSet).sort();
   }, [trades, selectedSymbols]);
 
-  // Ensure selected items are valid according to available options (prevents ghost selections)
+  // Ensure selected items are valid according to available options
   useEffect(() => {
       const validSymbols = new Set(availableSymbols);
       setSelectedSymbols(prev => {
@@ -222,7 +222,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
   const tradesWithProfitPercentage: TradeWithProfitPercentage[] = useMemo(() => {
     let runningBalance = initialBalance;
-    // The `trades` array must be sorted chronologically by closeTime for this to work.
     return trades.map(trade => {
         const balanceBefore = runningBalance;
         const netProfit = trade.profit + trade.commission + trade.swap;
@@ -246,7 +245,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     }
     if (endDate) {
         const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999); // Include the whole end day
+        end.setHours(23, 59, 59, 999);
         result = result.filter(trade => trade.closeTime.getTime() <= end.getTime());
     }
     return result;
@@ -316,7 +315,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
       const sorted = Array.from(map.entries())
           .sort((a, b) => b[1] - a[1]);
       
-      // Take top 5, group rest as "Others"
       if (sorted.length <= 5) {
           return sorted.map(([name, value]) => ({ name, value }));
       }
@@ -327,9 +325,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
       return [...top5, { name: t('common.others') || 'Others', value: others }];
   }, [filteredTrades, t]);
 
-  // 4. Buy/Sell Ratio Data (Pie)
-  // REFACTOR: Use 'type' field for consistent coloring, and 'name' field for translated display
-  const buySellData = useMemo(() => {
+  // 4. Buy/Sell Stats
+  const biasStats = useMemo(() => {
       let buys = 0;
       let sells = 0;
       filteredTrades.forEach(t => {
@@ -337,11 +334,19 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
           if (type.includes('buy')) buys++;
           else if (type.includes('sell')) sells++;
       });
-      return [
-          { name: t('analysis.buy'), type: 'buy', value: buys },
-          { name: t('analysis.sell'), type: 'sell', value: sells }
-      ].filter(d => d.value > 0);
-  }, [filteredTrades, t]);
+      
+      const total = buys + sells;
+      const buyPct = total > 0 ? (buys / total) * 100 : 0;
+      const sellPct = total > 0 ? (sells / total) * 100 : 0;
+      
+      let biasLabel = "Neutral";
+      if (buyPct >= 65) biasLabel = "Strongly Bull";
+      else if (buyPct > 55) biasLabel = "Bullish";
+      else if (sellPct >= 65) biasLabel = "Strongly Bear";
+      else if (sellPct > 55) biasLabel = "Bearish";
+      
+      return { buys, sells, total, buyPct, sellPct, biasLabel };
+  }, [filteredTrades]);
   
   const xDomain = useMemo(() => {
       if (!chartData || chartData.length < 2) return [0, 1];
@@ -384,6 +389,16 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const profitFillColor = 'rgb(13 148 136)';
   const lossFillColor = 'rgb(159 18 57)';
   const grayColor = '#6b7280';
+
+  const isBullDominant = biasStats.buyPct >= biasStats.sellPct;
+  const isBearDominant = biasStats.sellPct > biasStats.buyPct;
+
+  // Stripe pattern for the "back" of the bars (unfilled area)
+  // Applied to the container background
+  const stripeStyle = {
+      backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.05) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.05) 50%,rgba(255,255,255,.05) 75%,transparent 75%,transparent)',
+      backgroundSize: '1rem 1rem'
+  };
 
   return (
     <div className="space-y-6">
@@ -471,7 +486,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
             </div>
         </div>
         
-        {/* 2. Additional Analysis Charts (Bar & Pie) */}
+        {/* 2. Additional Analysis Charts (Bar & Bias Card) */}
         {filteredTrades.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Monthly Performance Bar Chart */}
@@ -484,7 +499,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                             <XAxis dataKey="month" stroke="#888" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                             <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} axisLine={false} tickLine={false} />
                             <Tooltip content={<CustomTooltip currency={currency} />} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
-                            <Bar dataKey="profit" radius={[4, 4, 0, 0]}>
+                            {/* Updated radius to be fully rounded pills */}
+                            <Bar dataKey="profit" radius={[4, 4, 4, 4]}>
                                 {monthlyData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#4ade80' : '#f87171'} />
                                 ))}
@@ -520,29 +536,74 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 </div>
             </div>
 
-            {/* Buy/Sell Ratio Pie Chart */}
-            <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
-                <h3 className="text-lg font-semibold text-white mb-4">{t('analysis.buy_vs_sell_ratio')}</h3>
-                <div style={{ width: '100%', height: 300 }}>
-                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                        <PieChart>
-                            <Pie
-                                data={buySellData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {buySellData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.type === 'buy' ? BUY_COLOR : SELL_COLOR} stroke="rgba(0,0,0,0)" />
-                                ))}
-                            </Pie>
-                            <Tooltip content={<CustomTooltip currency={currency} />} />
-                            <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                        </PieChart>
-                    </ResponsiveContainer>
+            {/* Behavioral Bias Card (Replaces Pie Chart) */}
+            <div className="bg-[#16152c] p-6 rounded-2xl shadow-lg border border-gray-700/50 flex flex-col justify-between">
+                <div className="flex justify-between items-start mb-6">
+                    <span className="text-gray-400 font-medium">Behavioral Bias</span>
+                    <span className="text-white font-bold">Total Trades: {biasStats.total}</span>
+                </div>
+
+                <div className="flex justify-between items-center px-4 mb-4">
+                    <img 
+                        src="https://i.imgur.com/07RKkwK.png" 
+                        alt="Bear"
+                        className={`h-32 w-32 object-contain transition-all duration-500 ${
+                            isBearDominant
+                            ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(251,146,60,0.5)]' 
+                            : 'opacity-40 grayscale scale-100'
+                        }`} 
+                    />
+                    <h2 className="text-3xl font-bold text-white text-center">{biasStats.biasLabel}</h2>
+                    <img 
+                        src="https://i.imgur.com/D83p1q4.png" 
+                        alt="Bull" 
+                        className={`h-32 w-32 object-contain transition-all duration-500 ${
+                            isBullDominant
+                            ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]' 
+                            : 'opacity-40 grayscale scale-100'
+                        }`} 
+                    />
+                </div>
+
+                {/* Divergent Progress Bar (Center is 0%) */}
+                <div className="relative w-full h-8 flex items-center mb-2">
+                    {/* Middle Marker (0%) */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-500 z-20 -translate-x-1/2"></div>
+
+                    {/* Left Side (Sell) */}
+                    {/* Background is striped. Inner div is solid fill. */}
+                    <div className="w-1/2 relative h-full bg-gray-800/30 rounded-l-full overflow-hidden flex justify-end" style={stripeStyle}>
+                         <div 
+                            // Added rounded-l-full to make the bar tip rounded
+                            className={`h-full transition-all duration-500 ${isBearDominant ? 'bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.6)]' : 'bg-orange-600/70'} rounded-l-full`}
+                            style={{ width: `${biasStats.sellPct}%` }}
+                         />
+                    </div>
+
+                    {/* Right Side (Buy) */}
+                    {/* Background is striped. Inner div is solid fill. */}
+                    <div className="w-1/2 relative h-full bg-gray-800/30 rounded-r-full overflow-hidden flex justify-start" style={stripeStyle}>
+                        <div 
+                            // Added rounded-r-full to make the bar tip rounded
+                            className={`h-full transition-all duration-500 ${isBullDominant ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.6)]' : 'bg-cyan-600/70'} rounded-r-full`}
+                            style={{ width: `${biasStats.buyPct}%` }}
+                        />
+                    </div>
+                </div>
+
+                <div className="relative h-6 mt-1">
+                    <div className={`absolute left-0 top-0 text-sm font-medium transition-colors ${isBearDominant ? 'text-orange-400 font-bold' : 'text-gray-400'}`}>
+                        {biasStats.sells} ({biasStats.sellPct.toFixed(1)}%)
+                    </div>
+                    
+                    {/* Absolute centered 0% label */}
+                    <div className="absolute left-1/2 top-0 -translate-x-1/2 text-xs text-gray-500">
+                        0%
+                    </div>
+
+                    <div className={`absolute right-0 top-0 text-sm font-medium transition-colors ${isBullDominant ? 'text-cyan-400 font-bold' : 'text-gray-400'}`}>
+                        {biasStats.buys} ({biasStats.buyPct.toFixed(1)}%)
+                    </div>
                 </div>
             </div>
         </div>
