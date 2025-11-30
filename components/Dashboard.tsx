@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DashboardMetrics } from '../types';
 import StatCard from './StatCard';
@@ -34,16 +35,34 @@ const Dashboard: React.FC<DashboardProps> = ({ metrics, currency }) => {
     <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
             <div className="animate-fade-in-up animation-delay-200">
-                <StatCard title={t('metrics.total_profit')} value={formatCurrency(metrics.netProfit)} colorClass={netProfitColor} tooltip="Total Profit - (Commission + Swap)"/>
+                <StatCard 
+                    title={t('metrics.total_profit')} 
+                    value={formatCurrency(metrics.netProfit)} 
+                    colorClass={netProfitColor} 
+                    tooltip="Net realized profit after commissions and swaps"
+                />
             </div>
             <div className="animate-fade-in-up animation-delay-300">
-                <StatCard title={t('metrics.win_rate')} value={`${metrics.winRate.toFixed(2)}%`} colorClass={metrics.winRate >= 50 ? 'text-cyan-400' : 'text-yellow-400'}/>
+                <StatCard 
+                    title={t('metrics.win_rate')} 
+                    value={`${metrics.winRate.toFixed(2)}%`} 
+                    colorClass={metrics.winRate >= 50 ? 'text-cyan-400' : 'text-yellow-400'}
+                    tooltip="Percentage of trades with profit > 0"
+                />
             </div>
             <div className="animate-fade-in-up animation-delay-400">
-                <StatCard title={t('metrics.total_orders')} value={metrics.totalOrders.toString()} />
+                <StatCard 
+                    title={t('metrics.total_orders')} 
+                    value={metrics.totalOrders.toString()} 
+                    tooltip="Total number of closed trades"
+                />
             </div>
             <div className="animate-fade-in-up animation-delay-500">
-                <StatCard title={t('metrics.profit_factor')} value={isFinite(metrics.profitFactor) ? metrics.profitFactor.toFixed(2) : '∞'} tooltip="Gross Profit / Gross Loss"/>
+                <StatCard 
+                    title={t('metrics.profit_factor')} 
+                    value={isFinite(metrics.profitFactor) ? metrics.profitFactor.toFixed(2) : '∞'} 
+                    tooltip="Ratio of Gross Profit to Gross Loss"
+                />
             </div>
         </div>
         <div className="p-6 bg-gray-800/50 rounded-xl shadow-lg border border-gray-700/50 flex items-center animate-fade-in-up animation-delay-600">

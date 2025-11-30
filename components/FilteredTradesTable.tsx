@@ -47,7 +47,7 @@ const calculateDuration = (trade: Trade): string => {
 };
 
 // Defined outside render for performance
-const VirtuosoTable = (props: any) => <table {...props} className="w-full text-xs text-left border-collapse table-fixed" style={{borderSpacing: 0}} />;
+const VirtuosoTable = (props: any) => <table {...props} className="min-w-full text-xs text-left border-collapse" style={{borderSpacing: 0}} />;
 const VirtuosoTableHead = React.forwardRef((props: any, ref: any) => <thead {...props} ref={ref} className="text-xs text-gray-400 uppercase border-b border-gray-700 sticky top-0 bg-[#16152c] z-10" />);
 // Align-middle for better centering
 const VirtuosoTableRow = ({ item, context, ...props }: any) => <tr {...props} className="text-xs hover:bg-gray-800/50 border-b border-gray-800 align-middle h-12" />;
@@ -123,9 +123,9 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
 
     const renderDate = (date: Date) => {
         return (
-            <div className="flex flex-col justify-center">
-                <span className="font-medium whitespace-nowrap">{formatDateOnly(date)}</span>
-                <span className="text-[10px] text-gray-500 whitespace-nowrap">{formatTimeOnly(date)}</span>
+            <div className="flex flex-col justify-center whitespace-nowrap">
+                <span className="font-medium">{formatDateOnly(date)}</span>
+                <span className="text-[10px] text-gray-500">{formatTimeOnly(date)}</span>
             </div>
         );
     };
@@ -219,8 +219,16 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
                                     }
 
                                     return (
-                                        <td key={col.key} className={`px-2 py-2 ${cellClass} ${col.isNumeric ? 'text-right' : ''} ${col.key === 'comment' ? 'truncate max-w-[100px] sm:max-w-xs' : 'whitespace-nowrap'}`} title={col.key === 'comment' ? trade.comment : undefined}>
-                                            {cellContent}
+                                        <td 
+                                            key={col.key} 
+                                            className={`px-2 py-2 whitespace-nowrap ${cellClass} ${col.isNumeric ? 'text-right' : ''} first:pl-4 last:pr-4`} 
+                                            title={typeof cellContent === 'string' || typeof cellContent === 'number' ? String(cellContent) : undefined}
+                                        >
+                                            {col.key === 'comment' ? (
+                                                <div className="max-w-[100px] sm:max-w-xs truncate">{cellContent}</div>
+                                            ) : (
+                                                cellContent
+                                            )}
                                         </td>
                                     );
                                 })}

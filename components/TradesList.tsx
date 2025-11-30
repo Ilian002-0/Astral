@@ -25,7 +25,8 @@ const calculateDuration = (trade: Trade): string => {
 };
 
 // Define Table Components outside of the render function
-const VirtuosoTable = (props: any) => <table {...props} className="w-full text-xs text-left border-collapse table-fixed" style={{borderSpacing: 0}} />;
+// switched from table-fixed to min-w-full to allow columns to sizing based on content (no overlap/truncation unless specified)
+const VirtuosoTable = (props: any) => <table {...props} className="min-w-full text-xs text-left border-collapse" style={{borderSpacing: 0}} />;
 const VirtuosoTableHead = React.forwardRef((props: any, ref: any) => <thead {...props} ref={ref} className="text-xs text-gray-400 uppercase bg-[#16152c] sticky top-0 z-10" />);
 // Changed align-top to align-middle for better aesthetics
 const VirtuosoTableRow = ({ item, context, ...props }: any) => <tr {...props} className="border-b border-gray-800 hover:bg-gray-800/50 align-middle h-14" />;
@@ -207,9 +208,9 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                                         const dateValue = trade[col.key] as Date;
                                         return (
                                             <td key={col.key} className="px-2 py-2 text-white first:pl-4 last:pr-4">
-                                                <div className="flex flex-col justify-center">
-                                                    <span className="font-medium whitespace-nowrap">{formatDateOnly(dateValue)}</span>
-                                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">{formatTimeOnly(dateValue)}</span>
+                                                <div className="flex flex-col justify-center whitespace-nowrap">
+                                                    <span className="font-medium">{formatDateOnly(dateValue)}</span>
+                                                    <span className="text-[10px] text-gray-500">{formatTimeOnly(dateValue)}</span>
                                                 </div>
                                             </td>
                                         );
@@ -218,10 +219,16 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                                     return (
                                         <td 
                                             key={col.key} 
-                                            className={`px-2 py-2 whitespace-nowrap ${cellClass} ${isComment ? 'max-w-xs truncate' : ''} first:pl-4 last:pr-4`}
-                                            title={isComment ? trade.comment : undefined}
+                                            className={`px-2 py-2 whitespace-nowrap ${cellClass} first:pl-4 last:pr-4`}
+                                            title={String(formatValue(trade, col.key))}
                                         >
-                                            {formatValue(trade, col.key)}
+                                            {isComment ? (
+                                                <div className="max-w-xs truncate">
+                                                    {formatValue(trade, col.key)}
+                                                </div>
+                                            ) : (
+                                                formatValue(trade, col.key)
+                                            )}
                                         </td>
                                     );
                                 })}
