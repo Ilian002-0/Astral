@@ -113,7 +113,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const lastActiveIndex = useRef<number | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsMounted(true), 0);
+    // Increased delay to 200ms to allow animations to finish and container to have stable dimensions
+    const timer = setTimeout(() => setIsMounted(true), 200);
     return () => clearTimeout(timer);
   }, []);
 

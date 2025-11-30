@@ -122,7 +122,12 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
 
   useEffect(() => {
     // Delay setting isMounted to ensuring the parent container has been rendered and sized
-    const timer = setTimeout(() => setIsMounted(true), 0);
+    // Increased delay to 200ms to allow animations to finish and container to have stable dimensions
+    const timer = setTimeout(() => {
+        if (chartRef.current) {
+            setIsMounted(true);
+        }
+    }, 200);
     
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
