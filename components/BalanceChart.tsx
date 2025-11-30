@@ -110,6 +110,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const { t, language } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -120,13 +121,19 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   const drawdownGoal = goals?.maxDrawdown;
 
   useEffect(() => {
+    // Delay setting isMounted to ensuring the parent container has been rendered and sized
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+        clearTimeout(timer);
+        document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -316,7 +323,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
         </div>
       </div>
       <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
-        {hasAnyData ? (
+        {hasAnyData && isMounted ? (
           <ResponsiveContainer key={timeRange} width="100%" height="100%" minWidth={0} minHeight={0}>
             <AreaChart
               data={filteredData}

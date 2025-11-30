@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts';
 
 interface GoalCardProps {
@@ -12,6 +12,12 @@ interface GoalCardProps {
 }
 
 const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, formatValue, isLessBetter = false, isPercent = false }) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const { progress, color, isMet } = useMemo(() => {
     if (targetValue === 0 && currentValue > 0) return { progress: 100, color: '#2dd4bf', isMet: true };
@@ -49,19 +55,21 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, f
         {isLessBetter && <p className="text-xs text-gray-500">(lower is better)</p>}
       </div>
       <div className="relative w-32 h-32 mx-auto my-4">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-          <RadialBarChart
-            innerRadius="80%"
-            outerRadius="100%"
-            data={chartData}
-            startAngle={90}
-            endAngle={-270}
-            barSize={8}
-          >
-            <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
-            <RadialBar background={{ fill: '#374151' }} dataKey="value" cornerRadius={10} fill={color} />
-          </RadialBarChart>
-        </ResponsiveContainer>
+        {isMounted && (
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+            <RadialBarChart
+                innerRadius="80%"
+                outerRadius="100%"
+                data={chartData}
+                startAngle={90}
+                endAngle={-270}
+                barSize={8}
+            >
+                <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+                <RadialBar background={{ fill: '#374151' }} dataKey="value" cornerRadius={10} fill={color} />
+            </RadialBarChart>
+            </ResponsiveContainer>
+        )}
         <div className="absolute inset-0 flex items-center justify-center flex-col">
             {isMet ? (
                 <div className="text-sm font-bold text-green-400">Goal Met!</div>

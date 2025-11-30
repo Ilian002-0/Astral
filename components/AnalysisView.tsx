@@ -107,9 +107,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const [selectedComments, setSelectedComments] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const chartRef = useRef<HTMLDivElement>(null);
   const lastActiveIndex = useRef<number | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Calculate static metadata (min/max dates)
   const { minDate, maxDate } = useMemo(() => {
@@ -441,7 +447,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
             <h3 className="text-lg font-semibold text-white mb-4">{t('dashboard.balance_chart_title')}</h3>
             <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
-                {chartData.length > 1 ? (
+                {chartData.length > 1 && isMounted ? (
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart 
                         data={chartData} 
@@ -493,20 +499,21 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
             <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50 lg:col-span-2">
                 <h3 className="text-lg font-semibold text-white mb-4">{t('analysis.monthly_performance')}</h3>
                 <div style={{ width: '100%', height: 300 }}>
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                        <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" vertical={false} />
-                            <XAxis dataKey="month" stroke="#888" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                            <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} axisLine={false} tickLine={false} />
-                            <Tooltip content={<CustomTooltip currency={currency} />} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
-                            {/* Updated radius to be fully rounded pills */}
-                            <Bar dataKey="profit" radius={[4, 4, 4, 4]}>
-                                {monthlyData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#4ade80' : '#f87171'} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
+                    {isMounted && (
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                            <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" vertical={false} />
+                                <XAxis dataKey="month" stroke="#888" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                                <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} axisLine={false} tickLine={false} />
+                                <Tooltip content={<CustomTooltip currency={currency} />} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
+                                <Bar dataKey="profit" radius={[4, 4, 4, 4]}>
+                                    {monthlyData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#4ade80' : '#f87171'} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    )}
                 </div>
             </div>
 
@@ -514,25 +521,27 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
             <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
                 <h3 className="text-lg font-semibold text-white mb-4">{t('analysis.trade_volume_by_symbol')}</h3>
                 <div style={{ width: '100%', height: 300 }}>
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                        <PieChart>
-                            <Pie
-                                data={symbolData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {symbolData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
-                                ))}
-                            </Pie>
-                            <Tooltip content={<CustomTooltip currency={currency} />} />
-                            <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                        </PieChart>
-                    </ResponsiveContainer>
+                    {isMounted && (
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                            <PieChart>
+                                <Pie
+                                    data={symbolData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {symbolData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
+                                    ))}
+                                </Pie>
+                                <Tooltip content={<CustomTooltip currency={currency} />} />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    )}
                 </div>
             </div>
 
@@ -544,6 +553,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 </div>
 
                 <div className="relative flex justify-between items-center px-4 mb-4 h-32">
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white text-center drop-shadow-lg">{biasStats.biasLabel}</h2>
+                    </div>
+
                     <img 
                         src="https://i.imgur.com/07RKkwK.png" 
                         alt="Bear"
@@ -554,10 +567,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                         }`} 
                     />
                     
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                        <h2 className="text-2xl sm:text-3xl font-bold text-white text-center drop-shadow-lg">{biasStats.biasLabel}</h2>
-                    </div>
-
                     <img 
                         src="https://i.imgur.com/D83p1q4.png" 
                         alt="Bull" 

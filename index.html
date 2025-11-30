@@ -84,14 +84,33 @@
           font-size: 0.65rem; /* 10.4px */
           line-height: 1;
       }
-      /* Hide scrollbar for a cleaner, app-like appearance */
-      body::-webkit-scrollbar {
-        display: none; /* for Chrome, Safari, and Opera */
+
+      /* Custom Discreet Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
       }
-      body {
-        -ms-overflow-style: none;  /* for Internet Explorer and Edge */
-        scrollbar-width: none;  /* for Firefox */
+      ::-webkit-scrollbar-track {
+        background: transparent; 
       }
+      ::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-radius: 9999px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+      }
+      ::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+      /* Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+      }
+
       /* Prevent focus outline on charts for a cleaner mobile experience */
       .recharts-wrapper:focus, .recharts-surface:focus {
         outline: none !important;
