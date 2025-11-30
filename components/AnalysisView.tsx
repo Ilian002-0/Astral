@@ -547,21 +547,21 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                     <img 
                         src="https://i.imgur.com/07RKkwK.png" 
                         alt="Bear"
-                        className={`h-32 w-32 object-contain transition-all duration-500 z-10 ${
+                        className={`h-24 w-24 sm:h-32 sm:w-32 object-contain transition-all duration-500 z-0 ${
                             isBearDominant
                             ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(251,146,60,0.5)]' 
                             : 'opacity-40 grayscale scale-100'
                         }`} 
                     />
                     
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <h2 className="text-3xl font-bold text-white text-center drop-shadow-lg z-0">{biasStats.biasLabel}</h2>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white text-center drop-shadow-lg">{biasStats.biasLabel}</h2>
                     </div>
 
                     <img 
                         src="https://i.imgur.com/D83p1q4.png" 
                         alt="Bull" 
-                        className={`h-32 w-32 object-contain transition-all duration-500 z-10 ${
+                        className={`h-24 w-24 sm:h-32 sm:w-32 object-contain transition-all duration-500 z-0 ${
                             isBullDominant
                             ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]' 
                             : 'opacity-40 grayscale scale-100'
