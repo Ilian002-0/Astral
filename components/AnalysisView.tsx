@@ -543,21 +543,25 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                     <span className="text-white font-bold">Total Trades: {biasStats.total}</span>
                 </div>
 
-                <div className="flex justify-between items-center px-4 mb-4">
+                <div className="relative flex justify-between items-center px-4 mb-4 h-32">
                     <img 
                         src="https://i.imgur.com/07RKkwK.png" 
                         alt="Bear"
-                        className={`h-32 w-32 object-contain transition-all duration-500 ${
+                        className={`h-32 w-32 object-contain transition-all duration-500 z-10 ${
                             isBearDominant
                             ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(251,146,60,0.5)]' 
                             : 'opacity-40 grayscale scale-100'
                         }`} 
                     />
-                    <h2 className="text-3xl font-bold text-white text-center">{biasStats.biasLabel}</h2>
+                    
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <h2 className="text-3xl font-bold text-white text-center drop-shadow-lg z-0">{biasStats.biasLabel}</h2>
+                    </div>
+
                     <img 
                         src="https://i.imgur.com/D83p1q4.png" 
                         alt="Bull" 
-                        className={`h-32 w-32 object-contain transition-all duration-500 ${
+                        className={`h-32 w-32 object-contain transition-all duration-500 z-10 ${
                             isBullDominant
                             ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]' 
                             : 'opacity-40 grayscale scale-100'
@@ -574,7 +578,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                     {/* Background is striped. Inner div is solid fill. */}
                     <div className="w-1/2 relative h-full bg-gray-800/30 rounded-l-full overflow-hidden flex justify-end" style={stripeStyle}>
                          <div 
-                            // Added rounded-l-full to make the bar tip rounded
                             className={`h-full transition-all duration-500 ${isBearDominant ? 'bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.6)]' : 'bg-orange-600/70'} rounded-l-full`}
                             style={{ width: `${biasStats.sellPct}%` }}
                          />
@@ -584,7 +587,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                     {/* Background is striped. Inner div is solid fill. */}
                     <div className="w-1/2 relative h-full bg-gray-800/30 rounded-r-full overflow-hidden flex justify-start" style={stripeStyle}>
                         <div 
-                            // Added rounded-r-full to make the bar tip rounded
                             className={`h-full transition-all duration-500 ${isBullDominant ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.6)]' : 'bg-cyan-600/70'} rounded-r-full`}
                             style={{ width: `${biasStats.buyPct}%` }}
                         />
