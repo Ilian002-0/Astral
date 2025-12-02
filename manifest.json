@@ -3,8 +3,8 @@
   "name": "Atlas - Trading Dashboard",
   "short_name": "Atlas",
   "description": "Atlas helps you visualize your trading history. Upload your trade report to see an interactive dashboard.",
-  "start_url": "./?source=pwa",
-  "scope": "./",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0c0b1e",
@@ -17,38 +17,26 @@
       "src": "logo.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "logo.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "logo.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    },
-    {
-      "src": "logo.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
     {
       "src": "logo.svg",
-      "sizes": "1024x500",
+      "sizes": "1024x1024",
       "type": "image/svg+xml",
       "form_factor": "wide",
-      "label": "Atlas Dashboard Desktop"
+      "label": "Atlas Dashboard"
     },
     {
       "src": "logo.svg",
-      "sizes": "500x1024",
+      "sizes": "1024x1024",
       "type": "image/svg+xml",
       "form_factor": "narrow",
       "label": "Atlas Dashboard Mobile"
@@ -59,7 +47,7 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "View trading dashboard",
-      "url": "./?view=dashboard",
+      "url": "/?view=dashboard",
       "icons": [
         { "src": "dashboard-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
       ]
@@ -68,7 +56,7 @@
       "name": "List of Trades",
       "short_name": "Trades",
       "description": "View all trades",
-      "url": "./?view=trades",
+      "url": "/?view=trades",
       "icons": [
         { "src": "list-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
       ]
@@ -77,7 +65,7 @@
       "name": "Calendar",
       "short_name": "Calendar",
       "description": "View trades on a calendar",
-      "url": "./?view=calendar",
+      "url": "/?view=calendar",
       "icons": [
         { "src": "calendar-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
       ]
@@ -86,7 +74,7 @@
       "name": "Goals",
       "short_name": "Goals",
       "description": "View trading goals",
-      "url": "./?view=goals",
+      "url": "/?view=goals",
       "icons": [
         { "src": "goals-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
       ]
@@ -94,7 +82,7 @@
   ],
   "file_handlers": [
     {
-      "action": "./",
+      "action": "/",
       "accept": {
         "text/csv": [".csv"]
       }

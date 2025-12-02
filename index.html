@@ -299,11 +299,12 @@
         <div class="title">Atlas</div>
       </div>
     </div>
-    <script type="module" src="./index.tsx"></script>
+    <script type="module" src="index.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          const swUrl = './service-worker.js';
+          // Use root relative path for robustness
+          const swUrl = 'service-worker.js';
           navigator.serviceWorker.register(swUrl)
             .then(registration => {
               console.log('ServiceWorker registration successful with scope: ', registration.scope);
