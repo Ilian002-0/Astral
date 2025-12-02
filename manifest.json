@@ -1,4 +1,3 @@
-
 {
   "name": "Atlas - Trading Dashboard",
   "short_name": "Atlas",
@@ -14,7 +13,35 @@
       "src": "/logo.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "Atlas Dashboard"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Atlas Mobile View"
     }
   ],
   "shortcuts": [

@@ -1,8 +1,7 @@
-
 importScripts('https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js');
 
 // --- CONSTANTS & CONFIG ---
-const CACHE_NAME = 'atlas-cache-v28'; // Incremented cache version
+const CACHE_NAME = 'atlas-cache-v29'; // Incremented cache version
 const ASSETS_TO_CACHE = [
     '/', '/index.html', '/manifest.json', '/logo.svg',
     '/dashboard-icon.svg', '/list-icon.svg', '/calendar-icon.svg', '/goals-icon.svg',
