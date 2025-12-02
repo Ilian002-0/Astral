@@ -5,95 +5,7 @@ import { ChartDataPoint, Goals } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { triggerHaptic } from '../utils/haptics';
-
-const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
-  const { language } = useLanguage();
-  
-  const formatCurrency = (value: number, options?: Intl.NumberFormatOptions) => {
-    const symbol = currency === 'USD' ? '$' : '€';
-    
-    let sign = '';
-    const _options = options || {};
-    if (_options.signDisplay === 'always') {
-        sign = value >= 0 ? '+' : '-';
-    } else if (value < 0) {
-        sign = '-';
-    }
-
-    const numberPart = new Intl.NumberFormat(language, {
-        style: 'decimal',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(Math.abs(value));
-
-    if (language === 'fr') {
-        return `${sign}${numberPart}${symbol}`;
-    }
-    return `${sign}${symbol}${numberPart}`;
-  }
-
-  if (active && payload && payload.length) {
-    const dataPoint: ChartDataPoint = payload[0].payload;
-    const { trade, balance, timestamp, isEquityPoint, floatingPnl } = dataPoint;
-    
-    if (isEquityPoint) {
-       return (
-        <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
-          <p className="font-bold text-lg text-white mb-1">Current Equity</p>
-          <p className="text-gray-400 text-base font-semibold">{formatCurrency(balance)}</p>
-          {floatingPnl !== undefined && (
-              <div className="mt-2 border-t border-gray-600 pt-2 text-xs space-y-1">
-                  <div className="flex justify-between items-center gap-4">
-                      <span className="text-gray-400">Floating P/L</span>
-                      <span className={`font-semibold ${floatingPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {formatCurrency(floatingPnl, { signDisplay: 'always' })}
-                      </span>
-                  </div>
-              </div>
-          )}
-        </div>
-      );
-    }
-
-    if (trade) {
-      if (trade.type === 'balance') {
-        return (
-          <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
-            <p className="font-bold text-lg text-white mb-1">{trade.profit > 0 ? 'Deposit' : 'Withdrawal'}</p>
-            <p className="text-gray-400 text-base font-semibold">{formatCurrency(trade.profit, { signDisplay: 'always' })}</p>
-            <p className="text-xs text-gray-500 mt-1">New Balance: {formatCurrency(balance)}</p>
-          </div>
-        );
-      }
-      const netProfit = trade.profit + trade.commission + trade.swap;
-
-      return (
-        <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
-          <p className="font-bold text-lg text-white mb-1">{formatCurrency(balance)}</p>
-          <p className="text-gray-400">{new Date(timestamp).toLocaleDateString(language, {month: 'short', day: 'numeric', year: 'numeric'})}</p>
-          
-          <div className="mt-2 border-t border-gray-600 pt-2 text-xs">
-              <div className="flex justify-between items-center gap-4">
-                  <span className="text-gray-400">{(trade.type + ' ' + trade.symbol).toLowerCase()}</span>
-                  <span className={`font-semibold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatCurrency(netProfit, { signDisplay: 'always' })}
-                  </span>
-              </div>
-          </div>
-        </div>
-      );
-    }
-    
-    // Fallback for initial balance point
-    return (
-      <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
-          <p className="font-bold text-lg text-white mb-1">Initial Balance</p>
-          <p className="text-gray-400">{formatCurrency(balance)}</p>
-      </div>
-    );
-  }
-  return null;
-};
+import CustomTooltip from './charts/CustomTooltip';
 
 type TimeRange = 'today' | 'week' | 'month' | 'all';
 
@@ -104,7 +16,6 @@ interface BalanceChartProps {
   currency: 'USD' | 'EUR';
   goals: Goals;
 }
-
 
 const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisClick, initialBalance, currency, goals }) => {
   const { t, language } = useLanguage();

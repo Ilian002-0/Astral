@@ -1,8 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label,
-    BarChart, Bar, PieChart, Pie, Cell, Legend
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label
 } from 'recharts';
 import { Trade, ChartDataPoint, Account } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -10,6 +9,11 @@ import MultiSelectDropdown from './MultiSelectDropdown';
 import FilteredTradesTable from './FilteredTradesTable';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { triggerHaptic } from '../utils/haptics';
+
+import CustomTooltip from './charts/CustomTooltip';
+import MonthlyPerformanceChart from './analysis/MonthlyPerformanceChart';
+import SymbolPieChart from './analysis/SymbolPieChart';
+import BiasCard from './analysis/BiasCard';
 
 interface AnalysisViewProps {
   trades: Trade[];
@@ -19,87 +23,6 @@ interface AnalysisViewProps {
 }
 
 type TradeWithProfitPercentage = Trade & { profitPercentage: number };
-
-const COLORS = ['#22d3ee', '#34d399', '#f472b6', '#a78bfa', '#fb923c', '#94a3b8']; // Cyan, Emerald, Pink, Violet, Orange, Gray
-const BUY_COLOR = '#22d3ee'; // Cyan
-const SELL_COLOR = '#fb923c'; // Orange
-
-const CustomTooltip: React.FC<any> = ({ active, payload, currency }) => {
-  const { language } = useLanguage();
-  const formatCurrency = (value: number, options?: Intl.NumberFormatOptions) => {
-    const symbol = currency === 'USD' ? '$' : '€';
-    
-    let sign = '';
-    const _options = options || {};
-    if (_options.signDisplay === 'always') {
-        sign = value >= 0 ? '+' : '-';
-    } else if (value < 0) {
-        sign = '-';
-    }
-
-    const numberPart = new Intl.NumberFormat(language, {
-        style: 'decimal',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(Math.abs(value));
-
-    if (language === 'fr') {
-        return `${sign}${numberPart}${symbol}`;
-    }
-    return `${sign}${symbol}${numberPart}`;
-  }
-
-  if (active && payload && payload.length) {
-    // Handling different chart types in tooltip
-    if (payload[0].payload.month) {
-        // Monthly Bar Chart
-        const { month, profit } = payload[0].payload;
-        return (
-             <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
-                <p className="font-bold text-white mb-1">{month}</p>
-                <p className={`font-semibold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {formatCurrency(profit, { signDisplay: 'always' })}
-                </p>
-            </div>
-        );
-    }
-    
-    if (payload[0].name && payload[0].value !== undefined && !payload[0].payload.date) {
-        // Pie Chart
-        const { name, value } = payload[0];
-        return (
-            <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-2 rounded-lg shadow-xl text-xs">
-                <span className="text-gray-300">{name}: </span>
-                <span className="font-bold text-white">{value} trades</span>
-            </div>
-        );
-    }
-
-    // Area Chart (Equity)
-    const dataPoint: ChartDataPoint = payload[0].payload;
-    const { trade, balance, timestamp } = dataPoint;
-
-    if (trade) {
-      const netProfit = trade.profit + trade.commission + trade.swap;
-      return (
-        <div className="bg-[#16152c]/90 backdrop-blur-sm border border-gray-700 p-3 rounded-lg shadow-xl text-sm">
-          <p className="font-bold text-lg text-white mb-1">{formatCurrency(balance)}</p>
-          <p className="text-gray-400">{new Date(timestamp).toLocaleDateString(language, {month: 'short', day: 'numeric', year: 'numeric'})}</p>
-          <div className="mt-2 border-t border-gray-600 pt-2 text-xs">
-              <div className="flex justify-between items-center gap-4">
-                  <span className="text-gray-400">{(trade.type + ' ' + trade.symbol).toLowerCase()}</span>
-                  <span className={`font-semibold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatCurrency(netProfit, { signDisplay: 'always' })}
-                  </span>
-              </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  }
-  return null;
-};
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onBackToDashboard, currency }) => {
   const { t, language } = useLanguage();
@@ -510,129 +433,27 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         {/* 2. Additional Analysis Charts (Bar & Bias Card) */}
         {filteredTrades.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Monthly Performance Bar Chart */}
-            <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50 lg:col-span-2">
-                <h3 className="text-lg font-semibold text-white mb-4">{t('analysis.monthly_performance')}</h3>
-                <div style={{ width: '100%', height: 300 }}>
-                    {isMounted && (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                            <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" vertical={false} />
-                                <XAxis dataKey="month" stroke="#888" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                                <YAxis stroke="#888" tick={{ fontSize: 12 }} tickFormatter={yAxisTickFormatter} axisLine={false} tickLine={false} />
-                                <Tooltip content={<CustomTooltip currency={currency} />} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
-                                <Bar dataKey="profit" radius={[4, 4, 4, 4]}>
-                                    {monthlyData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#4ade80' : '#f87171'} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    )}
-                </div>
-            </div>
+            <MonthlyPerformanceChart 
+                data={monthlyData}
+                currency={currency}
+                yAxisTickFormatter={yAxisTickFormatter}
+                title={t('analysis.monthly_performance')}
+                isMounted={isMounted}
+            />
 
-            {/* Symbol Distribution Pie Chart */}
-            <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
-                <h3 className="text-lg font-semibold text-white mb-4">{t('analysis.trade_volume_by_symbol')}</h3>
-                <div style={{ width: '100%', height: 300 }}>
-                    {isMounted && (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                            <PieChart>
-                                <Pie
-                                    data={symbolData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {symbolData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
-                                    ))}
-                                </Pie>
-                                <Tooltip content={<CustomTooltip currency={currency} />} />
-                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    )}
-                </div>
-            </div>
+            <SymbolPieChart 
+                data={symbolData}
+                currency={currency}
+                title={t('analysis.trade_volume_by_symbol')}
+                isMounted={isMounted}
+            />
 
-            {/* Behavioral Bias Card (Replaces Pie Chart) */}
-            <div className="bg-[#16152c] p-6 lg:p-4 rounded-2xl shadow-lg border border-gray-700/50 flex flex-col justify-center">
-                {/* Restored Header */}
-                <div className="flex justify-between items-center mb-4 lg:mb-2">
-                    <h3 className="text-gray-400 font-medium text-sm sm:text-base">Behavioral Bias</h3>
-                    <h3 className="text-white font-bold text-sm sm:text-base">Total Trades: {biasStats.total}</h3>
-                </div>
-
-                <div className="relative h-32 lg:h-24 flex items-center justify-between px-4 mb-4 lg:mb-2">
-                    {/* Centered Text */}
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg text-center">{biasStats.biasLabel}</h2>
-                    </div>
-
-                    {/* Bear Image */}
-                    <img 
-                        src="https://i.imgur.com/07RKkwK.png" 
-                        alt="Bear"
-                        className={`h-24 w-24 sm:h-32 sm:w-32 lg:h-20 lg:w-20 object-contain transition-all duration-500 z-0 ${
-                            isBearDominant
-                            ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(251,146,60,0.5)]' 
-                            : 'opacity-40 grayscale scale-100'
-                        }`} 
-                    />
-                    
-                    {/* Bull Image */}
-                    <img 
-                        src="https://i.imgur.com/D83p1q4.png" 
-                        alt="Bull" 
-                        className={`h-24 w-24 sm:h-32 sm:w-32 lg:h-20 lg:w-20 object-contain transition-all duration-500 z-0 ${
-                            isBullDominant
-                            ? 'opacity-100 scale-110 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]' 
-                            : 'opacity-40 grayscale scale-100'
-                        }`} 
-                    />
-                </div>
-
-                {/* Divergent Progress Bar (Center is 0%) */}
-                <div className="relative w-full h-8 lg:h-6 flex items-center mb-2 lg:mb-1">
-                    {/* Middle Marker (0%) */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-500 z-20 -translate-x-1/2"></div>
-
-                    {/* Left Side (Sell) */}
-                    <div className="w-1/2 relative h-full bg-gray-800/30 rounded-l-full overflow-hidden flex justify-end" style={stripeStyle}>
-                         <div 
-                            className={`h-full transition-all duration-500 ${isBearDominant ? 'bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.6)]' : 'bg-orange-600/70'} rounded-l-full`}
-                            style={{ width: `${biasStats.sellPct}%` }}
-                         />
-                    </div>
-
-                    {/* Right Side (Buy) */}
-                    <div className="w-1/2 relative h-full bg-gray-800/30 rounded-r-full overflow-hidden flex justify-start" style={stripeStyle}>
-                        <div 
-                            className={`h-full transition-all duration-500 ${isBullDominant ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.6)]' : 'bg-cyan-600/70'} rounded-r-full`}
-                            style={{ width: `${biasStats.buyPct}%` }}
-                        />
-                    </div>
-                </div>
-
-                <div className="relative h-6 mt-1">
-                    <div className={`absolute left-0 top-0 text-sm font-medium transition-colors ${isBearDominant ? 'text-orange-400 font-bold' : 'text-gray-400'}`}>
-                        {biasStats.sells} ({biasStats.sellPct.toFixed(1)}%)
-                    </div>
-                    
-                    <div className="absolute left-1/2 top-0 -translate-x-1/2 text-xs text-gray-500">
-                        0%
-                    </div>
-
-                    <div className={`absolute right-0 top-0 text-sm font-medium transition-colors ${isBullDominant ? 'text-cyan-400 font-bold' : 'text-gray-400'}`}>
-                        {biasStats.buys} ({biasStats.buyPct.toFixed(1)}%)
-                    </div>
-                </div>
-            </div>
+            <BiasCard 
+                biasStats={biasStats}
+                isBearDominant={isBearDominant}
+                isBullDominant={isBullDominant}
+                stripeStyle={stripeStyle}
+            />
         </div>
         )}
 

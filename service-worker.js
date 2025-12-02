@@ -1,11 +1,16 @@
 importScripts('https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js');
 
 // --- CONSTANTS & CONFIG ---
-const CACHE_NAME = 'atlas-cache-v32'; // Incremented cache version
+const CACHE_NAME = 'atlas-cache-v34'; // Incremented cache version
 const ASSETS_TO_CACHE = [
-    './', // Keep root
-    'index.html', 'manifest.json', 'logo.svg',
-    'dashboard-icon.svg', 'list-icon.svg', 'calendar-icon.svg', 'goals-icon.svg',
+    './', // Relative root
+    './index.html', 
+    './manifest.json', 
+    './logo.svg',
+    './dashboard-icon.svg', 
+    './list-icon.svg', 
+    './calendar-icon.svg', 
+    './goals-icon.svg',
 ];
 const DB_NAME = 'atlas-db';
 const DB_VERSION = 1;
@@ -254,7 +259,7 @@ self.addEventListener('message', (event) => {
         event.waitUntil(
             self.registration.showNotification(title, {
                 body: body,
-                icon: 'logo.svg',
+                icon: '/logo.svg',
                 tag: 'atlas-test-notification' // Use a tag to prevent multiple test notifications from stacking
             })
         );
@@ -304,7 +309,7 @@ const notifyForTrades = (trades, account, lang, settings) => {
         const currency = account.currency === 'EUR' ? '€' : '$';
         const title = t(lang, 'notifications.trade_closed_title');
         const body = t(lang, 'notifications.trade_closed_body', { symbol: trade.symbol, profit: trade.profit.toFixed(2), currency });
-        self.registration.showNotification(title, { body, tag: `trade-${trade.ticket}`, icon: 'logo.svg', data: { url: `${self.location.origin}/?view=trades` } });
+        self.registration.showNotification(title, { body, tag: `trade-${trade.ticket}`, icon: '/logo.svg', data: { url: `${self.location.origin}/?view=trades` } });
     });
 };
 

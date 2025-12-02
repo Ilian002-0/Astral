@@ -303,7 +303,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // Use root relative path for robustness
+          // Use relative path for better compatibility with bundlers/subpaths
           const swUrl = 'service-worker.js';
           navigator.serviceWorker.register(swUrl)
             .then(registration => {

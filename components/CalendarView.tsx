@@ -4,11 +4,8 @@ import { Trade, CalendarDay, CalendarSettings, WeeklySummary } from '../types';
 import { generateCalendarData, getDayIdentifier } from '../utils/calendar';
 import { useLanguage } from '../contexts/LanguageContext';
 import useMediaQuery from '../hooks/useMediaQuery';
-
-
-const CameraIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
-const SpinnerIcon = () => <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>;
-
+import CalendarHeader from './calendar/CalendarHeader';
+import CalendarDayCell from './calendar/CalendarDayCell';
 
 interface CalendarViewProps {
     trades: Trade[];
@@ -17,119 +14,6 @@ interface CalendarViewProps {
     transitioningDay: string | null;
     calendarSettings: CalendarSettings;
 }
-
-interface CalendarHeaderProps {
-    displayDate: Date;
-    onPrevMonth: () => void;
-    onNextMonth: () => void;
-    onScreenshot: () => void;
-    isCapturing: boolean;
-}
-
-const CalendarHeader: React.FC<CalendarHeaderProps> = ({ displayDate, onPrevMonth, onNextMonth, onScreenshot, isCapturing }) => {
-    const { language } = useLanguage();
-    const monthYear = displayDate.toLocaleDateString(language, {
-        month: 'long',
-        year: 'numeric'
-    });
-
-    return (
-        <div className="flex justify-between items-center mb-4">
-            <button onClick={onPrevMonth} className="p-2 rounded-full hover:bg-gray-700 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            </button>
-            <h2 className="text-xl font-bold text-white">{monthYear}</h2>
-            <div className="flex items-center gap-2">
-                <button onClick={onNextMonth} className="p-2 rounded-full hover:bg-gray-700 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
-                 <button
-                    onClick={onScreenshot}
-                    disabled={isCapturing}
-                    className="p-2 rounded-full hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
-                    title="Take Screenshot & Share"
-                >
-                    {isCapturing ? <SpinnerIcon /> : <CameraIcon />}
-                </button>
-            </div>
-        </div>
-    );
-};
-
-interface CalendarDayCellProps {
-    day: CalendarDay;
-    onClick: () => void;
-    formatCurrency: (value: number) => string;
-    index: number;
-    isTransitioning: boolean;
-    isCapturing: boolean;
-    profitClass: string;
-}
-
-const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatCurrency, index, isTransitioning, isCapturing, profitClass }) => {
-    const isToday = day.isToday && day.isCurrentMonth;
-    const hasTrades = day.tradeCount > 0 && day.isCurrentMonth;
-
-    const profitColor = day.profit > 0 ? 'text-green-400' : 'text-red-400';
-
-    const tradeDayClasses = useMemo(() => {
-        if (hasTrades) {
-            if (day.profit > 0) {
-                return 'bg-teal-950/70 border border-teal-800 cursor-pointer hover:bg-teal-900/80 hover:scale-105';
-            }
-            if (day.profit < 0) {
-                return 'bg-red-950/70 border border-red-800 cursor-pointer hover:bg-red-900/80 hover:scale-105';
-            }
-            return 'border border-gray-600 cursor-pointer hover:bg-gray-700 hover:scale-105';
-        }
-        return '';
-    }, [hasTrades, day.profit]);
-    
-    const baseBg = day.isCurrentMonth ? 'bg-gray-800/50' : 'bg-transparent';
-
-    const cellClasses = `
-        relative h-16 sm:h-20 flex flex-col justify-between p-2 rounded-lg transition-all duration-300
-        ${baseBg}
-        ${tradeDayClasses}
-        ${isToday ? '!bg-slate-800 border !border-slate-600' : ''}
-        ${!day.isCurrentMonth ? 'text-gray-600' : ''}
-        ${!isCapturing ? 'animate-fade-in' : ''}
-    `;
-    
-    const TradeIcon = () => (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline-block ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-        </svg>
-    );
-    
-    const transitionName = isTransitioning ? `day-card-active` : '';
-
-    return (
-        <div 
-            className={cellClasses} 
-            onClick={day.tradeCount > 0 ? onClick : undefined}
-            style={{ 
-                animationDelay: !isCapturing ? `${index * 15}ms` : '0s', 
-                opacity: isCapturing ? 1 : 0,
-                // @ts-ignore
-                viewTransitionName: transitionName
-            }}
-        >
-            <div className={`text-xs sm:text-sm ${isToday ? 'font-bold' : 'font-semibold'} ${!day.isCurrentMonth ? 'text-gray-600' : 'text-white'}`}>
-                {day.date.getDate()}
-            </div>
-            {hasTrades && (
-                <div className="text-right">
-                    <p className={`${profitClass} font-bold ${profitColor}`}>{formatCurrency(day.profit)}</p>
-                    <p className="text-calendar-trades text-gray-400 flex items-center justify-end">
-                        {day.tradeCount}
-                        <TradeIcon />
-                    </p>
-                </div>
-            )}
-        </div>
-    );
-};
 
 const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currency, transitioningDay, calendarSettings }) => {
     const { t, language } = useLanguage();
