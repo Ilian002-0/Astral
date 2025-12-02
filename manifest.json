@@ -1,11 +1,14 @@
+
 {
   "name": "Atlas - Trading Dashboard",
   "short_name": "Atlas",
   "description": "Atlas helps you visualize your trading history. Upload your trade report to see an interactive dashboard.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0c0b1e",
   "theme_color": "#0c0b1e",
+  "categories": ["finance", "productivity", "utilities"],
   "icons": [
     {
       "src": "/logo.svg",

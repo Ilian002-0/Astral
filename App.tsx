@@ -288,7 +288,7 @@ const App: React.FC = () => {
     return (
         <>
             <div className="flex h-screen overflow-hidden">
-                {isDesktop && <Sidebar currentView={view} onNavigate={setView} />}
+                {isDesktop && <Sidebar currentView={view} onNavigate={setView} canInstall={!!installPrompt} onInstallClick={handleInstallClick} />}
                 <div className="flex-1 flex flex-col w-full">
                     <header className="flex-shrink-0 z-10 bg-[#0c0b1e] shadow-lg shadow-black/30 app-region-drag">
                         <div className="max-w-4xl mx-auto px-4 md:px-6" style={{ paddingTop: 'env(titlebar-area-height, 0)'}}>

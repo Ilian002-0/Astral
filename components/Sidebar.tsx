@@ -16,11 +16,14 @@ const GoalsIcon = () => (
         <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
     </svg>
 );
+const DownloadIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>;
 
 
 interface SidebarProps {
     currentView: AppView;
     onNavigate: (view: AppView) => void;
+    canInstall: boolean;
+    onInstallClick: () => void;
 }
 
 const NavItem: React.FC<{
@@ -46,7 +49,7 @@ const NavItem: React.FC<{
     );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, canInstall, onInstallClick }) => {
     const { t } = useLanguage();
 
     return (
@@ -61,6 +64,19 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
                 <NavItem view="goals" currentView={currentView} onNavigate={onNavigate} icon={<GoalsIcon />} label={t('nav.goals')} />
                 <NavItem view="profile" currentView={currentView} onNavigate={onNavigate} icon={<AccountsIcon />} label={t('nav.profile')} />
             </nav>
+            
+            {canInstall && (
+                <div className="px-4 py-2 mt-4">
+                    <button
+                        onClick={onInstallClick}
+                        className="flex items-center justify-center w-full px-4 py-3 text-cyan-400 bg-cyan-950/30 border border-cyan-900/50 hover:bg-cyan-900/50 rounded-lg transition-all duration-200 shadow-sm"
+                    >
+                        <DownloadIcon />
+                        <span className="ml-2 font-bold text-sm">Install App</span>
+                    </button>
+                </div>
+            )}
+
             <div className="mt-auto text-center text-gray-500 text-xs pt-4 border-t border-gray-700/50">
                 <p>{t('profile.free_to_use')}</p>
                 <p>{t('profile.data_privacy')}</p>
