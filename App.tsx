@@ -1,11 +1,9 @@
-
-import React, { useState, useMemo, useCallback, Suspense, useEffect } from 'react';
-import { Account, AppView, Trade, CalendarSettings, NotificationSettings } from './types';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Account, AppView, CalendarSettings, NotificationSettings } from './types';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
 import usePullToRefresh from './hooks/usePullToRefresh';
 import useDBStorage from './hooks/useLocalStorage';
-import { useLanguage } from './contexts/LanguageContext';
 
 // Custom Hooks
 import { useAccountManager } from './hooks/useAccountManager';
@@ -13,49 +11,14 @@ import { useSync } from './hooks/useSync';
 import { usePWA } from './hooks/usePWA';
 import { useTradeData } from './hooks/useTradeData';
 
-// Skeletons
-import { 
-    DashboardSkeleton, 
-    TradesListSkeleton, 
-    CalendarSkeleton, 
-    AnalysisSkeleton, 
-    GenericSkeleton 
-} from './components/Skeletons';
-
 // Static Imports (Layout & critical UI)
-import Header from './components/Header';
 import AccountSelector from './components/AccountSelector';
 import BottomNav from './components/BottomNav';
 import Sidebar from './components/Sidebar';
 import Logo from './components/Logo';
-
-// Dynamic Imports (Lazy Loading)
-const Dashboard = React.lazy(() => import('./components/Dashboard'));
-const BalanceChart = React.lazy(() => import('./components/BalanceChart'));
-const RecentTradesTable = React.lazy(() => import('./components/RecentTradesTable'));
-const OpenTradesTable = React.lazy(() => import('./components/OpenTradesTable'));
-const DashboardMetricsBottom = React.lazy(() => import('./components/DashboardMetricsBottom'));
-
-const TradesList = React.lazy(() => import('./components/TradesList'));
-const CalendarView = React.lazy(() => import('./components/CalendarView'));
-const ProfileView = React.lazy(() => import('./components/ProfileView'));
-const AnalysisView = React.lazy(() => import('./components/AnalysisView'));
-const GoalsView = React.lazy(() => import('./components/GoalsView'));
-
-const AddAccountModal = React.lazy(() => import('./components/AddAccount'));
-const AccountActionModal = React.lazy(() => import('./components/AccountActionModal'));
-const DayDetailModal = React.lazy(() => import('./components/DayDetailModal'));
-const DeleteConfirmationModal = React.lazy(() => import('./components/DeleteConfirmationModal'));
-
-
-const SyncIcon: React.FC<{ isSyncing?: boolean }> = ({ isSyncing }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 text-gray-300 ${isSyncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 11.9998C3 7.02919 7.02944 2.99976 12 2.99976C14.8273 2.99976 17.35 4.30342 19 6.34242" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 2.99976L19.5 6.99976L15.5 6.99976" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.9998C21 16.9703 16.9706 20.9998 12 20.9998C9.17273 20.9998 6.64996 19.6961 5 17.6571" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 20.9998L4.5 16.9998L8.5 16.9998" />
-    </svg>
-);
+import { SyncIcon } from './components/SyncIcon';
+import AppViews from './components/AppViews';
+import AppModals from './components/AppModals';
 
 const App: React.FC = () => {
     // 1. Core Data Management
@@ -104,7 +67,6 @@ const App: React.FC = () => {
     // Combine errors
     const displayError = syncError || pwaError;
     const isDesktop = useMediaQuery('(min-width: 768px)');
-    const { t } = useLanguage();
 
     // 6. Preload Lazy Components
     useEffect(() => {
@@ -199,91 +161,6 @@ const App: React.FC = () => {
             setTransitioningDay(null);
         });
     };
-    
-    const dayDetailModalData = useMemo(() => {
-        if (!selectedCalendarDate || !processedData) return null;
-        const dateKey = getDayIdentifier(selectedCalendarDate);
-        const dailyTrades = processedData.closedTrades.filter(t => getDayIdentifier(t.closeTime) === dateKey);
-        if (dailyTrades.length === 0) return null;
-        const tradesBefore = processedData.closedTrades.filter(t => t.closeTime.getTime() < dailyTrades[0].closeTime.getTime());
-        const startOfDayBalance = (currentAccount?.initialBalance ?? 0) + tradesBefore.reduce((sum, t) => sum + (t.profit + t.commission + t.swap), 0);
-        return { trades: dailyTrades, date: selectedCalendarDate, startOfDayBalance };
-    }, [selectedCalendarDate, processedData, currentAccount?.initialBalance]);
-
-    // View Renderer with Skeletons
-    const renderView = () => {
-        // Show Skeleton if global loading or if we have an account but data isn't processed yet
-        if (isLoading || (currentAccount && !processedData)) {
-            switch(view) {
-                case 'dashboard': return <DashboardSkeleton />;
-                case 'trades': return <TradesListSkeleton />;
-                case 'calendar': return <CalendarSkeleton />;
-                case 'analysis': return <AnalysisSkeleton />;
-                case 'goals': return <GenericSkeleton />;
-                case 'profile': return <GenericSkeleton />;
-                default: return <DashboardSkeleton />;
-            }
-        }
-
-        if (!currentAccount || !processedData) {
-            return (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-fade-in">
-                    <h1 className="text-3xl font-bold text-white mb-4">{t('app.welcome')}</h1>
-                    <p className="text-gray-400 mb-8">{t('app.add_account_prompt')}</p>
-                    <button onClick={handleAddClick} className="px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">
-                        {t('app.add_first_account_button')}
-                    </button>
-                </div>
-            );
-        }
-
-        const commonProps = { currency: currentAccount.currency || 'USD' };
-
-        switch(view) {
-            case 'dashboard':
-                return (
-                     <div className="space-y-6">
-                        <div className="animate-fade-in-up">
-                            <Header metrics={processedData.metrics} accountName={currentAccount.name} lastUpdated={currentAccount.lastUpdated} onRefresh={handleRefresh} isSyncing={isSyncing} {...commonProps} />
-                        </div>
-                        <div className="animate-fade-in-up animation-delay-200">
-                            <Dashboard metrics={processedData.metrics} {...commonProps} />
-                        </div>
-                        <div className="animate-fade-in-up animation-delay-300">
-                           <BalanceChart data={processedData.chartData} onAdvancedAnalysisClick={() => setView('analysis')} initialBalance={currentAccount.initialBalance} goals={currentAccount.goals || {}} {...commonProps} />
-                        </div>
-                         {processedData.openTrades.length > 0 && (
-                            <div className="animate-fade-in-up animation-delay-400">
-                                <OpenTradesTable trades={processedData.openTrades} floatingPnl={processedData.metrics.floatingPnl} {...commonProps} />
-                            </div>
-                        )}
-                        <div className="animate-fade-in-up animation-delay-500">
-                            <RecentTradesTable trades={processedData.recentTrades} {...commonProps} />
-                        </div>
-                        <div className="animate-fade-in-up animation-delay-600">
-                           <DashboardMetricsBottom metrics={processedData.metrics} {...commonProps} />
-                        </div>
-                    </div>
-                );
-            case 'trades': return <TradesList trades={processedData.closedTrades} {...commonProps} />;
-            case 'calendar': return <CalendarView trades={processedData.closedTrades} onDayClick={handleDayClick} transitioningDay={transitioningDay} calendarSettings={calendarSettings} {...commonProps} />;
-            case 'analysis': return <AnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} {...commonProps} />;
-            case 'goals': return <GoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} {...commonProps} />;
-            case 'profile': return <ProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} notificationSettings={notificationSettings} onNotificationSettingsChange={setNotificationSettings} />;
-            default: return null;
-        }
-    };
-    
-    // Determine the skeleton fallback for Suspense based on current view
-    const getSuspenseFallback = () => {
-         switch(view) {
-            case 'dashboard': return <DashboardSkeleton />;
-            case 'trades': return <TradesListSkeleton />;
-            case 'calendar': return <CalendarSkeleton />;
-            case 'analysis': return <AnalysisSkeleton />;
-            default: return <GenericSkeleton />;
-        }
-    };
 
     return (
         <>
@@ -338,9 +215,26 @@ const App: React.FC = () => {
                                         <button className="ml-2 float-right font-bold" onClick={() => { setSyncError(null); setPwaError(null); }}>&times;</button>
                                     </div>
                                 )}
-                                <Suspense fallback={getSuspenseFallback()}>
-                                    {renderView()}
-                                </Suspense>
+                                
+                                <AppViews 
+                                    view={view}
+                                    isLoading={isLoading}
+                                    currentAccount={currentAccount}
+                                    processedData={processedData}
+                                    isSyncing={isSyncing}
+                                    handleRefresh={handleRefresh}
+                                    setView={setView}
+                                    saveGoals={saveGoals}
+                                    installPrompt={installPrompt}
+                                    handleInstallClick={handleInstallClick}
+                                    notificationSettings={notificationSettings}
+                                    setNotificationSettings={setNotificationSettings}
+                                    calendarSettings={calendarSettings}
+                                    onCalendarSettingsChange={setCalendarSettings}
+                                    handleDayClick={handleDayClick}
+                                    transitioningDay={transitioningDay}
+                                    handleAddClick={handleAddClick}
+                                />
                             </div>
                         </main>
                     </div>
@@ -348,42 +242,27 @@ const App: React.FC = () => {
                 </div>
             </div>
             
-            {/* Modals wrapped in Suspense */}
-            <Suspense fallback={null}>
-                <AddAccountModal 
-                    isOpen={isAddAccountModalOpen} 
-                    onClose={() => setAddAccountModalOpen(false)} 
-                    onSaveAccount={handleSaveAccountWrapper}
-                    mode={modalMode}
-                    accountToUpdate={currentAccount}
-                    launchedFileContent={launchedFileContent}
-                    onLaunchedFileConsumed={() => setLaunchedFileContent(null)}
-                />
-                <AccountActionModal 
-                    isOpen={isAccountActionModalOpen}
-                    onClose={() => setAccountActionModalOpen(false)}
-                    onAddAccount={handleAddClick}
-                    onUpdateAccount={handleUpdateClick}
-                    onDeleteAccount={handleDeleteClick}
-                    canUpdate={!!currentAccount}
-                    canDelete={!!currentAccount}
-                />
-                {dayDetailModalData && (
-                    <DayDetailModal 
-                        isOpen={!!selectedCalendarDate} 
-                        onClose={handleCloseDayModal} 
-                        {...dayDetailModalData}
-                        currency={currentAccount?.currency || 'USD'}
-                        transitioningDay={transitioningDay}
-                    />
-                )}
-                <DeleteConfirmationModal 
-                    isOpen={isDeleteConfirmModalOpen}
-                    onClose={() => setDeleteConfirmModalOpen(false)}
-                    onConfirm={handleDeleteWrapper}
-                    accountName={currentAccount?.name || ''}
-                />
-            </Suspense>
+            <AppModals 
+                isAddAccountModalOpen={isAddAccountModalOpen}
+                setAddAccountModalOpen={setAddAccountModalOpen}
+                isAccountActionModalOpen={isAccountActionModalOpen}
+                setAccountActionModalOpen={setAccountActionModalOpen}
+                isDeleteConfirmModalOpen={isDeleteConfirmModalOpen}
+                setDeleteConfirmModalOpen={setDeleteConfirmModalOpen}
+                modalMode={modalMode}
+                currentAccount={currentAccount}
+                handleSaveAccountWrapper={handleSaveAccountWrapper}
+                launchedFileContent={launchedFileContent}
+                setLaunchedFileContent={setLaunchedFileContent}
+                handleAddClick={handleAddClick}
+                handleUpdateClick={handleUpdateClick}
+                handleDeleteClick={handleDeleteClick}
+                handleDeleteWrapper={handleDeleteWrapper}
+                selectedCalendarDate={selectedCalendarDate}
+                handleCloseDayModal={handleCloseDayModal}
+                processedData={processedData}
+                transitioningDay={transitioningDay}
+            />
         </>
     );
 };
