@@ -1,34 +1,38 @@
 {
+  "id": "atlas-trading-dashboard",
   "name": "Atlas - Trading Dashboard",
   "short_name": "Atlas",
   "description": "Atlas helps you visualize your trading history. Upload your trade report to see an interactive dashboard.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./?source=pwa",
+  "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0c0b1e",
   "theme_color": "#0c0b1e",
+  "orientation": "any",
   "categories": ["finance", "productivity", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "logo.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/logo.svg",
+      "src": "logo.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/logo.svg",
+      "src": "logo.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "maskable"
     },
     {
-      "src": "/logo.svg",
+      "src": "logo.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"
@@ -36,18 +40,18 @@
   ],
   "screenshots": [
     {
-      "src": "/logo.svg",
-      "sizes": "512x512",
+      "src": "logo.svg",
+      "sizes": "1024x500",
       "type": "image/svg+xml",
       "form_factor": "wide",
-      "label": "Atlas Dashboard"
+      "label": "Atlas Dashboard Desktop"
     },
     {
-      "src": "/logo.svg",
-      "sizes": "512x512",
+      "src": "logo.svg",
+      "sizes": "500x1024",
       "type": "image/svg+xml",
       "form_factor": "narrow",
-      "label": "Atlas Mobile View"
+      "label": "Atlas Dashboard Mobile"
     }
   ],
   "shortcuts": [
@@ -55,42 +59,42 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "View trading dashboard",
-      "url": "/?view=dashboard",
+      "url": "./?view=dashboard",
       "icons": [
-        { "src": "/dashboard-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
+        { "src": "dashboard-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
       ]
     },
     {
       "name": "List of Trades",
       "short_name": "Trades",
       "description": "View all trades",
-      "url": "/?view=trades",
+      "url": "./?view=trades",
       "icons": [
-        { "src": "/list-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
+        { "src": "list-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
       ]
     },
     {
       "name": "Calendar",
       "short_name": "Calendar",
       "description": "View trades on a calendar",
-      "url": "/?view=calendar",
+      "url": "./?view=calendar",
       "icons": [
-        { "src": "/calendar-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
+        { "src": "calendar-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
       ]
     },
     {
       "name": "Goals",
       "short_name": "Goals",
       "description": "View trading goals",
-      "url": "/?view=goals",
+      "url": "./?view=goals",
       "icons": [
-        { "src": "/goals-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
+        { "src": "goals-icon.svg", "sizes": "96x96", "type": "image/svg+xml" }
       ]
     }
   ],
   "file_handlers": [
     {
-      "action": "/",
+      "action": "./",
       "accept": {
         "text/csv": [".csv"]
       }
@@ -99,17 +103,6 @@
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
-  "widgets": [
-    {
-      "name": "Atlas Goal Progress",
-      "short_name": "Goal",
-      "description": "Track your main trading goal progress.",
-      "tag": "goal-progress-widget",
-      "template": "goal-widget-template",
-      "data": "/widget-goal-data.json",
-      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
-    }
-  ],
   "window_controls_overlay": {
     "display_override": [
       "window-controls-overlay"
