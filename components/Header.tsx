@@ -1,6 +1,7 @@
 import React from 'react';
 import { DashboardMetrics } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import AnimatedCounter from './AnimatedCounter';
 
 interface HeaderProps {
     metrics: DashboardMetrics;
@@ -141,7 +142,8 @@ Tracked with Atlas.`,
     const displayLabel = t('header.profit_today');
 
     const percent = startOfDayBalance > 0 ? (displayValue / startOfDayBalance) * 100 : 0;
-    const displayColor = displayValue >= 0 ? 'text-green-400' : 'text-red-400';
+    
+    const getColorClass = (val: number) => val >= 0 ? 'text-green-400' : 'text-red-400';
     
     return (
         <header className="bg-gradient-to-br from-teal-500/30 to-teal-600/30 p-6 rounded-3xl shadow-2xl border border-teal-500/20">
@@ -175,8 +177,20 @@ Tracked with Atlas.`,
             </div>
             <div className="text-center">
                 <p className="text-sm text-teal-200">{displayLabel}</p>
-                <p className={`text-main-header font-black my-1 ${displayColor}`}>{formatCurrency(displayValue)}</p>
-                <p className={`text-lg font-bold ${displayColor}`}>{percent.toFixed(2)}%</p>
+                <p className="text-main-header font-black my-1">
+                    <AnimatedCounter 
+                        value={displayValue} 
+                        format={formatCurrency} 
+                        getColor={getColorClass}
+                    />
+                </p>
+                <p className="text-lg font-bold">
+                    <AnimatedCounter 
+                        value={percent} 
+                        format={(v) => `${v.toFixed(2)}%`}
+                        getColor={getColorClass}
+                    />
+                </p>
             </div>
         </header>
     );
