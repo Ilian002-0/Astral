@@ -60,7 +60,7 @@ const Dashboard: React.FC<DashboardProps> = ({ metrics, currency }) => {
             <div className="animate-fade-in-up animation-delay-500">
                 <StatCard 
                     title={t('metrics.profit_factor')} 
-                    value={isFinite(metrics.profitFactor) ? metrics.profitFactor.toFixed(2) : '∞'} 
+                    value={metrics.profitFactor !== null ? metrics.profitFactor.toFixed(2) : '∞'} 
                     tooltip="Ratio of Gross Profit to Gross Loss"
                 />
             </div>
