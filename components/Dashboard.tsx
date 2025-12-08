@@ -65,7 +65,7 @@ const Dashboard: React.FC<DashboardProps> = ({ metrics, currency }) => {
                 />
             </div>
         </div>
-        <div className="p-6 bg-gray-800/50 rounded-xl shadow-lg border border-gray-700/50 flex items-center animate-fade-in-up animation-delay-600">
+        <div className="p-6 bg-gray-800/50 rounded-3xl shadow-lg border border-gray-700/50 flex items-center animate-fade-in-up animation-delay-600 overflow-hidden">
             <div className="flex-1 flex flex-col items-center justify-center">
                 <h3 className="text-sm font-medium text-gray-400 text-center">{t('dashboard.winning_trades')}</h3>
                 <p className="text-3xl font-bold text-green-400 text-center mt-2">{metrics.winningTrades}</p>

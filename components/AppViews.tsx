@@ -1,3 +1,4 @@
+
 import React, { Suspense } from 'react';
 import { Account, AppView, CalendarSettings, NotificationSettings, ProcessedData } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -81,7 +82,7 @@ const AppViews: React.FC<AppViewsProps> = ({
             <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-fade-in">
                 <h1 className="text-3xl font-bold text-white mb-4">{t('app.welcome')}</h1>
                 <p className="text-gray-400 mb-8">{t('app.add_account_prompt')}</p>
-                <button onClick={handleAddClick} className="px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                <button onClick={handleAddClick} className="px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-2xl shadow-lg transition-transform transform hover:scale-105">
                     {t('app.add_first_account_button')}
                 </button>
             </div>

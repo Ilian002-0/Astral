@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleDriveBackup from './GoogleDriveBackup';
@@ -82,14 +81,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
     );
 
     return (
-        <div className="bg-[#16152c] p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-700/50">
+        <div className="bg-[#16152c] p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-700/50">
             <header className="mb-8">
                 <h2 className="text-2xl font-bold text-white text-center">{t('profile.title')}</h2>
             </header>
             
             <div className="max-w-md mx-auto space-y-8">
                 {/* NOTIFICATIONS COLLAPSIBLE */}
-                <div className="bg-[#0c0b1e] rounded-lg">
+                <div className="bg-[#0c0b1e] rounded-2xl">
                     <button 
                         className="w-full flex justify-between items-center p-4 text-left"
                         onClick={() => setIsNotificationsExpanded(prev => !prev)}
@@ -105,13 +104,13 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                             <p className="text-sm text-gray-400 my-4 text-center">{t('profile.notifications_description')}</p>
                     
                             {notificationPermission === 'default' && (
-                                <button onClick={requestNotificationPermission} className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105">
+                                <button onClick={requestNotificationPermission} className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-2xl shadow-md transition-transform transform hover:scale-105">
                                     {t('profile.enable_notifications')}
                                 </button>
                             )}
 
                             {notificationPermission === 'denied' && (
-                                <p className="text-center text-sm text-yellow-400 bg-yellow-900/50 p-3 rounded-md">{t('profile.notifications_denied')}</p>
+                                <p className="text-center text-sm text-yellow-400 bg-yellow-900/50 p-3 rounded-2xl">{t('profile.notifications_denied')}</p>
                             )}
 
                             {notificationPermission === 'granted' && (
@@ -129,7 +128,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                                     <p className="text-xs text-gray-500 mt-3 text-center italic">
                                         {t('profile.background_sync_note')}
                                     </p>
-                                    <button onClick={handleTestNotification} className="w-full mt-4 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105">
+                                    <button onClick={handleTestNotification} className="w-full mt-4 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-2xl shadow-md transition-transform transform hover:scale-105">
                                         {t('profile.send_test_notification')}
                                     </button>
                                 </>
@@ -140,12 +139,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
 
                 {/* INSTALL APP */}
                 {canInstall && (
-                    <div className="p-4 bg-[#0c0b1e] rounded-lg text-center">
+                    <div className="p-4 bg-[#0c0b1e] rounded-2xl text-center">
                         <h3 className="text-lg font-medium text-gray-300 mb-2">Install App</h3>
                         <p className="text-sm text-gray-400 mb-4">Get the best experience by installing the app on your device.</p>
                         <button
                             onClick={onInstallClick}
-                            className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105"
+                            className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-2xl shadow-md transition-transform transform hover:scale-105"
                         >
                             Install Atlas
                         </button>
@@ -153,19 +152,19 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                 )}
                 
                 {/* UPDATE APP */}
-                <div className="p-4 bg-[#0c0b1e] rounded-lg">
+                <div className="p-4 bg-[#0c0b1e] rounded-2xl">
                     <h3 className="text-lg font-medium text-gray-300 mb-2 text-center">{t('profile.update_title')}</h3>
                     <p className="text-sm text-gray-400 mb-4 text-center">{t('profile.update_description')}</p>
                     <button
                         onClick={handleUpdate}
-                        className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105"
+                        className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-2xl shadow-md transition-transform transform hover:scale-105"
                     >
                         {t('profile.update_button')}
                     </button>
                 </div>
 
                 {/* LANGUAGE */}
-                <div className="flex items-center justify-between p-4 bg-[#0c0b1e] rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-[#0c0b1e] rounded-2xl">
                     <label htmlFor="language-select" className="text-lg font-medium text-gray-300">
                         {t('profile.language')}
                     </label>
@@ -173,7 +172,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                         id="language-select"
                         value={language}
                         onChange={(e) => setLanguage(e.target.value as 'en' | 'fr')}
-                        className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
+                        className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-2xl text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
                     >
                         <option value="en">{t('profile.english')}</option>
                         <option value="fr">{t('profile.french')}</option>
@@ -181,7 +180,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                 </div>
                 
                 {/* BACKUP */}
-                <div className="p-4 bg-[#0c0b1e] rounded-lg">
+                <div className="p-4 bg-[#0c0b1e] rounded-2xl">
                     <h3 className="text-lg font-medium text-gray-300 mb-4 text-center">{t('profile.backup_title')}</h3>
                     <GoogleDriveBackup />
                 </div>

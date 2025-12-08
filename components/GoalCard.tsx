@@ -65,7 +65,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, f
   const chartData = [{ name: 'progress', value: progress }];
   
   return (
-    <div className="bg-[#0c0b1e]/60 p-4 rounded-xl shadow-lg border border-gray-700/50 text-center h-full flex flex-col justify-between">
+    <div className="bg-[#0c0b1e]/60 p-4 rounded-3xl shadow-lg border border-gray-700/50 text-center h-full flex flex-col justify-between">
       <div>
         <h3 className="text-lg font-semibold text-white truncate">{title}</h3>
         {isLessBetter && <p className="text-xs text-gray-500">(lower is better)</p>}
@@ -95,11 +95,11 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, f
         </div>
       </div>
       <div className="text-xs grid grid-cols-2 gap-2">
-        <div className="bg-gray-800/50 p-2 rounded">
+        <div className="bg-gray-800/50 p-2 rounded-xl">
             <div className="text-gray-400">Current</div>
             <div className="font-bold text-white text-sm truncate">{formatValue(currentValue, isPercent)}</div>
         </div>
-        <div className="bg-gray-800/50 p-2 rounded">
+        <div className="bg-gray-800/50 p-2 rounded-xl">
             <div className="text-gray-400">Target</div>
             <div className="font-bold text-white text-sm truncate">{formatValue(targetValue, isPercent)}</div>
         </div>

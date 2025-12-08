@@ -348,13 +348,13 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     <div className="space-y-6 pb-24 md:pb-12">
         <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-white">{t('analysis.title')}</h2>
-            <button onClick={onBackToDashboard} className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-all">
+            <button onClick={onBackToDashboard} className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-2xl shadow-md transition-all">
                 &larr; {t('analysis.back_to_dashboard')}
             </button>
         </div>
         
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-[#16152c] rounded-2xl border border-gray-700/50">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-[#16152c] rounded-3xl border border-gray-700/50">
             <MultiSelectDropdown 
                 options={availableSymbols}
                 selectedOptions={selectedSymbols}
@@ -373,16 +373,16 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
             />
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">{t('analysis.start_date')}</label>
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} min={minDate} max={endDate} className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg"/>
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} min={minDate} max={endDate} className="w-full px-4 py-2 bg-gray-700 text-white rounded-2xl"/>
             </div>
              <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">{t('analysis.end_date')}</label>
-                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate} max={maxDate} className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg"/>
+                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate} max={maxDate} className="w-full px-4 py-2 bg-gray-700 text-white rounded-2xl"/>
             </div>
         </div>
 
         {/* 1. Equity Chart */}
-        <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+        <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50">
             <h3 className="text-lg font-semibold text-white mb-4">{t('dashboard.balance_chart_title')}</h3>
             <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
                 {chartData.length > 1 && isMounted ? (

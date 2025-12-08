@@ -152,7 +152,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
         const relevantSummaries = weeklySummaries.filter((_, index) => weeks[index] && weeks[index].some(d => d.isCurrentMonth));
 
         return (
-            <div ref={calendarRef} className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+            <div ref={calendarRef} className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50">
                 <CalendarHeader displayDate={displayDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} onScreenshot={handleScreenshot} isCapturing={isCapturing} />
                 
                 <div className="grid grid-cols-[1fr_4.5rem] sm:grid-cols-[1fr_5rem] items-end border-b border-gray-700 pb-2 mb-2 gap-2 sm:gap-4">
@@ -186,7 +186,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                                     ))}
                                 </div>
                                 <div className="flex items-center">
-                                     <div className="bg-gray-800/50 rounded-lg flex flex-col justify-center items-center text-center w-full h-16 sm:h-20 p-2">
+                                     <div className="bg-gray-800/50 rounded-2xl flex flex-col justify-center items-center text-center w-full h-16 sm:h-20 p-2">
                                         <p className="font-semibold text-white text-xs">{summary.weekLabel}</p>
                                         <p className={`font-bold whitespace-nowrap ${summary.pnl >= 0 ? 'text-green-400' : 'text-red-400'} text-xs mt-1`}>
                                             {formatCurrency(summary.pnl)}
@@ -211,7 +211,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
     }
 
     return (
-        <div ref={calendarRef} className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+        <div ref={calendarRef} className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50">
             <div className={`lg:grid lg:grid-cols-[1fr_12rem] lg:gap-8`}>
                 <div className="min-w-0">
                     <CalendarHeader displayDate={displayDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} onScreenshot={handleScreenshot} isCapturing={isCapturing} />
@@ -238,7 +238,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ trades, onDayClick, currenc
                     <h3 className={`text-lg font-bold text-white mb-4 text-center lg:text-left`}>{t('calendar.weekly_summary')}</h3>
                     <div className="space-y-1 sm:space-y-2">
                         {weeklySummaries.filter(w => w.weekLabel.trim()).map((week, index) => (
-                            <div key={`${week.weekLabel}-${index}`} className={`bg-gray-800/50 rounded-lg flex justify-between items-center p-3 lg:h-20`}>
+                            <div key={`${week.weekLabel}-${index}`} className={`bg-gray-800/50 rounded-2xl flex justify-between items-center p-3 lg:h-20`}>
                                 <p className={`font-semibold text-white text-sm`}>{week.weekLabel}</p>
                                 <p className={`font-bold whitespace-nowrap ${week.pnl >= 0 ? 'text-green-400' : 'text-red-400'} text-base`}>
                                     {formatCurrency(week.pnl)}

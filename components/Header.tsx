@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DashboardMetrics } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -151,7 +152,7 @@ Tracked with Atlas.`,
                 <div className="flex items-center gap-4">
                     <h1 className="text-xl font-bold whitespace-nowrap">{accountName || 'Dashboard'}</h1>
                     {typeof navigator.share !== 'undefined' && (
-                        <button onClick={handleShare} className="text-teal-200 hover:text-white transition-colors" aria-label="Share results">
+                        <button onClick={handleShare} className="text-teal-200 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full" aria-label="Share results">
                             <ShareIcon />
                         </button>
                     )}

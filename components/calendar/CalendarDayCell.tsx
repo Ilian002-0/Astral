@@ -35,7 +35,7 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatC
     const baseBg = day.isCurrentMonth ? 'bg-gray-800/50' : 'bg-transparent';
 
     const cellClasses = `
-        relative h-16 sm:h-20 flex flex-col justify-between p-2 rounded-lg transition-all duration-300
+        relative h-16 sm:h-20 flex flex-col justify-between p-2 rounded-2xl transition-all duration-300
         ${baseBg}
         ${tradeDayClasses}
         ${isToday ? '!bg-slate-800 border !border-slate-600' : ''}

@@ -130,7 +130,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
     const activeColumns = COLUMN_DEFINITIONS.filter(col => visibleColumns[col.key]);
 
     return (
-        <div className="bg-[#16152c] rounded-2xl shadow-lg border border-gray-700/50 flex flex-col h-full">
+        <div className="bg-[#16152c] rounded-3xl shadow-lg border border-gray-700/50 flex flex-col h-full overflow-hidden">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4 px-4 sm:px-6 pt-4 sm:pt-6 flex-shrink-0">
                 <h2 className="text-xl font-bold text-white">{t('trades_list.title', { count: filteredTrades.length })}</h2>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -139,17 +139,17 @@ const TradesList: React.FC<TradesListProps> = ({ trades, currency }) => {
                         placeholder={t('trades_list.search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full sm:w-48 px-3 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition text-sm"
+                        className="w-full sm:w-48 px-3 py-2 bg-[#0c0b1e] border border-gray-600 rounded-2xl text-white focus:ring-cyan-500 focus:border-cyan-500 transition text-sm"
                     />
                     <div className="relative" ref={dropdownRef}>
-                        <button onClick={() => setDropdownOpen(!isDropdownOpen)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg">
+                        <button onClick={() => setDropdownOpen(!isDropdownOpen)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-2xl">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" /></svg>
                         </button>
                         {isDropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-20 p-2">
+                            <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg z-20 p-2 overflow-hidden">
                                 <p className="text-sm font-bold px-2 py-1">{t('trades_list.customize_columns')}</p>
                                 {COLUMN_DEFINITIONS.map(col => (
-                                    <label key={col.key} className="flex items-center space-x-2 p-2 hover:bg-gray-700 rounded-md cursor-pointer">
+                                    <label key={col.key} className="flex items-center space-x-2 p-2 hover:bg-gray-700 rounded-xl cursor-pointer">
                                         <input type="checkbox" checked={visibleColumns[col.key]} onChange={() => handleColumnToggle(col.key)} className="form-checkbox h-4 w-4 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600"/>
                                         <span className="text-sm">{col.label}</span>
                                     </label>

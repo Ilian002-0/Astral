@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -23,10 +24,10 @@ const Bar: React.FC<{ value: number; scale: number; color: string; label: string
                 <span className="text-gray-300">{label}</span>
                 <span className={`font-bold ${value >= 0 ? 'text-green-400' : 'text-red-400'} whitespace-nowrap`}>{value.toFixed(2)}%</span>
             </div>
-            <div className="h-6 bg-gray-800/50 rounded-md overflow-hidden relative">
+            <div className="h-6 bg-gray-800/50 rounded-lg overflow-hidden relative">
                 <div className="absolute top-0 left-1/2 w-px h-full bg-gray-600"></div>
                 <div
-                    className={`h-full rounded-md ${color}`}
+                    className={`h-full rounded-lg ${color}`}
                     style={{
                         width: `${width / 2}%`,
                         position: 'absolute',
@@ -56,7 +57,7 @@ const BenchmarkComparison: React.FC<BenchmarkComparisonProps> = ({ userReturn, b
     const benchmarkBarColor = benchmarkReturn >= 0 ? 'bg-gray-400' : 'bg-gray-600';
 
     return (
-        <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+        <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50">
             <h3 className="text-lg font-semibold text-white mb-4 text-center">{t('benchmark.title')}</h3>
             <div className="grid grid-cols-3 gap-4 mb-6 border-b border-t border-gray-700/50 py-4">
                 <Stat label={t('benchmark.your_return')} value={`${userReturn.toFixed(2)}%`} color={userReturnColor} />

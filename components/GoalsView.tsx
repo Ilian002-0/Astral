@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardMetrics, Goals, Goal, GoalMetric } from '../types';
 import GoalCard from './GoalCard';
@@ -107,22 +108,22 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
         .filter(item => item.goal && item.goal.enabled);
     
     return (
-        <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+        <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                 <div className="text-center sm:text-left">
                     <h2 className="text-2xl font-bold text-white">{t('goals.title')}</h2>
                     <p className="text-gray-400">{t('goals.subtitle')}</p>
                 </div>
                 {!isEditing ? (
-                    <button onClick={() => setIsEditing(true)} className="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105">
+                    <button onClick={() => setIsEditing(true)} className="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-2xl shadow-md transition-transform transform hover:scale-105">
                         {t('goals.edit_goals')}
                     </button>
                 ) : (
                     <div className="flex gap-2">
-                        <button onClick={handleCancel} className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        <button onClick={handleCancel} className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-2xl shadow-md transition-transform transform hover:scale-105">
                             {t('goals.cancel')}
                         </button>
-                        <button onClick={handleSave} className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        <button onClick={handleSave} className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl shadow-md transition-transform transform hover:scale-105">
                             {t('goals.save_goals')}
                         </button>
                     </div>
@@ -136,7 +137,7 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
                         const canShowOnChart = key === 'netProfit' || key === 'maxDrawdown';
 
                         return (
-                            <div key={key} className={`p-4 rounded-xl border ${goal.enabled ? 'bg-[#0c0b1e]/60 border-gray-700' : 'bg-gray-800/30 border-gray-800'}`}>
+                            <div key={key} className={`p-4 rounded-2xl border ${goal.enabled ? 'bg-[#0c0b1e]/60 border-gray-700' : 'bg-gray-800/30 border-gray-800'}`}>
                                 <div className="flex items-center justify-between mb-3">
                                     <label className="text-lg font-semibold text-white">{t(titleKey)}</label>
                                     <Toggle enabled={goal.enabled} onChange={(val) => handleToggleGoal(key, val)} />
@@ -148,7 +149,7 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
                                             value={goal.target || ''}
                                             onChange={(e) => handleGoalChange(key, e.target.value)}
                                             placeholder={t('goals.target')}
-                                            className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
+                                            className="w-full px-4 py-2 bg-[#0c0b1e] border border-gray-600 rounded-2xl text-white focus:ring-cyan-500 focus:border-cyan-500 transition"
                                         />
                                         {canShowOnChart && (
                                             <div className="flex items-center justify-between">

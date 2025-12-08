@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DashboardMetrics } from '../types';
 import StatCard from './StatCard';
@@ -46,7 +47,7 @@ const DashboardMetricsBottom: React.FC<DashboardMetricsBottomProps> = ({ metrics
   
     return (
         <div className="space-y-6">
-            <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50 animate-fade-in-up">
+            <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50 animate-fade-in-up">
                 <div className="flex justify-between items-center">
                     <p className="text-base font-bold text-white">{t('dashboard.total_capital')}</p>
                     <p className="text-2xl font-bold text-white">{formatTotalCapital(metrics.totalBalance)}</p>

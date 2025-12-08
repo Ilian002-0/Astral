@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -61,7 +62,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ options, sele
             <label className="block text-sm font-medium text-gray-300 mb-2">{title}</label>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow-md transition-colors"
+                className="flex items-center justify-between w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-2xl shadow-md transition-colors"
                 aria-haspopup="true"
                 aria-expanded={isOpen}
             >
@@ -69,14 +70,14 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ options, sele
                 <svg className={`w-5 h-5 ml-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
             </button>
             {isOpen && (
-                <div className="absolute left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg z-20">
+                <div className="absolute left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-2xl shadow-lg z-20 overflow-hidden">
                     <div className="p-2">
                          <input
                             type="text"
                             placeholder="Search..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 bg-[#0c0b1e] border border-gray-600 rounded-lg text-white focus:ring-cyan-500 focus:border-cyan-500 transition mb-2"
+                            className="w-full px-3 py-2 bg-[#0c0b1e] border border-gray-600 rounded-2xl text-white focus:ring-cyan-500 focus:border-cyan-500 transition mb-2"
                         />
                     </div>
                     <div className="flex justify-between px-3 py-1 border-b border-t border-gray-700">

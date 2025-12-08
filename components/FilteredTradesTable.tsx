@@ -131,18 +131,18 @@ const FilteredTradesTable: React.FC<FilteredTradesTableProps> = ({ trades, curre
     };
 
     return (
-        <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+        <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50">
              <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-white">{t('analysis.filtered_trades_title')} ({trades.length})</h3>
                 <div className="relative" ref={dropdownRef}>
-                    <button onClick={() => setDropdownOpen(!isDropdownOpen)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg">
+                    <button onClick={() => setDropdownOpen(!isDropdownOpen)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-2xl">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" /></svg>
                     </button>
                     {isDropdownOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-20 p-2 animate-fade-in-fast">
+                        <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg z-20 p-2 animate-fade-in-fast overflow-hidden">
                             <p className="text-sm font-bold px-2 py-1">{t('trades_list.customize_columns')}</p>
                             {COLUMN_DEFINITIONS.map(col => (
-                                <label key={col.key} className="flex items-center space-x-2 p-2 hover:bg-gray-700 rounded-md cursor-pointer">
+                                <label key={col.key} className="flex items-center space-x-2 p-2 hover:bg-gray-700 rounded-xl cursor-pointer">
                                     <input type="checkbox" checked={visibleColumns?.[col.key]} onChange={() => handleColumnToggle(col.key)} className="form-checkbox h-4 w-4 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600"/>
                                     <span className="text-gray-300 text-sm">{col.label}</span>
                                 </label>

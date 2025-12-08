@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
@@ -18,7 +19,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ isOpe
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 animate-fade-in-fast" onClick={onClose}>
             <div 
-                className="w-full max-w-md p-6 sm:p-8 bg-[#16152c] border border-red-700/50 rounded-2xl shadow-2xl animate-fade-in-scale-up" 
+                className="w-full max-w-md p-6 sm:p-8 bg-[#16152c] border border-red-700/50 rounded-3xl shadow-2xl animate-fade-in-scale-up" 
                 onClick={e => e.stopPropagation()}
             >
                 <div className="text-center mb-6">
@@ -27,10 +28,10 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ isOpe
                 </div>
 
                 <div className="flex justify-center items-center space-x-4 mt-8">
-                    <button onClick={onClose} className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105">{t('common.cancel')}</button>
+                    <button onClick={onClose} className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-2xl shadow-md transition-all duration-300 transform hover:scale-105">{t('common.cancel')}</button>
                     <button 
                         onClick={onConfirm} 
-                        className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 transform hover:scale-105"
+                        className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-md transition-all duration-300 transform hover:scale-105"
                     >
                         {t('delete_confirmation.confirm_button')}
                     </button>

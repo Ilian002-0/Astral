@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trade } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -31,7 +32,7 @@ const OpenTradesTable: React.FC<OpenTradesTableProps> = ({ trades, floatingPnl, 
     };
 
     return (
-        <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+        <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
             <h3 className="text-lg font-semibold text-white mb-4">{t('open_trades.title')} ({trades.length})</h3>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left table-fixed">

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DailySummary } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -16,7 +17,7 @@ const DailyResultsTable: React.FC<DailyResultsTableProps> = ({ data }) => {
   };
 
   return (
-    <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+    <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-400 uppercase border-b border-gray-700">

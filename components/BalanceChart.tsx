@@ -207,20 +207,20 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
   }, [filteredData, hasAnyData]);
 
   return (
-    <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
+    <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
       <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
         <h3 className="text-lg font-semibold text-white">{t('dashboard.balance_chart_title')}</h3>
         <div className="flex items-center gap-2">
              <button
                 onClick={onAdvancedAnalysisClick}
-                className="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-cyan-300 rounded-lg shadow-sm transition-colors"
+                className="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-cyan-300 rounded-2xl shadow-sm transition-colors"
                 >
                 {t('dashboard.advanced_analysis')}
             </button>
             <div className="relative" ref={dropdownRef}>
                 <button
                 onClick={() => setDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-between w-36 px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-gray-300 rounded-lg shadow-sm transition-colors"
+                className="flex items-center justify-between w-36 px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-gray-300 rounded-2xl shadow-sm transition-colors"
                 aria-haspopup="true"
                 aria-expanded={isDropdownOpen}
                 >
@@ -230,14 +230,14 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 </svg>
                 </button>
                 {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 animate-fade-in-fast">
+                    <div className="absolute right-0 mt-2 w-36 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg z-10 animate-fade-in-fast overflow-hidden">
                         <ul className="py-1">
                             {timeRangeOptions.map(({ key, label }) => (
                                 <li key={key}>
                                     <a
                                     href="#"
                                     onClick={(e) => { e.preventDefault(); handleSelect(key); }}
-                                    className={`block px-4 py-2 text-sm ${key === timeRange ? 'bg-cyan-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+                                    className={`block px-4 py-2 text-sm mx-1 my-1 rounded-xl transition-all ${key === timeRange ? 'bg-cyan-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
                                     >
                                     {label}
                                     </a>

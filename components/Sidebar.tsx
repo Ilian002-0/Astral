@@ -37,7 +37,7 @@ const NavItem: React.FC<{
     return (
         <button
             onClick={() => onNavigate(view)}
-            className={`flex items-center w-full px-4 py-3 transition-all duration-200 rounded-lg ${
+            className={`flex items-center w-full px-4 py-3 transition-all duration-200 rounded-2xl ${
                 isActive 
                 ? 'bg-cyan-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)]' 
                 : 'text-gray-400 hover:bg-gray-700 hover:text-white'
@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, canInstall, 
                 <div className="px-4 py-2 mt-4">
                     <button
                         onClick={onInstallClick}
-                        className="flex items-center justify-center w-full px-4 py-3 text-cyan-400 bg-cyan-950/30 border border-cyan-900/50 hover:bg-cyan-900/50 rounded-lg transition-all duration-200 shadow-sm"
+                        className="flex items-center justify-center w-full px-4 py-3 text-cyan-400 bg-cyan-950/30 border border-cyan-900/50 hover:bg-cyan-900/50 rounded-2xl transition-all duration-200 shadow-sm"
                     >
                         <DownloadIcon />
                         <span className="ml-2 font-bold text-sm">Install App</span>

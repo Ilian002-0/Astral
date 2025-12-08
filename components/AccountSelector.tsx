@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 
 interface AccountSelectorProps {
@@ -30,7 +31,7 @@ const AccountSelector: React.FC<AccountSelectorProps> = ({ accountNames, current
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-48 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow-md transition-colors"
+        className="flex items-center justify-between w-48 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-2xl shadow-md transition-colors"
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
@@ -41,7 +42,7 @@ const AccountSelector: React.FC<AccountSelectorProps> = ({ accountNames, current
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 animate-fade-in-fast">
+        <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg z-10 animate-fade-in-fast overflow-hidden">
           <ul className="py-1">
             {accountNames.map(name => (
               <li key={name}>
