@@ -286,7 +286,9 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
       <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
         {hasAnyData ? (
           isMounted ? (
-            <ResponsiveContainer key={timeRange} width="100%" height={isMobile ? 300 : 400}>
+            // CRITICAL FIX: minWidth={0} and minHeight={0} are required to prevent Recharts "width(-1)" warning
+            // during initial render or layout shifts. Do not remove.
+            <ResponsiveContainer key={timeRange} width="100%" height={isMobile ? 300 : 400} minWidth={0} minHeight={0}>
               <AreaChart
                 data={filteredData}
                 onMouseMove={handleChartMouseMove}

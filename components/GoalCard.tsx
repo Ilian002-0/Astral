@@ -73,6 +73,8 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, f
       </div>
       <div className="relative w-32 h-32 mx-auto my-4" ref={chartContainerRef}>
         {isMounted && (
+            // CRITICAL FIX: minWidth={0} and minHeight={0} are required to prevent Recharts "width(-1)" warning
+            // during initial render or layout shifts. Do not remove.
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <RadialBarChart
                 innerRadius="80%"

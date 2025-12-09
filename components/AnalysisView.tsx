@@ -522,6 +522,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
             <div style={{ width: '100%', height: isMobile ? 300 : 450 }} ref={chartRef}>
                 {chartData.length > 1 ? (
                     isMounted ? (
+                        // CRITICAL FIX: minWidth={0} and minHeight={0} are required to prevent Recharts "width(-1)" warning
+                        // during initial render or layout shifts. Do not remove.
                         <ResponsiveContainer width="100%" height={isMobile ? 300 : 450} minWidth={0} minHeight={0}>
                             {splitMode === 'none' ? (
                                 <AreaChart 
