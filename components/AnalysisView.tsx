@@ -101,9 +101,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         for (const entry of entries) {
             const { width, height } = entry.contentRect;
             if (width > 0 && height > 0) {
-                requestAnimationFrame(() => {
+                // Fix: Use setTimeout to avoid Recharts "width(-1)" warning
+                setTimeout(() => {
                     setIsMounted(true);
-                });
+                }, 0);
                 resizeObserver.disconnect();
             }
         }
@@ -519,91 +520,93 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
             </div>
 
             <div style={{ width: '100%', height: isMobile ? 300 : 450 }} ref={chartRef}>
-                {chartData.length > 1 && isMounted ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    {splitMode === 'none' ? (
-                        <AreaChart 
-                            data={chartData} 
-                            margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
-                            onMouseMove={handleChartMouseMove}
-                            onMouseLeave={() => (lastActiveIndex.current = null)}
-                        >
-                            <defs>
-                                <linearGradient id="profitFillAnalysis" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/><stop offset="95%" stopColor={profitFillColor} stopOpacity={0.4}/></linearGradient>
-                                <linearGradient id="lossFillAnalysis" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/><stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/></linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                            <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} allowDecimals={false} type="number" domain={xDomain} />
-                            <YAxis 
-                                stroke="#888" 
-                                tick={{ fontSize: 12 }} 
-                                tickFormatter={yAxisTickFormatter} 
-                                type="number" 
-                                tickLine={false} 
-                                axisLine={false} 
-                                width={isMobile ? 40 : 60} 
-                                domain={yDomain} 
-                            />
-                            <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
-                            <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance >= initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#profitFillAnalysis)" />
-                            <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance < initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#lossFillAnalysis)" />
-                            <Area isAnimationActive={false} type="monotone" dataKey="balance" stroke={strokeColor} strokeWidth={2} fill="none" />
-                            <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
-                                <Label value="Initial" position="insideRight" fill={grayColor} fontSize={12} dy={-8} />
-                            </ReferenceLine>
-                        </AreaChart>
-                    ) : (
-                        <LineChart
-                            data={chartData}
-                            margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
-                            onMouseMove={handleChartMouseMove}
-                            onMouseLeave={() => (lastActiveIndex.current = null)}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                            <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} allowDecimals={false} type="number" domain={xDomain} />
-                            <YAxis 
-                                stroke="#888" 
-                                tick={{ fontSize: 12 }} 
-                                tickFormatter={yAxisTickFormatter} 
-                                type="number" 
-                                tickLine={false} 
-                                axisLine={false} 
-                                width={isMobile ? 40 : 60} 
-                                domain={yDomain} 
-                            />
-                            <Tooltip content={<SplitTooltip currency={currency} language={language} />} cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '3 3' }}/>
-                            <Legend verticalAlign="bottom" height={36} wrapperStyle={{ paddingTop: '10px' }} />
-                            
-                            {/* Total Balance Curve (Thicker, White) */}
-                            <Line 
-                                type="monotone" 
-                                dataKey="balance" 
-                                name="Total Balance" 
-                                stroke="#ffffff" 
-                                strokeWidth={3} 
-                                dot={false} 
-                                activeDot={{ r: 6 }} 
-                            />
+                {chartData.length > 1 ? (
+                    isMounted ? (
+                        <ResponsiveContainer width="100%" height={isMobile ? 300 : 450} minWidth={0} minHeight={0}>
+                            {splitMode === 'none' ? (
+                                <AreaChart 
+                                    data={chartData} 
+                                    margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
+                                    onMouseMove={handleChartMouseMove}
+                                    onMouseLeave={() => (lastActiveIndex.current = null)}
+                                >
+                                    <defs>
+                                        <linearGradient id="profitFillAnalysis" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/><stop offset="95%" stopColor={profitFillColor} stopOpacity={0.4}/></linearGradient>
+                                        <linearGradient id="lossFillAnalysis" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/><stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/></linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                                    <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} allowDecimals={false} type="number" domain={xDomain} />
+                                    <YAxis 
+                                        stroke="#888" 
+                                        tick={{ fontSize: 12 }} 
+                                        tickFormatter={yAxisTickFormatter} 
+                                        type="number" 
+                                        tickLine={false} 
+                                        axisLine={false} 
+                                        width={isMobile ? 40 : 60} 
+                                        domain={yDomain} 
+                                    />
+                                    <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                                    <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance >= initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#profitFillAnalysis)" />
+                                    <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance < initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#lossFillAnalysis)" />
+                                    <Area isAnimationActive={false} type="monotone" dataKey="balance" stroke={strokeColor} strokeWidth={2} fill="none" />
+                                    <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
+                                        <Label value="Initial" position="insideRight" fill={grayColor} fontSize={12} dy={-8} />
+                                    </ReferenceLine>
+                                </AreaChart>
+                            ) : (
+                                <LineChart
+                                    data={chartData}
+                                    margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
+                                    onMouseMove={handleChartMouseMove}
+                                    onMouseLeave={() => (lastActiveIndex.current = null)}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                                    <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} allowDecimals={false} type="number" domain={xDomain} />
+                                    <YAxis 
+                                        stroke="#888" 
+                                        tick={{ fontSize: 12 }} 
+                                        tickFormatter={yAxisTickFormatter} 
+                                        type="number" 
+                                        tickLine={false} 
+                                        axisLine={false} 
+                                        width={isMobile ? 40 : 60} 
+                                        domain={yDomain} 
+                                    />
+                                    <Tooltip content={<SplitTooltip currency={currency} language={language} />} cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ paddingTop: '10px' }} />
+                                    
+                                    {/* Total Balance Curve (Thicker, White) */}
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="balance" 
+                                        name="Total Balance" 
+                                        stroke="#ffffff" 
+                                        strokeWidth={3} 
+                                        dot={false} 
+                                        activeDot={{ r: 6 }} 
+                                    />
 
-                            {/* Split Curves */}
-                            {splitKeys.map((key, index) => (
-                                <Line
-                                    key={key}
-                                    type="monotone"
-                                    dataKey={key}
-                                    name={key}
-                                    stroke={SEGMENT_COLORS[index % SEGMENT_COLORS.length]}
-                                    strokeWidth={2}
-                                    dot={false}
-                                    activeDot={{ r: 4 }}
-                                />
-                            ))}
-                            
-                            {/* In Split mode, all curves start at Initial Balance, so the ref line is still valid */}
-                            <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5} />
-                        </LineChart>
-                    )}
-                </ResponsiveContainer>
+                                    {/* Split Curves */}
+                                    {splitKeys.map((key, index) => (
+                                        <Line
+                                            key={key}
+                                            type="monotone"
+                                            dataKey={key}
+                                            name={key}
+                                            stroke={SEGMENT_COLORS[index % SEGMENT_COLORS.length]}
+                                            strokeWidth={2}
+                                            dot={false}
+                                            activeDot={{ r: 4 }}
+                                        />
+                                    ))}
+                                    
+                                    {/* In Split mode, all curves start at Initial Balance, so the ref line is still valid */}
+                                    <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5} />
+                                </LineChart>
+                            )}
+                        </ResponsiveContainer>
+                    ) : null // Hide until mounted to prevent width(-1) error
                  ) : (
                   <div className="flex flex-col justify-center items-center h-full text-center">
                     <p className="text-gray-400">{t('dashboard.chart_no_data')}</p>

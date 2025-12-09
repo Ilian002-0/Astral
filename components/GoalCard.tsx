@@ -22,9 +22,10 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, currentValue, targetValue, f
         for (const entry of entries) {
             const { width, height } = entry.contentRect;
             if (width > 0 && height > 0) {
-                requestAnimationFrame(() => {
+                // Fix: Use setTimeout to avoid Recharts "width(-1)" warning
+                setTimeout(() => {
                     setIsMounted(true);
-                });
+                }, 0);
                 resizeObserver.disconnect();
             }
         }

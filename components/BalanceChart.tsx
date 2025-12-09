@@ -38,9 +38,11 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
         for (const entry of entries) {
             const { width, height } = entry.contentRect;
             if (width > 0 && height > 0) {
-                requestAnimationFrame(() => {
+                // Fix: Use setTimeout to push state update to end of event loop
+                // This prevents the "width(-1)" warning by ensuring layout is complete
+                setTimeout(() => {
                     setIsMounted(true);
-                });
+                }, 0);
                 resizeObserver.disconnect();
             }
         }
@@ -282,97 +284,99 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
         </div>
       </div>
       <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
-        {hasAnyData && isMounted ? (
-          <ResponsiveContainer key={timeRange} width="100%" height="100%" minWidth={0} minHeight={0}>
-            <AreaChart
-              data={filteredData}
-              onMouseMove={handleChartMouseMove}
-              onMouseLeave={() => (lastActiveIndex.current = null)}
-              margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
-            >
-              <defs>
-                 <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/>
-                    <stop offset="95%" stopColor={profitFillColor} stopOpacity={0.4}/>
-                </linearGradient>
-                <linearGradient id="lossFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-              <XAxis 
-                dataKey="index"
-                stroke="#888" 
-                tick={{ fontSize: 12 }} 
-                tickLine={false}
-                axisLine={false}
-                type="number"
-                domain={xDomain}
-                allowDecimals={false}
-              />
-              <YAxis 
-                stroke="#888" 
-                tick={{ fontSize: 12 }}
-                tickFormatter={yAxisTickFormatter}
-                tickLine={false}
-                axisLine={false}
-                type="number"
-                domain={yDomain}
-                width={isMobile ? 40 : 60}
-              />
-              <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
-              
-              <Area
+        {hasAnyData ? (
+          isMounted ? (
+            <ResponsiveContainer key={timeRange} width="100%" height={isMobile ? 300 : 400}>
+              <AreaChart
+                data={filteredData}
+                onMouseMove={handleChartMouseMove}
+                onMouseLeave={() => (lastActiveIndex.current = null)}
+                margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
+              >
+                <defs>
+                   <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor={profitFillColor} stopOpacity={0.4}/>
+                  </linearGradient>
+                  <linearGradient id="lossFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                <XAxis 
+                  dataKey="index"
+                  stroke="#888" 
+                  tick={{ fontSize: 12 }} 
+                  tickLine={false}
+                  axisLine={false}
+                  type="number"
+                  domain={xDomain}
+                  allowDecimals={false}
+                />
+                <YAxis 
+                  stroke="#888" 
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={yAxisTickFormatter}
+                  tickLine={false}
+                  axisLine={false}
+                  type="number"
+                  domain={yDomain}
+                  width={isMobile ? 40 : 60}
+                />
+                <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                
+                <Area
+                    isAnimationActive={true}
+                    animationDuration={800}
+                    animationEasing="ease-out"
+                    type="monotone"
+                    dataKey={(d) => (d.balance >= initialBalance ? d.balance : initialBalance)}
+                    baseValue={initialBalance}
+                    stroke="none"
+                    fill="url(#profitFill)"
+                />
+                
+                <Area
+                    isAnimationActive={true}
+                    animationDuration={800}
+                    animationEasing="ease-out"
+                    type="monotone"
+                    dataKey={(d) => (d.balance < initialBalance ? d.balance : initialBalance)}
+                    baseValue={initialBalance}
+                    stroke="none"
+                    fill="url(#lossFill)"
+                />
+                
+                <Area 
                   isAnimationActive={true}
                   animationDuration={800}
                   animationEasing="ease-out"
-                  type="monotone"
-                  dataKey={(d) => (d.balance >= initialBalance ? d.balance : initialBalance)}
-                  baseValue={initialBalance}
-                  stroke="none"
-                  fill="url(#profitFill)"
-              />
-              
-              <Area
-                  isAnimationActive={true}
-                  animationDuration={800}
-                  animationEasing="ease-out"
-                  type="monotone"
-                  dataKey={(d) => (d.balance < initialBalance ? d.balance : initialBalance)}
-                  baseValue={initialBalance}
-                  stroke="none"
-                  fill="url(#lossFill)"
-              />
-              
-              <Area 
-                isAnimationActive={true}
-                animationDuration={800}
-                animationEasing="ease-out"
-                type="monotone" 
-                dataKey="balance" 
-                stroke={strokeColor} 
-                strokeWidth={2} 
-                fill="none" 
-                activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: strokeColor }} 
-              />
+                  type="monotone" 
+                  dataKey="balance" 
+                  stroke={strokeColor} 
+                  strokeWidth={2} 
+                  fill="none" 
+                  activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: strokeColor }} 
+                />
 
-              <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
-                <Label value="Initial" position="insideRight" fill={grayColor} fontSize={12} dy={-8} />
-              </ReferenceLine>
+                <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
+                  <Label value="Initial" position="insideRight" fill={grayColor} fontSize={12} dy={-8} />
+                </ReferenceLine>
 
-              {profitGoal?.enabled && profitGoal.showOnChart && profitGoal.target && (
-                  <ReferenceLine y={initialBalance + profitGoal.target} stroke="#22c55e" strokeDasharray="5 5" strokeWidth={2}>
-                      <Label value={t('goals.profit_target_label')} position="insideRight" fill="#22c55e" fontSize={12} dy={12} />
-                  </ReferenceLine>
-              )}
-              {drawdownGoal?.enabled && drawdownGoal.showOnChart && drawdownGoal.target && (
-                  <ReferenceLine y={initialBalance - (initialBalance * (drawdownGoal.target / 100))} stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2}>
-                      <Label value={t('goals.drawdown_target_label')} position="insideRight" fill="#ef4444" fontSize={12} dy={-12} />
-                  </ReferenceLine>
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
+                {profitGoal?.enabled && profitGoal.showOnChart && profitGoal.target && (
+                    <ReferenceLine y={initialBalance + profitGoal.target} stroke="#22c55e" strokeDasharray="5 5" strokeWidth={2}>
+                        <Label value={t('goals.profit_target_label')} position="insideRight" fill="#22c55e" fontSize={12} dy={12} />
+                    </ReferenceLine>
+                )}
+                {drawdownGoal?.enabled && drawdownGoal.showOnChart && drawdownGoal.target && (
+                    <ReferenceLine y={initialBalance - (initialBalance * (drawdownGoal.target / 100))} stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2}>
+                        <Label value={t('goals.drawdown_target_label')} position="insideRight" fill="#ef4444" fontSize={12} dy={-12} />
+                    </ReferenceLine>
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : null // Don't render "No Data" if we are just waiting for mount, render nothing to avoid flicker
         ) : (
           <div className="flex flex-col justify-center items-center h-full text-center">
             <p className="text-gray-400">{t('dashboard.chart_no_data')}</p>
