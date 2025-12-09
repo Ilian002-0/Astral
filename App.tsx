@@ -60,7 +60,7 @@ const App: React.FC = () => {
         launchedFileContent, 
         pwaError, 
         setLaunchedFileContent, 
-        setPwaError,
+        setPwaError, 
         handleInstallClick 
     } = usePWA({ setView, setAddAccountModalOpen, setModalMode });
 
@@ -208,7 +208,7 @@ const App: React.FC = () => {
                                 transition: pullDistance === 0 && !isRefreshing ? 'transform 0.3s' : 'none',
                             }}
                         >
-                             <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-24 md:pb-6 h-full">
+                             <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6 pb-20 md:pb-6 min-h-full">
                                 {displayError && (
                                     <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
                                         {displayError}
