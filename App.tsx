@@ -25,7 +25,16 @@ import Login from './components/Login';
 const App: React.FC = () => {
     // Auth Check
     const { user, loading: authLoading, logout } = useAuth();
-    const [isGuest, setIsGuest] = useState(false);
+    
+    // Initialize guest mode from localStorage to prevent flash of login screen on refresh
+    const [isGuest, setIsGuest] = useState(() => {
+        return localStorage.getItem('atlas_guest_mode') === 'true';
+    });
+
+    const handleGuestLogin = () => {
+        setIsGuest(true);
+        localStorage.setItem('atlas_guest_mode', 'true');
+    };
 
     // 1. Core Data Management
     const { 
@@ -168,16 +177,23 @@ const App: React.FC = () => {
 
     const handleLogout = async () => {
         setIsGuest(false);
+        localStorage.removeItem('atlas_guest_mode');
         await logout();
     };
 
+    // Note: authLoading is now false immediately if we have a cached user in localStorage
     if (authLoading) {
-        return <div className="min-h-screen bg-[#0c0b1e] flex items-center justify-center text-white">Loading...</div>;
+        return <div className="min-h-screen bg-[#0c0b1e] flex items-center justify-center text-white">
+            <div className="flex flex-col items-center">
+                <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <div className="text-gray-400 text-sm tracking-widest">LOADING</div>
+            </div>
+        </div>;
     }
 
     // Show Login if not authenticated AND not in guest mode
     if (!user && !isGuest) {
-        return <Login onGuestLogin={() => setIsGuest(true)} />;
+        return <Login onGuestLogin={handleGuestLogin} />;
     }
 
     return (

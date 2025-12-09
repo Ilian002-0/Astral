@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 import LZString from 'lz-string';
 import { packAccounts, unpackAccounts } from '../utils/dataOptimizer';
@@ -85,9 +84,43 @@ interface DBStorage<T> {
 }
 
 function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
-    const [data, setDataState] = useState<T>(initialValue);
-    const [isLoading, setIsLoading] = useState(true);
+    // HYBRID INITIALIZATION: 
+    // Try to load from localStorage FIRST (Synchronous) to provide instant data.
+    const [data, setDataState] = useState<T>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const localItem = window.localStorage.getItem(key);
+                if (localItem) {
+                    // Try decompressing first
+                    const decompressed = LZString.decompressFromUTF16(localItem);
+                    const raw = decompressed || localItem;
+                    
+                    let parsed = deepParse(raw);
+                    if (parsed !== undefined) {
+                        if (key === 'trading_accounts_v1' && Array.isArray(parsed)) {
+                             // @ts-ignore
+                             parsed = unpackAccounts(parsed);
+                        }
+                        return parsed as T;
+                    }
+                }
+            } catch (error) {
+                console.warn(`Error reading localStorage key "${key}":`, error);
+            }
+        }
+        return initialValue;
+    });
 
+    // If we successfully loaded from localStorage, we are NOT loading.
+    // If we fell back to initialValue, we are loading (waiting for IndexedDB).
+    const [isLoading, setIsLoading] = useState(() => {
+        if (typeof window !== 'undefined' && window.localStorage.getItem(key)) {
+            return false;
+        }
+        return true;
+    });
+
+    // Load from IndexedDB (Async Source of Truth)
     useEffect(() => {
         let isMounted = true;
         getDBItem<string>(key).then(storedValue => {
@@ -99,7 +132,6 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
                     const decompressed = LZString.decompressFromUTF16(storedValue);
                     
                     if (decompressed !== null) {
-                         // If decompression returned a string, try parsing it as JSON
                         try {
                             parsed = deepParse(decompressed);
                         } catch (e) {
@@ -107,10 +139,7 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
                         }
                     }
 
-                    // 2. If parsed is still strictly undefined, it means:
-                    //    a) Decompression failed (decompressed was null)
-                    //    b) OR parsing the decompressed string failed/threw error
-                    //    In this case, assume it's legacy uncompressed data, BUT check if it looks like JSON first.
+                    // 2. Fallback to raw JSON
                     if (parsed === undefined) {
                         if (isJsonCandidate(storedValue)) {
                             try {
@@ -118,37 +147,23 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
                             } catch(e) {
                                 console.error(`Failed to parse legacy data for key "${key}"`, e);
                             }
-                        } else {
-                            // If it's not JSON candidate and decompression failed, it might be corrupted or in an unknown format.
-                            // We do NOT call JSON.parse here to avoid "Unexpected token" errors.
                         }
                     }
 
-                    // 3. Process the result if we have a valid parsed value (including null)
+                    // 3. Process result
                     if (parsed !== undefined) {
-                        // --- STRUCTURAL UNPACKING ---
-                        // If this is the accounts key, check if data is packed (array of arrays)
                         if (key === 'trading_accounts_v1' && Array.isArray(parsed)) {
-                             // @ts-ignore - We know T is Account[] here effectively
+                             // @ts-ignore
                              parsed = unpackAccounts(parsed);
                         }
                         
-                        // Handle the case where deepParse returns null but T might not allow null.
-                        // However, for current_account_v1, T is string | null, so it's fine.
-                        // We cast to T to satisfy TS.
+                        // Only update state if different from what we loaded from localStorage to avoid re-renders
+                        // Note: Deep comparison is expensive, so we just set it. React handles reference checks.
                         setDataState(parsed as T);
-                    } else {
-                         // If we failed to parse anything, default to initialValue
-                         setDataState(initialValue);
-                    }
-
-                } else {
-                   // If nothing is in the DB, store the initial value (compressed).
-                   const stringified = deepStringify(initialValue);
-                   const compressed = LZString.compressToUTF16(stringified);
-                   setDBItem(key, compressed);
-                   setDataState(initialValue);
-                }
+                    } 
+                } 
+                // If nothing in DB, we rely on initialValue or what was in localStorage
+                
                 setIsLoading(false);
             }
         }).catch(err => {
@@ -166,7 +181,6 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
                 let preparedValue = valueToStore;
 
                 // --- STRUCTURAL PACKING ---
-                // If storing accounts, convert to optimized column format before stringifying
                 if (key === 'trading_accounts_v1' && Array.isArray(valueToStore)) {
                     // @ts-ignore
                     preparedValue = packAccounts(valueToStore);
@@ -174,9 +188,20 @@ function useDBStorage<T>(key: string, initialValue: T): DBStorage<T> {
 
                 const stringified = deepStringify(preparedValue);
                 const compressed = LZString.compressToUTF16(stringified);
+                
+                // 1. Save to IndexedDB (The robust storage)
                 setDBItem(key, compressed);
+
+                // 2. Save to LocalStorage (The fast cache)
+                // We wrap this in a separate try-catch because it might fail if quota exceeded (5MB limit)
+                try {
+                    window.localStorage.setItem(key, compressed);
+                } catch (e) {
+                    console.warn("LocalStorage quota exceeded. Data saved to IndexedDB only.");
+                }
+
             } catch (error) {
-                console.error(`Error setting IndexedDB key “${key}”:`, error);
+                console.error(`Error setting storage key “${key}”:`, error);
             }
             return valueToStore;
         });
