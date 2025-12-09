@@ -1,14 +1,68 @@
-
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import useDBStorage from './useLocalStorage';
 import { Account, Trade, Goals } from '../types';
 import { triggerHaptic } from '../utils/haptics';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+
+// Define what we actually save to Firestore (Minimal data)
+interface FirestoreAccount {
+    name: string;
+    initialBalance: number;
+    currency?: 'USD' | 'EUR';
+    dataUrl?: string; // Critical for sync
+    goals?: Goals;
+    lastUpdated: string;
+}
 
 export const useAccountManager = () => {
-    const { data: accounts, setData: setAccounts, isLoading: isLoadingAccounts } = useDBStorage<Account[]>('trading_accounts_v1', []);
+    // Local storage (fallback / cache)
+    const { data: localAccounts, setData: setLocalAccounts, isLoading: isLoadingLocal } = useDBStorage<Account[]>('trading_accounts_v1', []);
     const { data: currentAccountName, setData: setCurrentAccountName, isLoading: isLoadingCurrentAccount } = useDBStorage<string | null>('current_account_v1', null);
+    
+    const { user } = useAuth();
+    
+    // If user is logged in, listen to Firestore. 
+    // We merge Firestore data into the local state view, but mostly rely on the Firestore listener to update `localAccounts`.
+    // Actually, to avoid conflicts, if logged in, we should use the data coming from Firestore as the source of truth for the *list* of accounts.
+    
+    useEffect(() => {
+        if (!user) return;
 
-    const isLoading = isLoadingAccounts || isLoadingCurrentAccount;
+        const userDocRef = doc(db, 'users', user.uid);
+        
+        const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+            if (docSnapshot.exists()) {
+                const data = docSnapshot.data();
+                const remoteAccounts = (data.accounts || []) as FirestoreAccount[];
+
+                // Merge remote config with local trades
+                // We do NOT store trades in Firestore. We matches by name.
+                setLocalAccounts(prevLocal => {
+                    const merged = remoteAccounts.map(remoteAcc => {
+                        const localMatch = prevLocal.find(l => l.name === remoteAcc.name);
+                        
+                        // If we have local trades for this account, keep them.
+                        // If not, it's a new account from another device, start with empty trades (the Sync hook will fetch the CSV via dataUrl)
+                        return {
+                            ...remoteAcc,
+                            trades: localMatch ? localMatch.trades : [] 
+                        };
+                    });
+                    
+                    return merged;
+                });
+            } else {
+                 // No document exists yet for this user? Maybe create it or leave empty.
+            }
+        });
+
+        return () => unsubscribe();
+    }, [user, setLocalAccounts]);
+
+    const accounts = localAccounts;
+    const isLoading = isLoadingLocal || isLoadingCurrentAccount;
 
     // Derived state: Current Account Object
     const currentAccount = useMemo(() => {
@@ -29,6 +83,27 @@ export const useAccountManager = () => {
         }
     }, [accounts, currentAccountName, setCurrentAccountName, isLoading]);
 
+    // Helper to push updates to Firestore
+    const pushToFirestore = async (newAccounts: Account[]) => {
+        if (!user) return;
+        
+        // Strip trades before saving to Firestore to save space
+        const minimizedAccounts: FirestoreAccount[] = newAccounts.map(acc => ({
+            name: acc.name,
+            initialBalance: acc.initialBalance,
+            currency: acc.currency,
+            dataUrl: acc.dataUrl,
+            goals: acc.goals,
+            lastUpdated: acc.lastUpdated || new Date().toISOString()
+        }));
+
+        try {
+            await setDoc(doc(db, 'users', user.uid), { accounts: minimizedAccounts }, { merge: true });
+        } catch (e) {
+            console.error("Failed to sync to Firestore", e);
+        }
+    };
+
     // Actions
     const saveAccount = useCallback((
         accountData: { name: string; trades: Trade[]; initialBalance: number; currency: 'USD' | 'EUR', dataUrl?: string }, 
@@ -36,7 +111,9 @@ export const useAccountManager = () => {
     ) => {
         let error: string | null = null;
         
-        setAccounts(prevAccounts => {
+        setLocalAccounts(prevAccounts => {
+            let newAccountsList = [...prevAccounts];
+
             if (mode === 'add') {
                 if (prevAccounts.some(acc => acc.name === accountData.name)) {
                     error = `An account with the name "${accountData.name}" already exists.`;
@@ -44,13 +121,12 @@ export const useAccountManager = () => {
                 }
                 const sortedTrades = accountData.trades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
                 const newAccount: Account = { ...accountData, trades: sortedTrades, goals: {}, lastUpdated: new Date().toISOString() };
-                const newAccounts = [...prevAccounts, newAccount];
+                newAccountsList = [...prevAccounts, newAccount];
                 setCurrentAccountName(newAccount.name);
                 triggerHaptic('success');
-                return newAccounts;
             } else { // 'update'
                 triggerHaptic('success');
-                return prevAccounts.map(acc => {
+                newAccountsList = prevAccounts.map(acc => {
                     if (acc.name === accountData.name) {
                         let updatedTrades = acc.trades;
                         // If trades were passed, it's a file update, so merge them.
@@ -64,26 +140,40 @@ export const useAccountManager = () => {
                     return acc;
                 });
             }
+            
+            // Sync with Firestore
+            if (user) {
+                pushToFirestore(newAccountsList);
+            }
+            return newAccountsList;
         });
 
         if (error) throw new Error(error);
-    }, [setAccounts, setCurrentAccountName]);
+    }, [setLocalAccounts, setCurrentAccountName, user]);
 
     const deleteAccount = useCallback(() => {
         if (!currentAccountName) return;
-        setAccounts(prev => prev.filter(acc => acc.name !== currentAccountName));
+        setLocalAccounts(prev => {
+            const newList = prev.filter(acc => acc.name !== currentAccountName);
+            if (user) pushToFirestore(newList);
+            return newList;
+        });
         triggerHaptic('heavy');
-    }, [currentAccountName, setAccounts]);
+    }, [currentAccountName, setLocalAccounts, user]);
 
     const saveGoals = useCallback((goals: Goals) => {
         if (!currentAccountName) return;
-        setAccounts(prev => prev.map(acc => acc.name === currentAccountName ? { ...acc, goals } : acc));
+        setLocalAccounts(prev => {
+            const newList = prev.map(acc => acc.name === currentAccountName ? { ...acc, goals } : acc);
+            if (user) pushToFirestore(newList);
+            return newList;
+        });
         triggerHaptic('success');
-    }, [currentAccountName, setAccounts]);
+    }, [currentAccountName, setLocalAccounts, user]);
 
     // Helper to update trades directly (used by Sync service)
     const updateAccountTrades = useCallback((accountName: string, newTrades: Trade[]) => {
-        setAccounts(prevAccounts => 
+        setLocalAccounts(prevAccounts => 
             prevAccounts.map(acc => {
                 if (acc.name === accountName) {
                     const sortedTrades = newTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
@@ -92,7 +182,10 @@ export const useAccountManager = () => {
                 return acc;
             })
         );
-    }, [setAccounts]);
+        // We generally don't push back to Firestore here because trades aren't stored there.
+        // But if lastUpdated changed, we might want to push metadata. 
+        // For efficiency, we skip this push to avoid loops, as dataUrl is the source of truth for trades.
+    }, [setLocalAccounts]);
 
     return {
         accounts,

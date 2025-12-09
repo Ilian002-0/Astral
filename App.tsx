@@ -10,6 +10,7 @@ import { useAccountManager } from './hooks/useAccountManager';
 import { useSync } from './hooks/useSync';
 import { usePWA } from './hooks/usePWA';
 import { useTradeData } from './hooks/useTradeData';
+import { useAuth } from './contexts/AuthContext';
 
 // Static Imports (Layout & critical UI)
 import AccountSelector from './components/AccountSelector';
@@ -19,8 +20,12 @@ import Logo from './components/Logo';
 import { SyncIcon } from './components/SyncIcon';
 import AppViews from './components/AppViews';
 import AppModals from './components/AppModals';
+import Login from './components/Login';
 
 const App: React.FC = () => {
+    // Auth Check
+    const { user, loading: authLoading, logout } = useAuth();
+
     // 1. Core Data Management
     const { 
         accounts, 
@@ -116,8 +121,6 @@ const App: React.FC = () => {
                 if (updatedAcc) refreshAccount({ ...updatedAcc, ...data });
             }
         } catch (e: any) {
-            // Pass error back to modal via a transient error state or alert
-            // For now, setting main error
             setPwaError(e.message);
         }
     };
@@ -162,6 +165,14 @@ const App: React.FC = () => {
         });
     };
 
+    if (authLoading) {
+        return <div className="min-h-screen bg-[#0c0b1e] flex items-center justify-center text-white">Loading...</div>;
+    }
+
+    if (!user) {
+        return <Login />;
+    }
+
     return (
         <>
             <div className="flex h-screen overflow-hidden">
@@ -175,8 +186,13 @@ const App: React.FC = () => {
                                         <Logo layout="mobile" />
                                     </div>
                                 )}
-                                <div className="app-region-no-drag">
+                                <div className="app-region-no-drag flex items-center gap-4">
                                     {!isLoading && accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
+                                    <button onClick={() => logout()} className="p-2 text-gray-400 hover:text-white" title="Sign Out">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         </div>
