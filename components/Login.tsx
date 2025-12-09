@@ -19,7 +19,7 @@ const Login: React.FC = () => {
       // Handle specific Firebase errors
       if (err.code === 'auth/unauthorized-domain') {
         const domain = window.location.hostname;
-        setError(`Domain not authorized: "${domain}". Please add this domain to your Firebase Console (Authentication > Settings > Authorized Domains).`);
+        setError(`Domain not authorized: "${domain}".\n\nTo fix this: Go to Firebase Console -> Authentication -> Settings -> Authorized Domains, and add "${domain}" to the list.`);
       } else if (err.code === 'auth/popup-closed-by-user') {
         setError("Sign-in cancelled by user.");
       } else if (err.code === 'auth/invalid-api-key') {
@@ -45,7 +45,7 @@ const Login: React.FC = () => {
             </div>
 
             {error && (
-                <div className="w-full bg-red-900/30 border border-red-500/50 text-red-200 p-4 rounded-2xl text-center text-sm break-words">
+                <div className="w-full bg-red-900/30 border border-red-500/50 text-red-200 p-4 rounded-2xl text-center text-sm whitespace-pre-wrap">
                     {error}
                 </div>
             )}
