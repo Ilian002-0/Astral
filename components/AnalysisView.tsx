@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label
+    AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label, Legend
 } from 'recharts';
 import { Trade, ChartDataPoint, Account } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -23,6 +23,63 @@ interface AnalysisViewProps {
 }
 
 type TradeWithProfitPercentage = Trade & { profitPercentage: number };
+type SplitMode = 'none' | 'symbol' | 'comment';
+
+const SEGMENT_COLORS = [
+    '#22d3ee', // Cyan
+    '#f472b6', // Pink
+    '#34d399', // Emerald
+    '#a78bfa', // Violet
+    '#fb923c', // Orange
+    '#fbbf24', // Amber
+    '#60a5fa', // Blue
+    '#e879f9', // Fuchsia
+    '#a3e635', // Lime
+    '#f87171', // Red
+];
+
+const SplitTooltip = ({ active, payload, currency, language }: any) => {
+    if (active && payload && payload.length) {
+        const dateStr = new Date(payload[0].payload.timestamp).toLocaleDateString(language, {
+            month: 'short', day: 'numeric', year: 'numeric'
+        });
+        
+        // Sort payload: Total first, then others by value desc
+        const sortedPayload = [...payload].sort((a: any, b: any) => {
+            if (a.name === 'Total Balance') return -1;
+            if (b.name === 'Total Balance') return 1;
+            return b.value - a.value;
+        });
+
+        const formatMoney = (val: number) => new Intl.NumberFormat(language, { 
+            style: 'currency', 
+            currency, 
+            maximumFractionDigits: 0 
+        }).format(val);
+
+        return (
+            <div className="bg-[#16152c]/95 backdrop-blur-sm border border-gray-700 p-4 rounded-2xl shadow-2xl text-xs sm:text-sm z-50">
+                <p className="text-gray-400 mb-3 font-medium border-b border-gray-700/50 pb-2">{dateStr}</p>
+                <div className="space-y-1.5">
+                    {sortedPayload.map((entry: any, index: number) => (
+                        <div key={index} className="flex justify-between items-center gap-6">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                                <span className={`font-medium ${entry.name === 'Total Balance' ? 'text-white' : 'text-gray-300'}`}>
+                                    {entry.name}
+                                </span>
+                            </div>
+                            <span className="font-bold text-white tabular-nums">
+                                {formatMoney(entry.value)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onBackToDashboard, currency }) => {
   const { t, language } = useLanguage();
@@ -30,6 +87,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const [selectedComments, setSelectedComments] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [splitMode, setSplitMode] = useState<SplitMode>('none');
+  
   const [isMounted, setIsMounted] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const chartRef = useRef<HTMLDivElement>(null);
@@ -197,36 +256,70 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
   // --- DATA PREPARATION FOR CHARTS ---
 
-  // 1. Equity Curve Data
-  const { chartData, filteredNetProfit } = useMemo(() => {
-    if (filteredTrades.length === 0) return { chartData: [], filteredNetProfit: 0 };
+  // 1. Equity Curve Data (Standard & Split)
+  const { chartData, filteredNetProfit, splitKeys } = useMemo(() => {
+    if (filteredTrades.length === 0) return { chartData: [], filteredNetProfit: 0, splitKeys: [] };
     
+    // Sort chronologically for chart
+    const chronTrades = [...filteredTrades].sort((a, b) => a.closeTime.getTime() - b.closeTime.getTime());
+
     let runningBalance = initialBalance;
     let netProfit = 0;
     
-    const data: ChartDataPoint[] = [{
+    // For Split Mode: Identify all keys first
+    const distinctKeys = new Set<string>();
+    if (splitMode !== 'none') {
+        chronTrades.forEach(t => {
+            const key = splitMode === 'symbol' ? t.symbol : (t.comment || 'No Comment');
+            distinctKeys.add(key);
+        });
+    }
+    const sortedKeys = Array.from(distinctKeys).sort();
+
+    // Initialize all segments at InitialBalance so they can be compared with Total Equity on the same scale
+    const currentSegmentBalances: Record<string, number> = {};
+    sortedKeys.forEach(k => currentSegmentBalances[k] = initialBalance);
+
+    const data: any[] = [{
         date: '',
         balance: initialBalance,
         trade: null,
         index: 0,
-        timestamp: 0,
+        timestamp: chronTrades.length > 0 ? chronTrades[0].closeTime.getTime() - 1000 : 0,
+        ...currentSegmentBalances
     }];
     
-    filteredTrades.forEach((trade, index) => {
+    chronTrades.forEach((trade, index) => {
         const tradeProfit = trade.profit + trade.commission + trade.swap;
         runningBalance += tradeProfit;
         netProfit += tradeProfit;
-        data.push({
+
+        if (splitMode !== 'none') {
+            const currentKey = splitMode === 'symbol' ? trade.symbol : (trade.comment || 'No Comment');
+            // Update the specific segment's running balance
+            if (currentSegmentBalances[currentKey] !== undefined) {
+                currentSegmentBalances[currentKey] += tradeProfit;
+            }
+        }
+
+        const point: any = {
             date: trade.closeTime.toISOString(),
             balance: runningBalance,
             trade,
             index: index + 1,
             timestamp: trade.closeTime.getTime(),
-        });
+            ...currentSegmentBalances // Spread current state of all segments
+        };
+
+        data.push(point);
     });
 
-    return { chartData: data, filteredNetProfit: netProfit };
-  }, [filteredTrades, initialBalance]);
+    return { 
+        chartData: data, 
+        filteredNetProfit: netProfit,
+        splitKeys: sortedKeys
+    };
+  }, [filteredTrades, initialBalance, splitMode]);
 
   // 2. Monthly Performance Data
   const monthlyData = useMemo(() => {
@@ -304,9 +397,23 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     if (!chartData || chartData.length < 2) {
         return ['auto', 'auto'];
     }
-    const balances = chartData.map(d => d.balance);
-    let min = Math.min(...balances);
-    let max = Math.max(...balances);
+    // Check all visible keys to determine domain
+    const keysToCheck = splitMode === 'none' ? ['balance'] : ['balance', ...splitKeys];
+    
+    let min = Infinity;
+    let max = -Infinity;
+
+    chartData.forEach(d => {
+        keysToCheck.forEach(k => {
+            const val = d[k];
+            if (typeof val === 'number') {
+                if (val < min) min = val;
+                if (val > max) max = val;
+            }
+        });
+    });
+
+    if (min === Infinity || max === -Infinity) return ['auto', 'auto'];
 
     if (min === max) {
         const padding = Math.abs(min * 0.01) || 10;
@@ -315,7 +422,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
     const padding = (max - min) * 0.1;
     return [min - padding, max + padding];
-  }, [chartData]);
+  }, [chartData, splitMode, splitKeys]);
 
   const yAxisTickFormatter = (value: any) => {
     const num = Number(value);
@@ -324,12 +431,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   };
   
   const formatCurrency = (value: number) => {
-      const symbol = currency === 'USD' ? '$' : '€';
       return new Intl.NumberFormat(language, { style: 'currency', currency, currencyDisplay: 'symbol' }).format(value);
   }
 
   const netProfitColor = filteredNetProfit >= 0 ? 'text-green-400' : 'text-red-400';
-  const strokeColor = '#f87171';
+  const strokeColor = '#f87171'; // Default red for single line
   const profitFillColor = 'rgb(13 148 136)';
   const lossFillColor = 'rgb(159 18 57)';
   const grayColor = '#6b7280';
@@ -337,11 +443,14 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const isBullDominant = biasStats.buyPct >= biasStats.sellPct;
   const isBearDominant = biasStats.sellPct > biasStats.buyPct;
 
-  // Stripe pattern for the "back" of the bars (unfilled area)
-  // Applied to the container background
   const stripeStyle = {
       backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.05) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.05) 50%,rgba(255,255,255,.05) 75%,transparent 75%,transparent)',
       backgroundSize: '1rem 1rem'
+  };
+
+  const handleSplitModeChange = (mode: SplitMode) => {
+      setSplitMode(mode);
+      triggerHaptic('light');
   };
 
   return (
@@ -383,40 +492,117 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
         {/* 1. Equity Chart */}
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50">
-            <h3 className="text-lg font-semibold text-white mb-4">{t('dashboard.balance_chart_title')}</h3>
-            <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
+            <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <h3 className="text-lg font-semibold text-white">{t('dashboard.balance_chart_title')}</h3>
+                
+                {/* Advanced Measurement / Split Control */}
+                <div className="flex items-center gap-2 bg-gray-800/50 p-1.5 rounded-2xl border border-gray-700/50">
+                    <span className="text-xs text-gray-400 px-2 font-bold uppercase tracking-wider hidden sm:inline">Advanced Measurement</span>
+                    <div className="flex bg-gray-700 rounded-xl p-1 relative">
+                        {/* Animated slider background */}
+                        <div 
+                            className={`absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-cyan-600 rounded-lg transition-all duration-300 ease-out shadow-sm
+                            ${splitMode === 'none' ? 'left-1' : splitMode === 'symbol' ? 'left-[calc(33.33%+2px)]' : 'left-[calc(66.66%+2px)]'}`}
+                        />
+                        
+                        <button onClick={() => handleSplitModeChange('none')} className={`relative z-10 w-20 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex justify-center ${splitMode === 'none' ? 'text-white' : 'text-gray-400 hover:text-white'}`}>
+                            None
+                        </button>
+                        <button onClick={() => handleSplitModeChange('symbol')} className={`relative z-10 w-20 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex justify-center ${splitMode === 'symbol' ? 'text-white' : 'text-gray-400 hover:text-white'}`}>
+                            Symbol
+                        </button>
+                        <button onClick={() => handleSplitModeChange('comment')} className={`relative z-10 w-20 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex justify-center ${splitMode === 'comment' ? 'text-white' : 'text-gray-400 hover:text-white'}`}>
+                            Comment
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ width: '100%', height: isMobile ? 300 : 450 }} ref={chartRef}>
                 {chartData.length > 1 && isMounted ? (
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <AreaChart 
-                        data={chartData} 
-                        margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
-                        onMouseMove={handleChartMouseMove}
-                        onMouseLeave={() => (lastActiveIndex.current = null)}
-                    >
-                        <defs>
-                            <linearGradient id="profitFillAnalysis" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/><stop offset="95%" stopColor={profitFillColor} stopOpacity={0.4}/></linearGradient>
-                            <linearGradient id="lossFillAnalysis" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/><stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/></linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                        <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} allowDecimals={false} type="number" domain={xDomain} />
-                        <YAxis 
-                            stroke="#888" 
-                            tick={{ fontSize: 12 }} 
-                            tickFormatter={yAxisTickFormatter} 
-                            type="number" 
-                            tickLine={false} 
-                            axisLine={false} 
-                            width={isMobile ? 40 : 60} 
-                            domain={yDomain} 
-                        />
-                        <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
-                        <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance >= initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#profitFillAnalysis)" />
-                        <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance < initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#lossFillAnalysis)" />
-                        <Area isAnimationActive={false} type="monotone" dataKey="balance" stroke={strokeColor} strokeWidth={2} fill="none" />
-                        <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
-                            <Label value="Initial" position="insideRight" fill={grayColor} fontSize={12} dy={-8} />
-                        </ReferenceLine>
-                    </AreaChart>
+                    {splitMode === 'none' ? (
+                        <AreaChart 
+                            data={chartData} 
+                            margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
+                            onMouseMove={handleChartMouseMove}
+                            onMouseLeave={() => (lastActiveIndex.current = null)}
+                        >
+                            <defs>
+                                <linearGradient id="profitFillAnalysis" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={profitFillColor} stopOpacity={0.7}/><stop offset="95%" stopColor={profitFillColor} stopOpacity={0.4}/></linearGradient>
+                                <linearGradient id="lossFillAnalysis" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={lossFillColor} stopOpacity={0.4}/><stop offset="95%" stopColor={lossFillColor} stopOpacity={0.7}/></linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                            <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} allowDecimals={false} type="number" domain={xDomain} />
+                            <YAxis 
+                                stroke="#888" 
+                                tick={{ fontSize: 12 }} 
+                                tickFormatter={yAxisTickFormatter} 
+                                type="number" 
+                                tickLine={false} 
+                                axisLine={false} 
+                                width={isMobile ? 40 : 60} 
+                                domain={yDomain} 
+                            />
+                            <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                            <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance >= initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#profitFillAnalysis)" />
+                            <Area isAnimationActive={false} type="monotone" dataKey={(d) => d.balance < initialBalance ? d.balance : initialBalance} baseValue={initialBalance} stroke="none" fill="url(#lossFillAnalysis)" />
+                            <Area isAnimationActive={false} type="monotone" dataKey="balance" stroke={strokeColor} strokeWidth={2} fill="none" />
+                            <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5}>
+                                <Label value="Initial" position="insideRight" fill={grayColor} fontSize={12} dy={-8} />
+                            </ReferenceLine>
+                        </AreaChart>
+                    ) : (
+                        <LineChart
+                            data={chartData}
+                            margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 0, bottom: 5 }}
+                            onMouseMove={handleChartMouseMove}
+                            onMouseLeave={() => (lastActiveIndex.current = null)}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                            <XAxis dataKey="index" stroke="#888" tick={{ fontSize: 12 }} allowDecimals={false} type="number" domain={xDomain} />
+                            <YAxis 
+                                stroke="#888" 
+                                tick={{ fontSize: 12 }} 
+                                tickFormatter={yAxisTickFormatter} 
+                                type="number" 
+                                tickLine={false} 
+                                axisLine={false} 
+                                width={isMobile ? 40 : 60} 
+                                domain={yDomain} 
+                            />
+                            <Tooltip content={<SplitTooltip currency={currency} language={language} />} cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                            <Legend verticalAlign="bottom" height={36} wrapperStyle={{ paddingTop: '10px' }} />
+                            
+                            {/* Total Balance Curve (Thicker, White) */}
+                            <Line 
+                                type="monotone" 
+                                dataKey="balance" 
+                                name="Total Balance" 
+                                stroke="#ffffff" 
+                                strokeWidth={3} 
+                                dot={false} 
+                                activeDot={{ r: 6 }} 
+                            />
+
+                            {/* Split Curves */}
+                            {splitKeys.map((key, index) => (
+                                <Line
+                                    key={key}
+                                    type="monotone"
+                                    dataKey={key}
+                                    name={key}
+                                    stroke={SEGMENT_COLORS[index % SEGMENT_COLORS.length]}
+                                    strokeWidth={2}
+                                    dot={false}
+                                    activeDot={{ r: 4 }}
+                                />
+                            ))}
+                            
+                            {/* In Split mode, all curves start at Initial Balance, so the ref line is still valid */}
+                            <ReferenceLine y={initialBalance} stroke={grayColor} strokeDasharray="3 3" strokeWidth={1.5} />
+                        </LineChart>
+                    )}
                 </ResponsiveContainer>
                  ) : (
                   <div className="flex flex-col justify-center items-center h-full text-center">
