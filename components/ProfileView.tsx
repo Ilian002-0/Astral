@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleDriveBackup from './GoogleDriveBackup';
@@ -11,9 +10,10 @@ interface ProfileViewProps {
     onInstallClick: () => void;
     notificationSettings: NotificationSettings;
     onNotificationSettingsChange: (settings: NotificationSettings) => void;
+    onLogout: () => void;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, notificationSettings, onNotificationSettingsChange }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, notificationSettings, onNotificationSettingsChange, onLogout }) => {
     const { language, setLanguage, t } = useLanguage();
     const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
     const [isNotificationsExpanded, setIsNotificationsExpanded] = useState(false);
@@ -183,6 +183,19 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                 <div className="p-4 bg-[#0c0b1e] rounded-2xl">
                     <h3 className="text-lg font-medium text-gray-300 mb-4 text-center">{t('profile.backup_title')}</h3>
                     <GoogleDriveBackup />
+                </div>
+
+                {/* DISCONNECT / LOGOUT */}
+                <div className="flex justify-center pt-2">
+                    <button 
+                        onClick={onLogout} 
+                        className="flex items-center gap-2 px-6 py-3 bg-red-900/30 hover:bg-red-900/50 text-red-400 font-bold rounded-2xl border border-red-900/50 transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Sign Out
+                    </button>
                 </div>
 
                 <div className="text-center text-gray-500 text-sm pt-4 border-t border-gray-700/50">

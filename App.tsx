@@ -25,6 +25,7 @@ import Login from './components/Login';
 const App: React.FC = () => {
     // Auth Check
     const { user, loading: authLoading, logout } = useAuth();
+    const [isGuest, setIsGuest] = useState(false);
 
     // 1. Core Data Management
     const { 
@@ -165,12 +166,18 @@ const App: React.FC = () => {
         });
     };
 
+    const handleLogout = async () => {
+        setIsGuest(false);
+        await logout();
+    };
+
     if (authLoading) {
         return <div className="min-h-screen bg-[#0c0b1e] flex items-center justify-center text-white">Loading...</div>;
     }
 
-    if (!user) {
-        return <Login />;
+    // Show Login if not authenticated AND not in guest mode
+    if (!user && !isGuest) {
+        return <Login onGuestLogin={() => setIsGuest(true)} />;
     }
 
     return (
@@ -188,11 +195,6 @@ const App: React.FC = () => {
                                 )}
                                 <div className="app-region-no-drag flex items-center gap-4">
                                     {!isLoading && accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
-                                    <button onClick={() => logout()} className="p-2 text-gray-400 hover:text-white" title="Sign Out">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                        </svg>
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -250,6 +252,7 @@ const App: React.FC = () => {
                                     handleDayClick={handleDayClick}
                                     transitioningDay={transitioningDay}
                                     handleAddClick={handleAddClick}
+                                    onLogout={handleLogout}
                                 />
                             </div>
                         </main>
