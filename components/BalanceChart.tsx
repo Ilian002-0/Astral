@@ -206,6 +206,38 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
       return [min, max === min ? max + 1 : max];
   }, [filteredData, hasAnyData]);
 
+  // Dynamically calculate Y-Axis domain to ensure Goals are visible
+  const yDomain = useMemo(() => {
+      if (!hasAnyData) return ['auto', 'auto'];
+
+      const balances = filteredData.map(d => d.balance);
+      let min = Math.min(...balances);
+      let max = Math.max(...balances);
+
+      // Add default padding (10% range or 5% value)
+      const range = max - min;
+      const padding = range > 0 ? range * 0.1 : Math.abs(min * 0.05) || 100;
+      
+      min -= padding;
+      max += padding;
+
+      // Expand to include Profit Target
+      if (profitGoal?.enabled && profitGoal.showOnChart && profitGoal.target) {
+          const targetY = initialBalance + profitGoal.target;
+          // Set max exactly to targetY if it's higher, to avoid wasted space at top
+          if (targetY > max) max = targetY; 
+      }
+
+      // Expand to include Drawdown Limit
+      if (drawdownGoal?.enabled && drawdownGoal.showOnChart && drawdownGoal.target) {
+          const targetY = initialBalance - (initialBalance * (drawdownGoal.target / 100));
+          // Set min exactly to targetY if it's lower, to avoid wasted space at bottom
+          if (targetY < min) min = targetY;
+      }
+
+      return [min, max];
+  }, [filteredData, hasAnyData, profitGoal, drawdownGoal, initialBalance]);
+
   return (
     <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
       <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
@@ -286,7 +318,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
                 tickLine={false}
                 axisLine={false}
                 type="number"
-                domain={['dataMin', 'dataMax']}
+                domain={yDomain}
                 width={isMobile ? 40 : 60}
               />
               <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
@@ -331,12 +363,12 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
 
               {profitGoal?.enabled && profitGoal.showOnChart && profitGoal.target && (
                   <ReferenceLine y={initialBalance + profitGoal.target} stroke="#22c55e" strokeDasharray="5 5" strokeWidth={2}>
-                      <Label value={t('goals.profit_target_label')} position="insideRight" fill="#22c55e" fontSize={12} dy={-8} />
+                      <Label value={t('goals.profit_target_label')} position="insideRight" fill="#22c55e" fontSize={12} dy={12} />
                   </ReferenceLine>
               )}
               {drawdownGoal?.enabled && drawdownGoal.showOnChart && drawdownGoal.target && (
                   <ReferenceLine y={initialBalance - (initialBalance * (drawdownGoal.target / 100))} stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2}>
-                      <Label value={t('goals.drawdown_target_label')} position="insideRight" fill="#ef4444" fontSize={12} dy={-8} />
+                      <Label value={t('goals.drawdown_target_label')} position="insideRight" fill="#ef4444" fontSize={12} dy={-12} />
                   </ReferenceLine>
               )}
             </AreaChart>
