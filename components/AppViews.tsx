@@ -1,3 +1,4 @@
+
 import React, { Suspense } from 'react';
 import { Account, AppView, CalendarSettings, NotificationSettings, ProcessedData } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -18,9 +19,9 @@ const OpenTradesTable = React.lazy(() => import('./OpenTradesTable'));
 const DashboardMetricsBottom = React.lazy(() => import('./DashboardMetricsBottom'));
 const TradesList = React.lazy(() => import('./TradesList'));
 const CalendarView = React.lazy(() => import('./CalendarView'));
-const ProfileView = React.lazy(() => import('./ProfileView'));
 const AnalysisView = React.lazy(() => import('./AnalysisView'));
 const GoalsView = React.lazy(() => import('./GoalsView'));
+const StrategyView = React.lazy(() => import('./StrategyView'));
 
 interface AppViewsProps {
     view: AppView;
@@ -73,7 +74,7 @@ const AppViews: React.FC<AppViewsProps> = ({
             case 'calendar': return <CalendarSkeleton />;
             case 'analysis': return <AnalysisSkeleton />;
             case 'goals': return <GenericSkeleton />;
-            case 'profile': return <GenericSkeleton />;
+            case 'strategy': return <GenericSkeleton />;
             default: return <DashboardSkeleton />;
         }
     }
@@ -135,7 +136,7 @@ const AppViews: React.FC<AppViewsProps> = ({
                     case 'calendar': return <CalendarView trades={processedData.closedTrades} onDayClick={handleDayClick} transitioningDay={transitioningDay} calendarSettings={calendarSettings} {...commonProps} />;
                     case 'analysis': return <AnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} {...commonProps} />;
                     case 'goals': return <GoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} {...commonProps} />;
-                    case 'profile': return <ProfileView canInstall={!!installPrompt} onInstallClick={handleInstallClick} notificationSettings={notificationSettings} onNotificationSettingsChange={setNotificationSettings} onLogout={onLogout} />;
+                    case 'strategy': return <StrategyView />;
                     default: return null;
                 }
             })()}

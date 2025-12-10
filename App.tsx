@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+
+import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { Account, AppView, CalendarSettings, NotificationSettings } from './types';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
@@ -21,6 +22,15 @@ import { SyncIcon } from './components/SyncIcon';
 import AppViews from './components/AppViews';
 import AppModals from './components/AppModals';
 import Login from './components/Login';
+
+// Lazy load the new Settings Modal
+const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
+
+const ProfileIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
 
 const App: React.FC = () => {
     // Auth Check
@@ -57,6 +67,7 @@ const App: React.FC = () => {
     const [isAddAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [isAccountActionModalOpen, setAccountActionModalOpen] = useState(false);
     const [isDeleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
+    const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'add' | 'update'>('add');
     
     // Calendar transitions
@@ -91,7 +102,7 @@ const App: React.FC = () => {
             import('./components/TradesList');
             import('./components/CalendarView');
             import('./components/GoalsView');
-            import('./components/ProfileView');
+            import('./components/StrategyView');
             import('./components/AnalysisView');
 
             // Dashboard Components
@@ -105,6 +116,7 @@ const App: React.FC = () => {
             import('./components/AccountActionModal');
             import('./components/DayDetailModal');
             import('./components/DeleteConfirmationModal');
+            import('./components/SettingsModal');
         }, 1500); // Wait 1.5s after mount to avoid blocking initial render
 
         return () => clearTimeout(preloadTimer);
@@ -211,6 +223,9 @@ const App: React.FC = () => {
                                 )}
                                 <div className="app-region-no-drag flex items-center gap-4">
                                     {!isLoading && accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
+                                    <button onClick={() => setSettingsModalOpen(true)} className="p-2 rounded-full hover:bg-gray-800 transition-colors" aria-label="Settings">
+                                        <ProfileIcon />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -298,6 +313,15 @@ const App: React.FC = () => {
                 processedData={processedData}
                 transitioningDay={transitioningDay}
             />
+            <Suspense fallback={null}>
+                <SettingsModal
+                    isOpen={isSettingsModalOpen}
+                    onClose={() => setSettingsModalOpen(false)}
+                    notificationSettings={notificationSettings}
+                    onNotificationSettingsChange={setNotificationSettings}
+                    onLogout={handleLogout}
+                />
+            </Suspense>
         </>
     );
 };

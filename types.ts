@@ -1,4 +1,5 @@
 
+
 export interface Trade {
   ticket: number;
   openTime: Date;
@@ -116,7 +117,7 @@ export interface CalendarSettings {
   hideWeekends: boolean;
 }
 
-export type AppView = 'dashboard' | 'trades' | 'calendar' | 'profile' | 'analysis' | 'goals';
+export type AppView = 'dashboard' | 'trades' | 'calendar' | 'strategy' | 'analysis' | 'goals';
 
 export interface NotificationSettings {
   tradeClosed: boolean;
