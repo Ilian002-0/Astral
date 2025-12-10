@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardMetrics, Goals, Goal, GoalMetric } from '../types';
 import GoalCard from './GoalCard';
@@ -175,7 +174,7 @@ const GoalsView: React.FC<GoalsViewProps> = ({ metrics, accountGoals, onSaveGoal
                         enabledGoals.map(({ key, titleKey, isLessBetter, isPercent, goal }, index) => (
                              <div 
                                 key={key} 
-                                className="animate-fade-in-up" 
+                                className="animate-spring-up" 
                                 style={{ animationDelay: `${index * 100}ms`, opacity: 0 }}
                             >
                                 <GoalCard

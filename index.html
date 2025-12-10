@@ -200,6 +200,23 @@
           transform: scale(0.95);
         }
       }
+      
+      /* New Premium Spring Animation */
+      @keyframes spring-up {
+        0% {
+          opacity: 0;
+          transform: translateY(15px) scale(0.95);
+        }
+        60% {
+          opacity: 1;
+          transform: translateY(-2px) scale(1.01);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
       @keyframes grow-and-fade-in {
           from {
               transform: scale(0.8);
@@ -210,6 +227,7 @@
               opacity: 1;
           }
       }
+      
       .animate-fade-in {
         animation: fade-in 0.5s ease-out forwards;
         opacity: 0;
@@ -222,16 +240,21 @@
         animation: fade-out 0.2s ease-out forwards;
       }
       .animate-fade-in-up {
-        animation: fade-in-up 0.5s ease-out forwards;
+        animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         opacity: 0;
       }
       .animate-fade-in-scale-up {
-        animation: fade-in-scale-up 0.3s ease-out forwards;
+        animation: fade-in-scale-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         opacity: 0;
       }
       .animate-fade-out-scale-down {
         animation: fade-out-scale-down 0.2s ease-out forwards;
       }
+      .animate-spring-up {
+        animation: spring-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        opacity: 0;
+      }
+
       /* View Transitions for Calendar Modal */
       [style*="view-transition-name: day-card-active"] {
         contain: layout;

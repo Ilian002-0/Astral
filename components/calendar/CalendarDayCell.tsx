@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { CalendarDay } from '../../types';
 import { getDayIdentifier } from '../../utils/calendar';
@@ -40,7 +39,7 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatC
         ${tradeDayClasses}
         ${isToday ? '!bg-slate-800 border !border-slate-600' : ''}
         ${!day.isCurrentMonth ? 'text-gray-600' : ''}
-        ${!isCapturing ? 'animate-fade-in' : ''}
+        ${!isCapturing ? 'animate-spring-up' : ''}
     `;
     
     const TradeIcon = () => (
@@ -56,7 +55,7 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({ day, onClick, formatC
             className={cellClasses} 
             onClick={day.tradeCount > 0 ? onClick : undefined}
             style={{ 
-                animationDelay: !isCapturing ? `${index * 15}ms` : '0s', 
+                animationDelay: !isCapturing ? `${index * 20}ms` : '0s', 
                 opacity: isCapturing ? 1 : 0,
                 // @ts-ignore
                 viewTransitionName: transitionName
