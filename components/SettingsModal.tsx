@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import Toggle from './Toggle';
@@ -30,14 +30,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     useLockBodyScroll(isOpen);
 
     useEffect(() => {
+        let timeoutId: number;
         if (isOpen) {
-            // Trigger animation frame to ensure transition plays
-            requestAnimationFrame(() => {
+            // Use a small delay to ensure the element is mounted and the initial state (opacity-0) is applied
+            // before transitioning to opacity-100. This fixes the "no animation on first open" issue.
+            timeoutId = window.setTimeout(() => {
                 setIsVisible(true);
-            });
+            }, 10); 
         } else {
             setIsVisible(false);
         }
+        return () => clearTimeout(timeoutId);
     }, [isOpen]);
 
     const handleClose = () => {
@@ -90,15 +93,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
     return (
         <div 
-            className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-ios ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isVisible ? '' : 'pointer-events-none'}`}
         >
-            {/* Backdrop */}
+            {/* Backdrop with independent transition */}
             <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-ios ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={handleClose}
             ></div>
 
-            {/* Modal Card */}
+            {/* Modal Card with independent transition */}
             <div 
                 className={`relative w-full max-w-sm p-6 sm:p-8 bg-[#16152c] border border-gray-700/50 rounded-3xl shadow-2xl transition-all duration-300 ease-ios ${isVisible ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`} 
                 onClick={e => e.stopPropagation()}
