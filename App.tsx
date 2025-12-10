@@ -226,7 +226,7 @@ const App: React.FC = () => {
                 <div className="flex-1 flex flex-col w-full">
                     <header className="flex-shrink-0 z-10 bg-[#0c0b1e] shadow-lg shadow-black/30 app-region-drag">
                         <div className="max-w-4xl mx-auto px-4 md:px-6" style={{ paddingTop: 'env(titlebar-area-height, 0)'}}>
-                            <div className={`flex ${!isDesktop ? 'justify-between' : 'justify-end'} items-center h-20`}>
+                            <div className={`flex ${!isDesktop ? 'justify-between' : 'justify-end'} items-center h-20 gap-2`}>
                                 {!isDesktop && (
                                     <div className="app-region-no-drag">
                                         <Logo layout="mobile" />
@@ -267,7 +267,7 @@ const App: React.FC = () => {
 
                         <main
                             ref={pullToRefreshRef}
-                            className="flex-1 overflow-y-auto h-full"
+                            className="flex-1 overflow-y-auto h-full overscroll-y-contain"
                             style={{
                                 transform: `translateY(${isRefreshing ? 50 : pullDistance}px)`,
                                 transition: pullDistance === 0 && !isRefreshing ? 'transform 0.3s' : 'none',
