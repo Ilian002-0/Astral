@@ -51,6 +51,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         }, 300);
     };
 
+    const handleReload = () => {
+        window.location.reload();
+    };
+
     const requestNotificationPermission = async () => {
         if (!('Notification' in window)) return;
         const permission = await Notification.requestPermission();
@@ -109,7 +113,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             >
                 <div className="flex justify-between items-center mb-6 border-b border-gray-700/50 pb-4">
                     <h2 className="text-xl font-bold text-white">{t('settings.title')}</h2>
-                    <button onClick={handleClose} className="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={handleReload}
+                            className="p-2 rounded-full bg-gray-800 text-cyan-400 hover:bg-gray-700 hover:text-cyan-300 transition-colors group"
+                            title="Restart & Update"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform duration-500 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                        <button onClick={handleClose} className="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
                 </div>
 
                 <div className="space-y-6">
