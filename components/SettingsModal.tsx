@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import Toggle from './Toggle';
@@ -11,6 +11,7 @@ interface SettingsModalProps {
     notificationSettings: NotificationSettings;
     onNotificationSettingsChange: (settings: NotificationSettings) => void;
     onLogout: () => void;
+    originRect?: DOMRect | null;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
@@ -18,12 +19,34 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onClose, 
     notificationSettings, 
     onNotificationSettingsChange, 
-    onLogout 
+    onLogout,
+    originRect
 }) => {
     const { t, language, setLanguage } = useLanguage();
     const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
+    const [isVisible, setIsVisible] = useState(false);
     
+    // We lock the scroll while open
     useLockBodyScroll(isOpen);
+
+    useEffect(() => {
+        if (isOpen) {
+            // Trigger animation frame to ensure transition plays
+            requestAnimationFrame(() => {
+                setIsVisible(true);
+            });
+        } else {
+            setIsVisible(false);
+        }
+    }, [isOpen]);
+
+    const handleClose = () => {
+        setIsVisible(false);
+        // Wait for the animation to finish before unmounting (300ms matches duration-300)
+        setTimeout(() => {
+            onClose();
+        }, 300);
+    };
 
     const requestNotificationPermission = async () => {
         if (!('Notification' in window)) return;
@@ -42,17 +65,48 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         }
     };
 
+    // Calculate dynamic transform origin to start/end exactly at the button position
+    const transformStyle = useMemo(() => {
+        if (!originRect || typeof window === 'undefined') return {};
+
+        // Window center
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+
+        // Origin center
+        const originX = originRect.left + originRect.width / 2;
+        const originY = originRect.top + originRect.height / 2;
+
+        // Difference
+        const deltaX = originX - centerX;
+        const deltaY = originY - centerY;
+
+        return {
+            transformOrigin: `calc(50% + ${deltaX}px) calc(50% + ${deltaY}px)`
+        };
+    }, [originRect]);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 animate-fade-in-fast" onClick={onClose}>
+        <div 
+            className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-ios ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        >
+            {/* Backdrop */}
             <div 
-                className="w-full max-w-sm p-6 sm:p-8 bg-[#16152c] border border-gray-700/50 rounded-3xl shadow-2xl animate-fade-in-scale-up" 
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={handleClose}
+            ></div>
+
+            {/* Modal Card */}
+            <div 
+                className={`relative w-full max-w-sm p-6 sm:p-8 bg-[#16152c] border border-gray-700/50 rounded-3xl shadow-2xl transition-all duration-300 ease-ios ${isVisible ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`} 
                 onClick={e => e.stopPropagation()}
+                style={transformStyle}
             >
                 <div className="flex justify-between items-center mb-6 border-b border-gray-700/50 pb-4">
                     <h2 className="text-xl font-bold text-white">{t('settings.title')}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+                    <button onClick={handleClose} className="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
                 </div>
 
                 <div className="space-y-6">
@@ -103,7 +157,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button 
                         onClick={() => {
                             onLogout();
-                            onClose();
+                            onClose(); 
                         }}
                         className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-red-900/30 hover:bg-red-900/50 text-red-400 font-bold rounded-2xl border border-red-900/50 transition-colors"
                     >

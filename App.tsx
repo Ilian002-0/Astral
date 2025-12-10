@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, Suspense, useRef } from 'react';
 import { Account, AppView, CalendarSettings, NotificationSettings } from './types';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
@@ -73,6 +73,10 @@ const App: React.FC = () => {
     // Calendar transitions
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
     const [transitioningDay, setTransitioningDay] = useState<string | null>(null);
+
+    // Profile Animation Ref
+    const profileButtonRef = useRef<HTMLButtonElement>(null);
+    const [settingsOrigin, setSettingsOrigin] = useState<DOMRect | null>(null);
 
     // 3. Derived Data Processing
     const processedData = useTradeData(currentAccount);
@@ -193,6 +197,13 @@ const App: React.FC = () => {
         await logout();
     };
 
+    const handleOpenSettings = () => {
+        if (profileButtonRef.current) {
+            setSettingsOrigin(profileButtonRef.current.getBoundingClientRect());
+        }
+        setSettingsModalOpen(true);
+    };
+
     // Note: authLoading is now false immediately if we have a cached user in localStorage
     if (authLoading) {
         return <div className="min-h-screen bg-[#0c0b1e] flex items-center justify-center text-white">
@@ -223,7 +234,12 @@ const App: React.FC = () => {
                                 )}
                                 <div className="app-region-no-drag flex items-center gap-2 md:gap-4">
                                     {!isLoading && accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
-                                    <button onClick={() => setSettingsModalOpen(true)} className="p-2 rounded-full hover:bg-gray-800 transition-colors" aria-label="Settings">
+                                    <button 
+                                        ref={profileButtonRef}
+                                        onClick={handleOpenSettings} 
+                                        className="p-2 rounded-full hover:bg-gray-800 transition-colors" 
+                                        aria-label="Settings"
+                                    >
                                         <ProfileIcon />
                                     </button>
                                 </div>
@@ -320,6 +336,7 @@ const App: React.FC = () => {
                     notificationSettings={notificationSettings}
                     onNotificationSettingsChange={setNotificationSettings}
                     onLogout={handleLogout}
+                    originRect={settingsOrigin}
                 />
             </Suspense>
         </>
