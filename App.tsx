@@ -221,7 +221,7 @@ const App: React.FC = () => {
                                         <Logo layout="mobile" />
                                     </div>
                                 )}
-                                <div className="app-region-no-drag flex items-center gap-4">
+                                <div className="app-region-no-drag flex items-center gap-2 md:gap-4">
                                     {!isLoading && accounts.length > 0 && <AccountSelector accountNames={accounts.map(a => a.name)} currentAccount={currentAccountName} onSelectAccount={setCurrentAccountName} onAddAccount={handleOpenAccountActions} />}
                                     <button onClick={() => setSettingsModalOpen(true)} className="p-2 rounded-full hover:bg-gray-800 transition-colors" aria-label="Settings">
                                         <ProfileIcon />
