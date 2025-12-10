@@ -2,7 +2,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { triggerHaptic } from '../utils/haptics';
 
-const PULL_THRESHOLD = 80; // Pixels to pull down before refresh is triggered
+const PULL_THRESHOLD = 80; // Pixels to trigger refresh
+const MAX_PULL_DISTANCE = 150; // Maximum pixels the UI can be pulled down
+const RESISTANCE_FACTOR = 0.4; // Dampening factor (move finger 10px -> UI moves 4px)
 
 const usePullToRefresh = (onRefresh: () => void, disabled: boolean = false) => {
     const pullToRefreshRef = useRef<HTMLElement>(null);
@@ -23,16 +25,24 @@ const usePullToRefresh = (onRefresh: () => void, disabled: boolean = false) => {
         if (disabled || pullStart === null) return;
 
         const touchY = e.touches[0].clientY;
-        const distance = touchY - pullStart;
+        const rawDistance = touchY - pullStart;
         const element = pullToRefreshRef.current;
 
         // Only register pull distance if pulling down from the top
-        if (element && distance > 0 && element.scrollTop === 0) {
+        if (element && rawDistance > 0 && element.scrollTop === 0) {
             // Prevent the default browser scroll behavior when we are handling the pull
-            e.preventDefault();
-            setPullDistance(distance);
+            if (e.cancelable) e.preventDefault();
+            
+            // Apply resistance and cap the distance
+            const dampenedDistance = rawDistance * RESISTANCE_FACTOR;
+            const finalDistance = Math.min(dampenedDistance, MAX_PULL_DISTANCE);
+            
+            setPullDistance(finalDistance);
+        } else {
+            // If user pushes back up past the start point, reset
+            if (pullDistance > 0) setPullDistance(0);
         }
-    }, [pullStart, disabled]);
+    }, [pullStart, disabled, pullDistance]);
 
     const handleTouchEnd = useCallback(async () => {
         if (disabled) return;

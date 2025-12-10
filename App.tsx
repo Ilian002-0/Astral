@@ -247,7 +247,7 @@ const App: React.FC = () => {
                         </div>
                     </header>
                     
-                    <div className="flex-1 relative overflow-y-hidden">
+                    <div className="flex-1 relative overflow-y-hidden bg-[#0c0b1e]">
                         {/* Pull-to-Refresh Indicator (Mobile Only) */}
                         {!isDesktop && !disablePTR && (
                             <div
@@ -267,7 +267,7 @@ const App: React.FC = () => {
 
                         <main
                             ref={pullToRefreshRef}
-                            className="flex-1 overflow-y-auto h-full overscroll-y-contain"
+                            className="flex-1 overflow-y-auto min-h-full overscroll-y-contain"
                             style={{
                                 transform: `translateY(${isRefreshing ? 50 : pullDistance}px)`,
                                 transition: pullDistance === 0 && !isRefreshing ? 'transform 0.3s' : 'none',
