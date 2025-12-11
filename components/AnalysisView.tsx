@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
     AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label, Legend
@@ -10,7 +9,6 @@ import MultiSelectDropdown from './MultiSelectDropdown';
 import FilteredTradesTable from './FilteredTradesTable';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { triggerHaptic } from '../utils/haptics';
-import useDBStorage from '../hooks/useLocalStorage';
 
 import CustomTooltip from './charts/CustomTooltip';
 import MonthlyPerformanceChart from './analysis/MonthlyPerformanceChart';
@@ -22,6 +20,7 @@ interface AnalysisViewProps {
   initialBalance: Account['initialBalance'];
   onBackToDashboard: () => void;
   currency: 'USD' | 'EUR';
+  strategies: Strategy[];
 }
 
 type TradeWithProfitPercentage = Trade & { profitPercentage: number };
@@ -83,9 +82,8 @@ const SplitTooltip = ({ active, payload, currency, language }: any) => {
     return null;
 };
 
-const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onBackToDashboard, currency }) => {
+const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onBackToDashboard, currency, strategies }) => {
   const { t, language } = useLanguage();
-  const { data: strategies } = useDBStorage<Strategy[]>('user_strategies_v1', []);
 
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
   const [selectedStrategyNames, setSelectedStrategyNames] = useState<string[]>([]);

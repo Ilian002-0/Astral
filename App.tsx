@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, Suspense, useRef } from 'react';
-import { Account, AppView, CalendarSettings, NotificationSettings } from './types';
+import { Account, AppView, CalendarSettings, NotificationSettings, Strategy } from './types';
 import { getDayIdentifier } from './utils/calendar';
 import useMediaQuery from './hooks/useMediaQuery';
 import usePullToRefresh from './hooks/usePullToRefresh';
@@ -12,6 +12,7 @@ import { useSync } from './hooks/useSync';
 import { usePWA } from './hooks/usePWA';
 import { useTradeData } from './hooks/useTradeData';
 import { useAuth } from './contexts/AuthContext';
+import { useStrategyManager } from './hooks/useStrategyManager';
 
 // Static Imports (Layout & critical UI)
 import AccountSelector from './components/AccountSelector';
@@ -59,11 +60,16 @@ const App: React.FC = () => {
         updateAccountTrades
     } = useAccountManager();
 
-    // 2. Settings & UI State
+    // 2. Strategy Management (Global Sync)
+    const { strategies, saveStrategy, deleteStrategy } = useStrategyManager();
+
+    // 3. Settings & UI State
     const { data: notificationSettings, setData: setNotificationSettings } = useDBStorage<NotificationSettings>('notification_settings', { tradeClosed: true, weeklySummary: true });
     const { data: calendarSettings, setData: setCalendarSettings } = useDBStorage<CalendarSettings>('calendar_settings_v1', { hideWeekends: false });
     
     const [view, setView] = useState<AppView>('dashboard');
+    const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null);
+
     const [isAddAccountModalOpen, setAddAccountModalOpen] = useState(false);
     const [isAccountActionModalOpen, setAccountActionModalOpen] = useState(false);
     const [isDeleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
@@ -78,13 +84,13 @@ const App: React.FC = () => {
     const profileButtonRef = useRef<HTMLButtonElement>(null);
     const [settingsOrigin, setSettingsOrigin] = useState<DOMRect | null>(null);
 
-    // 3. Derived Data Processing
+    // 4. Derived Data Processing
     const processedData = useTradeData(currentAccount);
 
-    // 4. Synchronization Logic
+    // 5. Synchronization Logic
     const { isSyncing, syncError, refreshAccount, setSyncError } = useSync(accounts, updateAccountTrades);
     
-    // 5. PWA Integration
+    // 6. PWA Integration
     const { 
         installPrompt, 
         launchedFileContent, 
@@ -98,7 +104,7 @@ const App: React.FC = () => {
     const displayError = syncError || pwaError;
     const isDesktop = useMediaQuery('(min-width: 768px)');
 
-    // 6. Preload Lazy Components
+    // 7. Preload Lazy Components
     useEffect(() => {
         const preloadTimer = setTimeout(() => {
             // Main Views
@@ -108,6 +114,7 @@ const App: React.FC = () => {
             import('./components/GoalsView');
             import('./components/StrategyView');
             import('./components/AnalysisView');
+            import('./components/StrategyDetailView');
 
             // Dashboard Components
             import('./components/BalanceChart');
@@ -126,6 +133,46 @@ const App: React.FC = () => {
         return () => clearTimeout(preloadTimer);
     }, []);
     
+    // Browser Back Button Handler
+    useEffect(() => {
+        const onPopState = (event: PopStateEvent) => {
+            // If the state has a 'view' property, restore it
+            if (event.state && event.state.view) {
+                setView(event.state.view);
+                if (event.state.view === 'strategy-detail' && event.state.strategyId) {
+                    setSelectedStrategyId(event.state.strategyId);
+                }
+            } else {
+                // Default to dashboard if no state (e.g. initial load or back to root)
+                setView('dashboard');
+                setSelectedStrategyId(null);
+            }
+        };
+
+        window.addEventListener('popstate', onPopState);
+        return () => window.removeEventListener('popstate', onPopState);
+    }, []);
+
+    // Helper to change view and push to history
+    const handleNavigate = useCallback((newView: AppView) => {
+        setView(newView);
+        // Clear query params when navigating via menu
+        window.history.pushState({ view: newView }, '', `/?view=${newView}`);
+    }, []);
+
+    const handleStrategySelect = useCallback((strategy: Strategy) => {
+        setSelectedStrategyId(strategy.id);
+        setView('strategy-detail');
+        // Push state so back button works
+        window.history.pushState(
+            { view: 'strategy-detail', strategyId: strategy.id }, 
+            '', 
+            `/?view=strategy-detail&id=${strategy.id}`
+        );
+        // Simple scroll to top
+        window.scrollTo(0, 0);
+    }, []);
+
     // Pull to Refresh Handler
     const handleRefresh = useCallback(() => {
         if (currentAccount) refreshAccount(currentAccount);
@@ -222,7 +269,7 @@ const App: React.FC = () => {
     return (
         <>
             <div className="flex h-screen overflow-hidden">
-                {isDesktop && <Sidebar currentView={view} onNavigate={setView} canInstall={!!installPrompt} onInstallClick={handleInstallClick} />}
+                {isDesktop && <Sidebar currentView={view} onNavigate={handleNavigate} canInstall={!!installPrompt} onInstallClick={handleInstallClick} />}
                 <div className="flex-1 flex flex-col w-full">
                     <header className="flex-shrink-0 z-10 bg-[#0c0b1e] shadow-lg shadow-black/30 app-region-drag">
                         <div className="max-w-4xl mx-auto px-4 md:px-6" style={{ paddingTop: 'env(titlebar-area-height, 0)'}}>
@@ -289,7 +336,7 @@ const App: React.FC = () => {
                                     processedData={processedData}
                                     isSyncing={isSyncing}
                                     handleRefresh={handleRefresh}
-                                    setView={setView}
+                                    setView={handleNavigate}
                                     saveGoals={saveGoals}
                                     installPrompt={installPrompt}
                                     handleInstallClick={handleInstallClick}
@@ -301,11 +348,16 @@ const App: React.FC = () => {
                                     transitioningDay={transitioningDay}
                                     handleAddClick={handleAddClick}
                                     onLogout={handleLogout}
+                                    strategies={strategies}
+                                    saveStrategy={saveStrategy}
+                                    deleteStrategy={deleteStrategy}
+                                    selectedStrategyId={selectedStrategyId}
+                                    onStrategySelect={handleStrategySelect}
                                 />
                             </div>
                         </main>
                     </div>
-                    {!isDesktop && <BottomNav hasAccount={!!currentAccount} currentView={view} onNavigate={setView} calendarSettings={calendarSettings} onCalendarSettingsChange={setCalendarSettings} />}
+                    {!isDesktop && <BottomNav hasAccount={!!currentAccount} currentView={view} onNavigate={handleNavigate} calendarSettings={calendarSettings} onCalendarSettingsChange={setCalendarSettings} />}
                 </div>
             </div>
             

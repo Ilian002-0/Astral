@@ -1,6 +1,6 @@
 
 import React, { Suspense } from 'react';
-import { Account, AppView, CalendarSettings, NotificationSettings, ProcessedData } from '../types';
+import { Account, AppView, CalendarSettings, NotificationSettings, ProcessedData, Strategy } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import Header from './Header';
 import { 
@@ -22,6 +22,7 @@ const CalendarView = React.lazy(() => import('./CalendarView'));
 const AnalysisView = React.lazy(() => import('./AnalysisView'));
 const GoalsView = React.lazy(() => import('./GoalsView'));
 const StrategyView = React.lazy(() => import('./StrategyView'));
+const StrategyDetailView = React.lazy(() => import('./StrategyDetailView'));
 
 interface AppViewsProps {
     view: AppView;
@@ -42,6 +43,11 @@ interface AppViewsProps {
     transitioningDay: string | null;
     handleAddClick: () => void;
     onLogout: () => void;
+    strategies: Strategy[];
+    saveStrategy: (s: any) => void;
+    deleteStrategy: (id: string) => void;
+    selectedStrategyId: string | null;
+    onStrategySelect: (strategy: Strategy) => void;
 }
 
 const AppViews: React.FC<AppViewsProps> = ({
@@ -62,7 +68,12 @@ const AppViews: React.FC<AppViewsProps> = ({
     handleDayClick,
     transitioningDay,
     handleAddClick,
-    onLogout
+    onLogout,
+    strategies,
+    saveStrategy,
+    deleteStrategy,
+    selectedStrategyId,
+    onStrategySelect
 }) => {
     const { t } = useLanguage();
 
@@ -75,6 +86,7 @@ const AppViews: React.FC<AppViewsProps> = ({
             case 'analysis': return <AnalysisSkeleton />;
             case 'goals': return <GenericSkeleton />;
             case 'strategy': return <GenericSkeleton />;
+            case 'strategy-detail': return <GenericSkeleton />;
             default: return <DashboardSkeleton />;
         }
     }
@@ -134,9 +146,27 @@ const AppViews: React.FC<AppViewsProps> = ({
                         );
                     case 'trades': return <TradesList trades={processedData.closedTrades} {...commonProps} />;
                     case 'calendar': return <CalendarView trades={processedData.closedTrades} onDayClick={handleDayClick} transitioningDay={transitioningDay} calendarSettings={calendarSettings} {...commonProps} />;
-                    case 'analysis': return <AnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} {...commonProps} />;
+                    case 'analysis': return <AnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} strategies={strategies} {...commonProps} />;
                     case 'goals': return <GoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} {...commonProps} />;
-                    case 'strategy': return <StrategyView processedData={processedData} initialBalance={currentAccount.initialBalance} onLogout={onLogout} {...commonProps} />;
+                    case 'strategy': return <StrategyView processedData={processedData} initialBalance={currentAccount.initialBalance} onLogout={onLogout} strategies={strategies} onSaveStrategy={saveStrategy} onDeleteStrategy={deleteStrategy} onStrategySelect={onStrategySelect} {...commonProps} />;
+                    case 'strategy-detail': 
+                        const selectedStrategy = strategies.find(s => s.id === selectedStrategyId);
+                        if (!selectedStrategy) {
+                            setView('strategy'); // Fallback
+                            return null;
+                        }
+                        const filteredTrades = processedData.closedTrades.filter(t => 
+                            selectedStrategy.criteria.comment ? t.comment === selectedStrategy.criteria.comment : true
+                        );
+                        return (
+                            <StrategyDetailView 
+                                strategy={selectedStrategy}
+                                trades={filteredTrades}
+                                initialBalance={currentAccount.initialBalance}
+                                onBack={() => window.history.back()}
+                                {...commonProps} 
+                            />
+                        );
                     default: return null;
                 }
             })()}

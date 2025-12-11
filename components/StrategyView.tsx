@@ -2,9 +2,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Trade, Strategy, ProcessedData } from '../types';
-import useDBStorage from '../hooks/useLocalStorage';
 import AddStrategyModal from './AddStrategyModal';
-import StrategyDetailModal from './StrategyDetailModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import StrategyActionModal from './StrategyActionModal';
 import StrategyImportModal from './StrategyImportModal';
@@ -12,23 +10,27 @@ import LoginRequiredModal from './LoginRequiredModal';
 import { triggerHaptic } from '../utils/haptics';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface StrategyViewProps {
     processedData: ProcessedData | null;
     currency?: 'USD' | 'EUR';
     initialBalance: number;
     onLogout: () => void;
+    strategies: Strategy[];
+    onSaveStrategy: (strategyData: { name: string, criteria: any, id?: string }) => void;
+    onDeleteStrategy: (id: string) => void;
+    onStrategySelect: (strategy: Strategy) => void; // New Prop for navigation
 }
 
 const StrategyCard: React.FC<{
     strategy: Strategy;
     totalProfit: number;
     tradeCount: number;
-    onClick: (rect: DOMRect) => void;
-    onLongPress: () => void;
+    onClick: () => void;
+    onMenuClick: (rect: DOMRect) => void;
     currency: 'USD' | 'EUR';
-}> = ({ strategy, totalProfit, tradeCount, onClick, onLongPress, currency }) => {
+}> = ({ strategy, totalProfit, tradeCount, onClick, onMenuClick, currency }) => {
     const { language } = useLanguage();
     const timerRef = React.useRef<number | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -36,7 +38,10 @@ const StrategyCard: React.FC<{
     const handleTouchStart = () => {
         timerRef.current = window.setTimeout(() => {
             triggerHaptic('medium');
-            onLongPress();
+            if (cardRef.current) {
+                // Pass the card's rect for the animation origin on long press
+                onMenuClick(cardRef.current.getBoundingClientRect());
+            }
         }, 500);
     };
 
@@ -45,9 +50,7 @@ const StrategyCard: React.FC<{
     };
 
     const handleClick = () => {
-        if (cardRef.current) {
-            onClick(cardRef.current.getBoundingClientRect());
-        }
+        onClick();
     };
 
     const formatCurrency = (value: number) => {
@@ -70,7 +73,7 @@ const StrategyCard: React.FC<{
     return (
         <div
             ref={cardRef}
-            className="bg-[#16152c] p-5 rounded-3xl border border-gray-700/50 shadow-lg relative overflow-hidden group animate-spring-up active:scale-95 transition-all duration-200 cursor-pointer"
+            className="bg-[#16152c] p-5 rounded-3xl border border-gray-700/50 shadow-lg relative overflow-hidden group animate-spring-up transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(34,211,238,0.15)] hover:border-cyan-500/30 cursor-pointer"
             onClick={handleClick}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
@@ -85,12 +88,24 @@ const StrategyCard: React.FC<{
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                 </div>
-                <span className="text-xs font-medium text-gray-500 bg-gray-800/50 px-2 py-1 rounded-lg">
-                    {tradeCount} Trades
-                </span>
+                
+                {/* Kebab Menu Button */}
+                <button 
+                    className="p-2 -mr-2 -mt-2 text-gray-500 hover:text-white hover:bg-gray-700/50 rounded-full transition-colors z-10"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // Clear the long press timer if the button is clicked directly
+                        if (timerRef.current) clearTimeout(timerRef.current);
+                        onMenuClick(e.currentTarget.getBoundingClientRect());
+                    }}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                </button>
             </div>
             
-            <h3 className="text-lg font-bold text-white mb-1 truncate">{strategy.name}</h3>
+            <h3 className="text-lg font-bold text-white mb-1 truncate pr-6">{strategy.name}</h3>
             
             <div className="flex items-center text-xs text-gray-400 mb-4">
                 <span className="truncate">
@@ -106,10 +121,9 @@ const StrategyCard: React.FC<{
     );
 };
 
-const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = 'USD', initialBalance, onLogout }) => {
+const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = 'USD', initialBalance, onLogout, strategies, onSaveStrategy, onDeleteStrategy, onStrategySelect }) => {
     const { t } = useLanguage();
     const { user } = useAuth();
-    const { data: strategies, setData: setStrategies } = useDBStorage<Strategy[]>('user_strategies_v1', []);
     
     // Modal states
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -117,11 +131,12 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
-    const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
-    const [selectedStrategyOrigin, setSelectedStrategyOrigin] = useState<DOMRect | null>(null);
+    // Action Menu State
+    const [activeStrategyForAction, setActiveStrategyForAction] = useState<Strategy | null>(null);
+    const [actionMenuOrigin, setActionMenuOrigin] = useState<DOMRect | null>(null);
+
     const [strategyToEdit, setStrategyToEdit] = useState<Strategy | null>(null);
     const [strategyToDelete, setStrategyToDelete] = useState<Strategy | null>(null);
-    const [activeStrategyForAction, setActiveStrategyForAction] = useState<Strategy | null>(null);
     
     const [cloudStrategies, setCloudStrategies] = useState<Strategy[]>([]);
     const [isLoadingCloud, setIsLoadingCloud] = useState(false);
@@ -138,87 +153,24 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
         return Array.from(comments);
     }, [allTrades]);
 
-    // --- Cloud Sync Helper ---
-    // Reads current cloud list, merges the specific strategy update, and writes back.
-    const pushStrategyToCloud = async (strategy: Strategy) => {
-        if (!user) return;
-
-        // SANITIZATION: Explicitly pick only the fields we want to store.
-        // This guarantees no local calculation data (like profit, trades array) leaks to the DB.
-        const cleanStrategy: Strategy = {
-            id: strategy.id,
-            name: strategy.name,
-            criteria: {
-                comment: strategy.criteria.comment,
-                magicNumber: strategy.criteria.magicNumber
-            },
-            createdAt: strategy.createdAt || new Date().toISOString()
-        };
-
-        try {
-            const docRef = doc(db, 'users', user.uid);
-            const docSnap = await getDoc(docRef);
-            let currentCloudStrategies: Strategy[] = [];
-            
-            if (docSnap.exists() && docSnap.data().strategies) {
-                currentCloudStrategies = docSnap.data().strategies;
-            }
-
-            // Check if exists, update or append
-            const index = currentCloudStrategies.findIndex(s => s.id === cleanStrategy.id);
-            if (index !== -1) {
-                currentCloudStrategies[index] = cleanStrategy;
-            } else {
-                currentCloudStrategies.push(cleanStrategy);
-            }
-
-            await setDoc(docRef, { strategies: currentCloudStrategies }, { merge: true });
-        } catch (e) {
-            console.error("Failed to push strategy to cloud:", e);
-        }
-    };
-
     const handleSaveStrategy = (strategyData: { name: string, criteria: any, id?: string }) => {
-        let updatedStrategy: Strategy;
-
-        if (strategyData.id) {
-            // Edit Mode
-            updatedStrategy = strategies.find(s => s.id === strategyData.id)!;
-            // Safety check
-            if (updatedStrategy) {
-                updatedStrategy = { ...updatedStrategy, name: strategyData.name, criteria: strategyData.criteria };
-                setStrategies(prev => prev.map(s => s.id === strategyData.id ? updatedStrategy : s));
-            } else {
-                return; 
-            }
-        } else {
-            // Create Mode
-            updatedStrategy = {
-                id: crypto.randomUUID(),
-                createdAt: new Date().toISOString(),
-                name: strategyData.name,
-                criteria: strategyData.criteria
-            };
-            setStrategies(prev => [...prev, updatedStrategy]);
-        }
-        
-        // Sync to cloud (Background)
-        pushStrategyToCloud(updatedStrategy);
-
+        onSaveStrategy(strategyData);
         setIsFormModalOpen(false);
         setStrategyToEdit(null);
         triggerHaptic('success');
     };
 
-    const handleLongPress = (strategy: Strategy) => {
+    const handleMenuOpen = (strategy: Strategy, origin: DOMRect) => {
         setActiveStrategyForAction(strategy);
+        setActionMenuOrigin(origin);
         setIsActionModalOpen(true);
+        triggerHaptic('light');
     };
 
     const handleEditAction = () => {
         if (activeStrategyForAction) {
             setStrategyToEdit(activeStrategyForAction);
-            setIsActionModalOpen(false);
+            // Close action modal first, then open form
             setTimeout(() => setIsFormModalOpen(true), 100);
         }
     };
@@ -226,15 +178,12 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
     const handleDeleteAction = () => {
         if (activeStrategyForAction) {
             setStrategyToDelete(activeStrategyForAction);
-            setIsActionModalOpen(false);
         }
     };
 
     const handleConfirmDelete = () => {
         if (strategyToDelete) {
-            setStrategies(prev => prev.filter(s => s.id !== strategyToDelete.id));
-            // Note: We currently DO NOT delete from the cloud repository to allow future recovery/import.
-            // "Deleting" effectively means removing from this device.
+            onDeleteStrategy(strategyToDelete.id);
             setStrategyToDelete(null);
             triggerHaptic('heavy');
         }
@@ -252,14 +201,13 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
             const docSnap = await getDoc(docRef);
             if (docSnap.exists() && docSnap.data().strategies) {
                 const remote: Strategy[] = docSnap.data().strategies;
-                // Filter out strategies that are already on the device
                 const localIds = new Set(strategies.map(s => s.id));
                 const newOnes = remote.filter(s => !localIds.has(s.id));
                 setCloudStrategies(newOnes);
                 setIsImportModalOpen(true);
             } else {
                 setCloudStrategies([]);
-                setIsImportModalOpen(true); // Open anyway to show "No strategies" message
+                setIsImportModalOpen(true);
             }
         } catch (e) {
             console.error("Error fetching cloud strategies:", e);
@@ -270,19 +218,18 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
     };
 
     const handleImportStrategies = (imported: Strategy[]) => {
-        setStrategies(prev => [...prev, ...imported]);
+        imported.forEach(s => {
+            onSaveStrategy({ name: s.name, criteria: s.criteria, id: s.id });
+        });
         triggerHaptic('success');
     };
 
-    // Calculate quick stats for the cards
     const strategyStats = useMemo(() => {
         return strategies.map(s => {
             let filtered = [];
             if (s.criteria.comment) {
                 filtered = allTrades.filter(t => t.comment === s.criteria.comment);
             }
-            // Add magic number logic later
-            
             const totalProfit = filtered.reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0);
             return { id: s.id, totalProfit, tradeCount: filtered.length, filteredTrades: filtered };
         });
@@ -344,11 +291,8 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                                 strategy={strategy}
                                 totalProfit={stats?.totalProfit || 0}
                                 tradeCount={stats?.tradeCount || 0}
-                                onClick={(rect) => {
-                                    setSelectedStrategyOrigin(rect);
-                                    setSelectedStrategy(strategy);
-                                }}
-                                onLongPress={() => handleLongPress(strategy)}
+                                onClick={() => onStrategySelect(strategy)}
+                                onMenuClick={(rect) => handleMenuOpen(strategy, rect)}
                                 currency={currency}
                             />
                         );
@@ -381,24 +325,13 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                 onLogin={onLogout}
             />
 
-            {selectedStrategy && (
-                <StrategyDetailModal
-                    isOpen={!!selectedStrategy}
-                    onClose={() => setSelectedStrategy(null)}
-                    strategy={selectedStrategy}
-                    trades={strategyStats.find(s => s.id === selectedStrategy.id)?.filteredTrades || []}
-                    initialBalance={initialBalance}
-                    currency={currency}
-                    originRect={selectedStrategyOrigin}
-                />
-            )}
-
             <StrategyActionModal
                 isOpen={isActionModalOpen}
                 onClose={() => setIsActionModalOpen(false)}
                 onEdit={handleEditAction}
                 onDelete={handleDeleteAction}
                 strategyName={activeStrategyForAction?.name || ''}
+                originRect={actionMenuOrigin}
             />
 
             <DeleteConfirmationModal
