@@ -73,6 +73,12 @@ export interface MaxDrawdown {
   percentage: number;
 }
 
+export interface PositionStats {
+    count: number;
+    won: number;
+    winRate: number;
+}
+
 export interface DashboardMetrics {
   totalBalance: number; // Represents Equity (Closed Balance + Floating P/L)
   floatingPnl: number;
@@ -96,6 +102,15 @@ export interface DashboardMetrics {
   grossProfit: number;
   grossLoss: number;
   totalReturnPercent: number;
+  
+  // Advanced Metrics
+  expectedPayoff: number;
+  largestProfitTrade: number;
+  largestLossTrade: number;
+  maxConsecutiveWins: number;
+  maxConsecutiveLosses: number;
+  longPositions: PositionStats;
+  shortPositions: PositionStats;
 }
 
 export interface CalendarDay {
@@ -122,4 +137,14 @@ export type AppView = 'dashboard' | 'trades' | 'calendar' | 'strategy' | 'analys
 export interface NotificationSettings {
   tradeClosed: boolean;
   weeklySummary: boolean;
+}
+
+export interface Strategy {
+  id: string;
+  name: string;
+  criteria: {
+    comment?: string;
+    magicNumber?: string;
+  };
+  createdAt: string;
 }

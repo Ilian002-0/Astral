@@ -1,6 +1,6 @@
 
 
-import { Trade, Account, ProcessedData, DashboardMetrics, ChartDataPoint, DailySummary, MaxDrawdown } from '../types';
+import { Trade, Account, ProcessedData, DashboardMetrics, ChartDataPoint, DailySummary, MaxDrawdown, PositionStats } from '../types';
 import { getDayIdentifier } from './calendar';
 
 export const processAccountData = (account: Account | null): ProcessedData | null => {
@@ -56,6 +56,20 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
   let totalSwap = 0;
   const tradesByDay: { [key: string]: Trade[] } = {};
 
+  // New Metrics Variables
+  let largestProfitTrade = 0;
+  let largestLossTrade = 0;
+  let longCount = 0;
+  let longWonCount = 0;
+  let shortCount = 0;
+  let shortWonCount = 0;
+  
+  // Consecutive Logic
+  let maxConsWins = 0;
+  let maxConsLosses = 0;
+  let currentConsWins = 0;
+  let currentConsLosses = 0;
+
   // 2. Iterate through all closed operations chronologically to build equity curve
   closedOperations.forEach((operation, index) => {
     const netValue = operation.profit + operation.commission + operation.swap;
@@ -86,12 +100,39 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
       // Aggregate Metrics
       totalCommission += operation.commission;
       totalSwap += operation.swap;
-      if (operation.profit > 0) {
+      
+      const isWin = operation.profit > 0;
+      
+      if (isWin) {
           winningTradesCount++;
           grossProfit += operation.profit;
+          
+          if (operation.profit > largestProfitTrade) largestProfitTrade = operation.profit;
+          
+          // Consecutives
+          currentConsWins++;
+          currentConsLosses = 0;
+          if (currentConsWins > maxConsWins) maxConsWins = currentConsWins;
       } else {
           losingTradesCount++;
           grossLoss += operation.profit;
+          
+          if (operation.profit < largestLossTrade) largestLossTrade = operation.profit;
+
+          // Consecutives
+          currentConsLosses++;
+          currentConsWins = 0;
+          if (currentConsLosses > maxConsLosses) maxConsLosses = currentConsLosses;
+      }
+
+      // Long/Short Logic
+      const type = operation.type.toLowerCase();
+      if (type.includes('buy')) {
+          longCount++;
+          if (isWin) longWonCount++;
+      } else if (type.includes('sell')) {
+          shortCount++;
+          if (isWin) shortWonCount++;
       }
 
       // Group Trades by Day using local time
@@ -168,6 +209,7 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
       chartData.push(equityPoint);
   }
 
+  const expectedPayoff = closedTrades.length > 0 ? netProfit / closedTrades.length : 0;
 
   const metrics: DashboardMetrics = {
     totalBalance: equity,
@@ -192,6 +234,22 @@ export const processAccountData = (account: Account | null): ProcessedData | nul
     grossProfit,
     grossLoss,
     totalReturnPercent,
+    // Advanced
+    expectedPayoff,
+    largestProfitTrade,
+    largestLossTrade,
+    maxConsecutiveWins: maxConsWins,
+    maxConsecutiveLosses: maxConsLosses,
+    longPositions: {
+        count: longCount,
+        won: longWonCount,
+        winRate: longCount > 0 ? (longWonCount / longCount) * 100 : 0
+    },
+    shortPositions: {
+        count: shortCount,
+        won: shortWonCount,
+        winRate: shortCount > 0 ? (shortWonCount / shortCount) * 100 : 0
+    }
   };
 
   const recentTrades = [...closedTrades].sort((a, b) => b.closeTime.getTime() - a.closeTime.getTime()).slice(0, 6);
