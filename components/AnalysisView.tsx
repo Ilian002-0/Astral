@@ -1,14 +1,16 @@
 
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
     AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label, Legend
 } from 'recharts';
-import { Trade, ChartDataPoint, Account } from '../types';
+import { Trade, ChartDataPoint, Account, Strategy } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import MultiSelectDropdown from './MultiSelectDropdown';
 import FilteredTradesTable from './FilteredTradesTable';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { triggerHaptic } from '../utils/haptics';
+import useDBStorage from '../hooks/useLocalStorage';
 
 import CustomTooltip from './charts/CustomTooltip';
 import MonthlyPerformanceChart from './analysis/MonthlyPerformanceChart';
@@ -83,8 +85,10 @@ const SplitTooltip = ({ active, payload, currency, language }: any) => {
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onBackToDashboard, currency }) => {
   const { t, language } = useLanguage();
+  const { data: strategies } = useDBStorage<Strategy[]>('user_strategies_v1', []);
+
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
-  const [selectedComments, setSelectedComments] = useState<string[]>([]);
+  const [selectedStrategyNames, setSelectedStrategyNames] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [splitMode, setSplitMode] = useState<SplitMode>('none');
@@ -134,36 +138,19 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
     }
   }, [trades]);
 
-  // Calculate available symbols dynamically based on selected comments
+  // Available Symbols (sorted)
   const availableSymbols = useMemo(() => {
     const symbolSet = new Set<string>();
-    
-    const sourceTrades = selectedComments.length > 0 
-        ? trades.filter(t => t.comment && selectedComments.includes(t.comment))
-        : trades;
-
-    sourceTrades.forEach(trade => {
-        symbolSet.add(trade.symbol);
-    });
+    trades.forEach(trade => symbolSet.add(trade.symbol));
     return Array.from(symbolSet).sort();
-  }, [trades, selectedComments]);
+  }, [trades]);
 
-  // Calculate available comments dynamically based on selected symbols
-  const availableComments = useMemo(() => {
-    const commentSet = new Set<string>();
-    
-    const sourceTrades = selectedSymbols.length > 0 
-        ? trades.filter(t => selectedSymbols.includes(t.symbol))
-        : trades;
+  // Available Strategies (sorted by name)
+  const availableStrategyNames = useMemo(() => {
+      return strategies.map(s => s.name).sort();
+  }, [strategies]);
 
-    sourceTrades.forEach(trade => {
-        if (trade.comment) commentSet.add(trade.comment);
-    });
-    
-    return Array.from(commentSet).sort();
-  }, [trades, selectedSymbols]);
-
-  // Ensure selected items are valid according to available options
+  // Ensure selected symbols are valid
   useEffect(() => {
       const validSymbols = new Set(availableSymbols);
       setSelectedSymbols(prev => {
@@ -172,13 +159,14 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
       });
   }, [availableSymbols]);
 
+  // Ensure selected strategies are valid
   useEffect(() => {
-      const validComments = new Set(availableComments);
-      setSelectedComments(prev => {
-          const next = prev.filter(c => validComments.has(c));
+      const validStrategyNames = new Set(availableStrategyNames);
+      setSelectedStrategyNames(prev => {
+          const next = prev.filter(s => validStrategyNames.has(s));
           return next.length === prev.length ? prev : next;
       });
-  }, [availableComments]);
+  }, [availableStrategyNames]);
 
   useEffect(() => {
     setStartDate(minDate);
@@ -237,12 +225,27 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
 
   const filteredTrades = useMemo(() => {
     let result = tradesWithProfitPercentage;
+    
+    // Filter by Symbol
     if (selectedSymbols.length > 0) {
       result = result.filter(trade => selectedSymbols.includes(trade.symbol));
     }
-    if (selectedComments.length > 0) {
-      result = result.filter(trade => trade.comment && selectedComments.includes(trade.comment));
+    
+    // Filter by Strategy
+    if (selectedStrategyNames.length > 0) {
+        const activeStrategies = strategies.filter(s => selectedStrategyNames.includes(s.name));
+        result = result.filter(trade => {
+            // Include trade if it matches criteria of ANY selected strategy
+            return activeStrategies.some(s => {
+                // Currently only 'comment' criteria is implemented
+                if (s.criteria.comment) {
+                    return trade.comment === s.criteria.comment;
+                }
+                return false; 
+            });
+        });
     }
+
     if (startDate) {
         const start = new Date(startDate).getTime();
         result = result.filter(trade => trade.closeTime.getTime() >= start);
@@ -253,7 +256,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
         result = result.filter(trade => trade.closeTime.getTime() <= end.getTime());
     }
     return result;
-  }, [tradesWithProfitPercentage, selectedSymbols, selectedComments, startDate, endDate]);
+  }, [tradesWithProfitPercentage, selectedSymbols, selectedStrategyNames, strategies, startDate, endDate]);
 
   // --- DATA PREPARATION FOR CHARTS ---
 
@@ -473,13 +476,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 title={t('analysis.filter_symbols_title')}
                 itemNamePlural={t('analysis.item_name_symbols')}
             />
+            {/* Replaced Comment Filter with Strategy Filter */}
             <MultiSelectDropdown 
-                options={availableComments}
-                selectedOptions={selectedComments}
-                onChange={setSelectedComments}
-                placeholder={t('analysis.filter_comments_placeholder')}
-                title={t('analysis.filter_comments_title')}
-                itemNamePlural={t('analysis.item_name_comments')}
+                options={availableStrategyNames}
+                selectedOptions={selectedStrategyNames}
+                onChange={setSelectedStrategyNames}
+                placeholder={t('analysis.filter_strategies_placeholder')}
+                title={t('analysis.filter_strategies_title')}
+                itemNamePlural={t('analysis.item_name_strategies')}
+                emptyMessage={t('analysis.no_strategies_found')}
             />
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">{t('analysis.start_date')}</label>

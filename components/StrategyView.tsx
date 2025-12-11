@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useMemo, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Trade, Strategy, ProcessedData } from '../types';
@@ -240,7 +242,7 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
     // --- Import Logic ---
     const handleOpenImport = async () => {
         if (!user) {
-            alert("Please sign in to import strategies.");
+            alert(t('strategy.login_required'));
             return;
         }
         setIsLoadingCloud(true);
@@ -260,7 +262,7 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
             }
         } catch (e) {
             console.error("Error fetching cloud strategies:", e);
-            alert("Failed to fetch cloud strategies.");
+            alert(t('strategy.fetch_failed'));
         } finally {
             setIsLoadingCloud(false);
         }

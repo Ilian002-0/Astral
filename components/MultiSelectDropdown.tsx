@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -9,9 +10,10 @@ interface MultiSelectDropdownProps {
     placeholder: string;
     title: string;
     itemNamePlural: string;
+    emptyMessage?: string; // New optional prop for empty state
 }
 
-const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ options, selectedOptions, onChange, placeholder, title, itemNamePlural }) => {
+const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ options, selectedOptions, onChange, placeholder, title, itemNamePlural, emptyMessage }) => {
     const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -71,34 +73,42 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ options, sele
             </button>
             {isOpen && (
                 <div className="absolute left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-2xl shadow-lg z-20 overflow-hidden">
-                    <div className="p-2">
-                         <input
-                            type="text"
-                            placeholder="Search..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 bg-[#0c0b1e] border border-gray-600 rounded-2xl text-white focus:ring-cyan-500 focus:border-cyan-500 transition mb-2"
-                        />
-                    </div>
-                    <div className="flex justify-between px-3 py-1 border-b border-t border-gray-700">
-                        <button onClick={handleSelectAll} className="text-xs text-cyan-400 hover:text-cyan-300">{t('analysis.select_all')}</button>
-                        <button onClick={handleClearAll} className="text-xs text-red-400 hover:text-red-300">{t('analysis.clear_all')}</button>
-                    </div>
-                    <ul className="py-1 max-h-60 overflow-y-auto">
-                        {filteredOptions.map(option => (
-                            <li key={option}>
-                                <label className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedOptions.includes(option)}
-                                        onChange={() => handleToggleOption(option)}
-                                        className="form-checkbox h-4 w-4 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600"
-                                    />
-                                    <span className="ml-3 truncate">{option}</span>
-                                </label>
-                            </li>
-                        ))}
-                    </ul>
+                    {options.length === 0 && emptyMessage ? (
+                        <div className="p-4 text-center">
+                            <p className="text-sm text-gray-400">{emptyMessage}</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="p-2">
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[#0c0b1e] border border-gray-600 rounded-2xl text-white focus:ring-cyan-500 focus:border-cyan-500 transition mb-2"
+                                />
+                            </div>
+                            <div className="flex justify-between px-3 py-1 border-b border-t border-gray-700">
+                                <button onClick={handleSelectAll} className="text-xs text-cyan-400 hover:text-cyan-300">{t('analysis.select_all')}</button>
+                                <button onClick={handleClearAll} className="text-xs text-red-400 hover:text-red-300">{t('analysis.clear_all')}</button>
+                            </div>
+                            <ul className="py-1 max-h-60 overflow-y-auto">
+                                {filteredOptions.map(option => (
+                                    <li key={option}>
+                                        <label className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedOptions.includes(option)}
+                                                onChange={() => handleToggleOption(option)}
+                                                className="form-checkbox h-4 w-4 bg-gray-900 border-gray-600 rounded text-cyan-500 focus:ring-cyan-600"
+                                            />
+                                            <span className="ml-3 truncate">{option}</span>
+                                        </label>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    )}
                 </div>
             )}
         </div>
