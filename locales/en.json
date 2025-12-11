@@ -1,3 +1,4 @@
+
 {
   "nav": { "trades": "List of Trades", "trades_short": "Trades", "calendar": "Calendar", "dashboard": "Dashboard", "strategy": "Strategy", "analysis": "Analysis", "goals": "Goals" },
   "common": { "currency": "${{value}}", "currency_plus": "+${{value}}", "currency_minus": "-${{value}}", "percentage": "{{value}}%", "close": "Close", "cancel": "Cancel", "save": "Save", "error": "Error", "today": "Today", "share": "Share", "others": "Others", "add": "Add" },
@@ -38,7 +39,28 @@
   "file_upload": { "title": "Upload Your MT5 Trade History", "subtitle": "Drag & drop your CSV file here, or click to select a file.", "drop_prompt": "Drop it like it's hot!", "click_prompt": "Click or Drag File Here" },
   "settings": { "title": "Settings", "notifications_title": "Notifications", "notifications_description": "Manage background notifications for your accounts.", "enable_notifications": "Enable Notifications", "notifications_denied": "Notifications are blocked. Please enable them in your browser settings.", "trade_closed_notifications": "Trade Closed Alerts", "weekly_summary_notifications": "Weekly Summary", "background_sync_note": "Background notifications depend on your browser's sync frequency.", "notifications_not_supported_alert": "Notifications are not supported in this browser.", "notifications_not_granted_alert": "Notification permission has not been granted. Please enable notifications first.", "service_worker_not_active_alert": "The app's background service is not active.", "service_worker_connect_error_alert": "Could not connect to the app's background service.", "language": "Language", "english": "English", "french": "French", "sign_out": "Sign Out" },
   "notifications": { "trade_closed_title": "Trade Closed", "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}", "weekly_summary_title": "Weekly Performance Summary", "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)" },
-  "analysis": { "title": "Advanced Analysis", "filter_symbols_title": "Filter by Symbol", "filter_symbols_placeholder": "All Symbols", "filter_comments_title": "Filter by Comment", "filter_comments_placeholder": "All Comments", "select_all": "Select All", "clear_all": "Clear All", "filtered_trades_title": "Filtered Trades", "filtered_profit_title": "Filtered Net Profit", "back_to_dashboard": "Back to Dashboard", "item_name_symbols": "symbols", "item_name_comments": "comments", "start_date": "Start Date", "end_date": "End Date", "monthly_performance": "Monthly Performance", "trade_volume_by_symbol": "Volume by Symbol", "buy_vs_sell_ratio": "Buy vs Sell Ratio", "buy": "Buy", "sell": "Sell" },
+  "analysis": { 
+    "title": "Advanced Analysis", 
+    "filter_symbols_title": "Filter by Symbol", 
+    "filter_symbols_placeholder": "All Symbols", 
+    "filter_strategies_title": "Filter by Strategy", 
+    "filter_strategies_placeholder": "All Strategies",
+    "no_strategies_found": "Add strategies to your account",
+    "select_all": "Select All", 
+    "clear_all": "Clear All", 
+    "filtered_trades_title": "Filtered Trades", 
+    "filtered_profit_title": "Filtered Net Profit", 
+    "back_to_dashboard": "Back to Dashboard", 
+    "item_name_symbols": "symbols", 
+    "item_name_strategies": "strategies", 
+    "start_date": "Start Date", 
+    "end_date": "End Date",
+    "monthly_performance": "Monthly Performance",
+    "trade_volume_by_symbol": "Trade Volume by Symbol",
+    "buy_vs_sell_ratio": "Buy vs Sell Ratio",
+    "buy": "Buy",
+    "sell": "Sell"
+  },
   "goals": { "title": "Trading Goals", "subtitle": "Set your targets and track your progress.", "edit_goals": "Edit Goals", "save_goals": "Save Goals", "cancel": "Cancel", "metric_netProfit": "Net Profit ($)", "metric_winRate": "Win Rate (%)", "metric_profitFactor": "Profit Factor", "metric_maxDrawdown": "Max Drawdown (%)", "current": "Current", "target": "Target", "not_set": "Not Set", "enable_goal": "Enable Goal", "goal_met": "Goal Met!", "less_is_better": "lower is better", "show_on_chart": "Show on chart", "profit_target_label": "Profit Target", "drawdown_target_label": "Drawdown Limit" },
   "strategy": { 
     "title": "Strategies", 
@@ -66,6 +88,11 @@
     "import_modal_subtitle": "Select strategies from your cloud backup to import.",
     "no_cloud_strategies": "No new strategies found in the cloud.",
     "recommended_badge": "Recommended",
-    "import_selected": "Import Selected"
+    "import_selected": "Import Selected",
+    "login_required": "Please sign in to import strategies.",
+    "fetch_failed": "Failed to fetch cloud strategies.",
+    "login_modal_title": "Connection Required",
+    "login_modal_message": "To import strategies from the cloud, you must be connected to a Google account. Guest mode does not support cloud sync.",
+    "login_button": "Log In"
   }
 }

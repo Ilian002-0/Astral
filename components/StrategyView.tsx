@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useMemo, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Trade, Strategy, ProcessedData } from '../types';
@@ -10,6 +8,7 @@ import StrategyDetailModal from './StrategyDetailModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import StrategyActionModal from './StrategyActionModal';
 import StrategyImportModal from './StrategyImportModal';
+import LoginRequiredModal from './LoginRequiredModal';
 import { triggerHaptic } from '../utils/haptics';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
@@ -19,6 +18,7 @@ interface StrategyViewProps {
     processedData: ProcessedData | null;
     currency?: 'USD' | 'EUR';
     initialBalance: number;
+    onLogout: () => void;
 }
 
 const StrategyCard: React.FC<{
@@ -106,7 +106,7 @@ const StrategyCard: React.FC<{
     );
 };
 
-const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = 'USD', initialBalance }) => {
+const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = 'USD', initialBalance, onLogout }) => {
     const { t } = useLanguage();
     const { user } = useAuth();
     const { data: strategies, setData: setStrategies } = useDBStorage<Strategy[]>('user_strategies_v1', []);
@@ -115,6 +115,7 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
     const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
     const [selectedStrategyOrigin, setSelectedStrategyOrigin] = useState<DOMRect | null>(null);
@@ -242,7 +243,7 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
     // --- Import Logic ---
     const handleOpenImport = async () => {
         if (!user) {
-            alert(t('strategy.login_required'));
+            setIsLoginModalOpen(true);
             return;
         }
         setIsLoadingCloud(true);
@@ -372,6 +373,12 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                 onImport={handleImportStrategies}
                 availableStrategies={cloudStrategies}
                 existingComments={uniqueComments}
+            />
+
+            <LoginRequiredModal
+                isOpen={isLoginModalOpen}
+                onClose={() => setIsLoginModalOpen(false)}
+                onLogin={onLogout}
             />
 
             {selectedStrategy && (

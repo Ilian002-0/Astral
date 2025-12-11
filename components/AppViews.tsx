@@ -136,7 +136,7 @@ const AppViews: React.FC<AppViewsProps> = ({
                     case 'calendar': return <CalendarView trades={processedData.closedTrades} onDayClick={handleDayClick} transitioningDay={transitioningDay} calendarSettings={calendarSettings} {...commonProps} />;
                     case 'analysis': return <AnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} {...commonProps} />;
                     case 'goals': return <GoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} {...commonProps} />;
-                    case 'strategy': return <StrategyView processedData={processedData} initialBalance={currentAccount.initialBalance} {...commonProps} />;
+                    case 'strategy': return <StrategyView processedData={processedData} initialBalance={currentAccount.initialBalance} onLogout={onLogout} {...commonProps} />;
                     default: return null;
                 }
             })()}

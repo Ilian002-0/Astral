@@ -1,3 +1,4 @@
+
 {
   "nav": { "trades": "Liste des Trades", "trades_short": "Trades", "calendar": "Calendrier", "dashboard": "Dashboard", "strategy": "Stratégie", "analysis": "Analyse", "goals": "Objectifs" },
   "common": { "currency": "{{value}} $", "currency_plus": "+{{value}} $", "currency_minus": "-{{value}} $", "percentage": "{{value}} %", "close": "Fermer", "cancel": "Annuler", "save": "Enregistrer", "error": "Erreur", "today": "Aujourd'hui", "share": "Partager", "others": "Autres", "add": "Ajouter" },
@@ -38,7 +39,28 @@
   "file_upload": { "title": "Téléchargez votre historique de trading MT5", "subtitle": "Glissez-déposez votre fichier CSV ici, ou cliquez pour sélectionner un fichier.", "drop_prompt": "Lâchez-le ici !", "click_prompt": "Cliquez ou glissez un fichier ici" },
   "settings": { "title": "Paramètres", "notifications_title": "Notifications", "notifications_description": "Gérez les notifications en arrière-plan.", "enable_notifications": "Activer les Notifications", "notifications_denied": "Les notifications sont bloquées.", "trade_closed_notifications": "Alertes de Trade Clôturé", "weekly_summary_notifications": "Résumé Hebdomadaire", "background_sync_note": "Les notifications dépendent de la fréquence de synchronisation.", "notifications_not_supported_alert": "Notifications non supportées.", "notifications_not_granted_alert": "Permission non accordée.", "service_worker_not_active_alert": "Service inactif.", "service_worker_connect_error_alert": "Erreur de connexion au service.", "language": "Langue", "english": "Anglais", "french": "Français", "sign_out": "Se déconnecter" },
   "notifications": { "trade_closed_title": "Trade Clôturé", "trade_closed_body": "{{symbol}}: {{profit}}{{currency}}", "weekly_summary_title": "Résumé Hebdomadaire des Performances", "weekly_summary_body": "{{accountName}} | Profit: {{profit}}{{currency}} ({{return}}%)" },
-  "analysis": { "title": "Analyse Avancée", "filter_symbols_title": "Filtrer par Symbole", "filter_symbols_placeholder": "Tous les symboles", "filter_comments_title": "Filtrer par Commentaire", "filter_comments_placeholder": "Tous les commentaires", "select_all": "Tout sélectionner", "clear_all": "Tout effacer", "filtered_trades_title": "Trades Filtrés", "filtered_profit_title": "Profit Net Filtré", "back_to_dashboard": "Retour au Tableau de Bord", "item_name_symbols": "symboles", "item_name_comments": "commentaires", "start_date": "Date de début", "end_date": "Date de fin", "monthly_performance": "Performance Mensuelle", "trade_volume_by_symbol": "Volume par Symbole", "buy_vs_sell_ratio": "Ratio Achat vs Vente", "buy": "Achat", "sell": "Vente" },
+  "analysis": { 
+    "title": "Analyse Avancée", 
+    "filter_symbols_title": "Filtrer par Symbole", 
+    "filter_symbols_placeholder": "Tous les symboles", 
+    "filter_strategies_title": "Filtrer par Stratégie", 
+    "filter_strategies_placeholder": "Toutes les stratégies", 
+    "no_strategies_found": "Ajoutez des stratégies à votre compte",
+    "select_all": "Tout sélectionner", 
+    "clear_all": "Tout effacer", 
+    "filtered_trades_title": "Trades Filtrés", 
+    "filtered_profit_title": "Profit Net Filtré", 
+    "back_to_dashboard": "Retour au Tableau de Bord", 
+    "item_name_symbols": "symboles", 
+    "item_name_strategies": "stratégies", 
+    "start_date": "Date de début", 
+    "end_date": "Date de fin",
+    "monthly_performance": "Performance Mensuelle",
+    "trade_volume_by_symbol": "Volume par Symbole",
+    "buy_vs_sell_ratio": "Ratio Achat vs Vente",
+    "buy": "Achat",
+    "sell": "Vente"
+  },
   "goals": { "title": "Objectifs de Trading", "subtitle": "Définissez vos cibles et suivez vos progrès.", "edit_goals": "Modifier les Objectifs", "save_goals": "Enregistrer les Objectifs", "cancel": "Annuler", "metric_netProfit": "Profit Net ($)", "metric_winRate": "Taux de Réussite (%)", "metric_profitFactor": "Facteur de Profit", "metric_maxDrawdown": "Drawdown Max (%)", "current": "Actuel", "target": "Cible", "not_set": "Non défini", "enable_goal": "Activer l'objectif", "goal_met": "Objectif atteint !", "less_is_better": "plus bas c'est mieux", "show_on_chart": "Afficher sur le graphique", "profit_target_label": "Objectif de Profit", "drawdown_target_label": "Limite de Drawdown" },
   "strategy": { 
     "title": "Stratégies", 
@@ -66,6 +88,11 @@
     "import_modal_subtitle": "Sélectionnez les stratégies à importer depuis votre sauvegarde cloud.",
     "no_cloud_strategies": "Aucune nouvelle stratégie trouvée dans le cloud.",
     "recommended_badge": "Recommandé",
-    "import_selected": "Importer la sélection"
+    "import_selected": "Importer la sélection",
+    "login_required": "Veuillez vous connecter pour importer des stratégies.",
+    "fetch_failed": "Échec de la récupération des stratégies cloud.",
+    "login_modal_title": "Connexion Requise",
+    "login_modal_message": "Pour importer des stratégies depuis le cloud, vous devez être connecté à un compte Google. Le mode invité ne prend pas en charge la synchronisation cloud.",
+    "login_button": "Se connecter"
   }
 }
