@@ -20,7 +20,6 @@ const StrategyActionModal: React.FC<StrategyActionModalProps> = ({ isOpen, onClo
     useEffect(() => {
         let timeoutId: number;
         if (isOpen) {
-            // Slight delay to ensure mount before transition
             timeoutId = window.setTimeout(() => setIsVisible(true), 10);
         } else {
             setIsVisible(false);
@@ -30,7 +29,6 @@ const StrategyActionModal: React.FC<StrategyActionModalProps> = ({ isOpen, onClo
 
     const handleClose = () => {
         setIsVisible(false);
-        // Wait for animation to finish (matches duration-300)
         setTimeout(onClose, 300);
     };
 
@@ -75,6 +73,7 @@ const StrategyActionModal: React.FC<StrategyActionModalProps> = ({ isOpen, onClo
                     >
                         {t('strategy.edit_strategy')}
                     </button>
+                    
                     <button
                         onClick={() => { onDelete(); handleClose(); }}
                         className="w-full py-3 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-900/30 font-bold rounded-2xl transition-colors"

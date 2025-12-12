@@ -1,3 +1,4 @@
+
 import { useMemo, useCallback, useEffect } from 'react';
 import useDBStorage from './useLocalStorage';
 import { Account, Trade, Goals } from '../types';
@@ -14,6 +15,7 @@ interface FirestoreAccount {
     dataUrl?: string; // Critical for sync
     goals?: Goals;
     lastUpdated: string;
+    activeStrategyIds?: string[];
 }
 
 export const useAccountManager = () => {
@@ -24,9 +26,6 @@ export const useAccountManager = () => {
     const { user } = useAuth();
     
     // If user is logged in, listen to Firestore. 
-    // We merge Firestore data into the local state view, but mostly rely on the Firestore listener to update `localAccounts`.
-    // Actually, to avoid conflicts, if logged in, we should use the data coming from Firestore as the source of truth for the *list* of accounts.
-    
     useEffect(() => {
         if (!user) return;
 
@@ -38,13 +37,10 @@ export const useAccountManager = () => {
                 const remoteAccounts = (data.accounts || []) as FirestoreAccount[];
 
                 // Merge remote config with local trades
-                // We do NOT store trades in Firestore. We matches by name.
                 setLocalAccounts(prevLocal => {
                     const merged = remoteAccounts.map(remoteAcc => {
                         const localMatch = prevLocal.find(l => l.name === remoteAcc.name);
                         
-                        // If we have local trades for this account, keep them.
-                        // If not, it's a new account from another device, start with empty trades (the Sync hook will fetch the CSV via dataUrl)
                         return {
                             ...remoteAcc,
                             trades: localMatch ? localMatch.trades : [] 
@@ -53,8 +49,6 @@ export const useAccountManager = () => {
                     
                     return merged;
                 });
-            } else {
-                 // No document exists yet for this user? Maybe create it or leave empty.
             }
         });
 
@@ -94,7 +88,8 @@ export const useAccountManager = () => {
             currency: acc.currency,
             dataUrl: acc.dataUrl,
             goals: acc.goals,
-            lastUpdated: acc.lastUpdated || new Date().toISOString()
+            lastUpdated: acc.lastUpdated || new Date().toISOString(),
+            activeStrategyIds: acc.activeStrategyIds
         }));
 
         try {
@@ -120,7 +115,14 @@ export const useAccountManager = () => {
                     return prevAccounts;
                 }
                 const sortedTrades = accountData.trades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-                const newAccount: Account = { ...accountData, trades: sortedTrades, goals: {}, lastUpdated: new Date().toISOString() };
+                // New accounts start with NO strategies linked (user must import explicitly)
+                const newAccount: Account = { 
+                    ...accountData, 
+                    trades: sortedTrades, 
+                    goals: {}, 
+                    lastUpdated: new Date().toISOString(),
+                    activeStrategyIds: [] 
+                };
                 newAccountsList = [...prevAccounts, newAccount];
                 setCurrentAccountName(newAccount.name);
                 triggerHaptic('success');
@@ -171,7 +173,6 @@ export const useAccountManager = () => {
         triggerHaptic('success');
     }, [currentAccountName, setLocalAccounts, user]);
 
-    // Helper to update trades directly (used by Sync service)
     const updateAccountTrades = useCallback((accountName: string, newTrades: Trade[]) => {
         setLocalAccounts(prevAccounts => 
             prevAccounts.map(acc => {
@@ -182,10 +183,56 @@ export const useAccountManager = () => {
                 return acc;
             })
         );
-        // We generally don't push back to Firestore here because trades aren't stored there.
-        // But if lastUpdated changed, we might want to push metadata. 
-        // For efficiency, we skip this push to avoid loops, as dataUrl is the source of truth for trades.
     }, [setLocalAccounts]);
+
+    // Strategy Linking
+    const linkStrategyToAccount = useCallback((strategyId: string) => {
+        if (!currentAccountName) return;
+        setLocalAccounts(prev => {
+            const newList = prev.map(acc => {
+                if (acc.name === currentAccountName) {
+                    const ids = new Set(acc.activeStrategyIds || []);
+                    ids.add(strategyId);
+                    return { ...acc, activeStrategyIds: Array.from(ids) };
+                }
+                return acc;
+            });
+            if (user) pushToFirestore(newList);
+            return newList;
+        });
+    }, [currentAccountName, setLocalAccounts, user]);
+
+    const unlinkStrategyFromAccount = useCallback((strategyId: string) => {
+        if (!currentAccountName) return;
+        setLocalAccounts(prev => {
+            const newList = prev.map(acc => {
+                if (acc.name === currentAccountName) {
+                    const ids = (acc.activeStrategyIds || []).filter(id => id !== strategyId);
+                    return { ...acc, activeStrategyIds: ids };
+                }
+                return acc;
+            });
+            if (user) pushToFirestore(newList);
+            return newList;
+        });
+        triggerHaptic('medium');
+    }, [currentAccountName, setLocalAccounts, user]);
+
+    // Migration helper (can be used in App.tsx)
+    const migrateLegacyStrategies = useCallback((allStrategyIds: string[]) => {
+        if (!currentAccountName) return;
+        setLocalAccounts(prev => {
+            const newList = prev.map(acc => {
+                if (acc.name === currentAccountName && acc.activeStrategyIds === undefined) {
+                    // Initialize legacy accounts with ALL strategies so nothing disappears
+                    return { ...acc, activeStrategyIds: allStrategyIds };
+                }
+                return acc;
+            });
+            if (user) pushToFirestore(newList);
+            return newList;
+        });
+    }, [currentAccountName, setLocalAccounts, user]);
 
     return {
         accounts,
@@ -196,6 +243,9 @@ export const useAccountManager = () => {
         saveAccount,
         deleteAccount,
         saveGoals,
-        updateAccountTrades
+        updateAccountTrades,
+        linkStrategyToAccount,
+        unlinkStrategyFromAccount,
+        migrateLegacyStrategies
     };
 };

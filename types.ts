@@ -34,6 +34,7 @@ export interface Account {
   goals?: Goals;
   dataUrl?: string; // New: For fetching CSV data from a URL
   lastUpdated?: string; // New: ISO string to track last successful update
+  activeStrategyIds?: string[]; // New: List of strategies active for this account
 }
 
 export interface ChartDataPoint {

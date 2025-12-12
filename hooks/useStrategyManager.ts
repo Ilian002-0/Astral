@@ -6,6 +6,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
+// Safe ID Generator
+const generateId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
 export const useStrategyManager = () => {
     const { data: strategies, setData: setStrategies } = useDBStorage<Strategy[]>('user_strategies_v1', []);
     const { user } = useAuth();
@@ -75,7 +83,7 @@ export const useStrategyManager = () => {
             } else {
                 // Add New
                 newStrategy = {
-                    id: crypto.randomUUID(),
+                    id: generateId(),
                     createdAt: new Date().toISOString(),
                     name: strategyData.name,
                     criteria: strategyData.criteria
@@ -90,21 +98,14 @@ export const useStrategyManager = () => {
         // However, since setState is functional, we need to reconstruct the object for the cloud call
         // to ensure we have the exact data.
         
-        const strategyToPush: Strategy = {
-            id: strategyData.id || crypto.randomUUID(), // Note: ID generation logic duplicated slightly for safety if not captured
-            // Ideally we grab the exact object, but for now we construct a clean one
-            name: strategyData.name,
-            criteria: strategyData.criteria,
-            createdAt: new Date().toISOString() // This might overwrite creation date on edit, handled below
-        };
-
-        if (strategyData.id) {
-             // If editing, try to preserve original createdAt if we can find it in current state
-             // But since we are inside an async function, we can't easily access the 'prev' state synchronously outside the setter.
-             // We'll rely on the fact that the local setter ran.
-             // A safer way for the cloud push is to fetch, merge, push.
-        }
-
+        // Note: strategyData.id is undefined here for new strategies if not passed explicitly, so we generate again? 
+        // NO, that would cause ID mismatch between local and cloud. 
+        // The pattern used in StrategyView handles ID generation before calling this function now.
+        // But for direct calls (if any), we need to ensure consistency. 
+        // The safest way is to rely on what was put into state, but that's async.
+        
+        // Since we refactored StrategyView to generate the ID upfront, strategyData.id WILL be present.
+        
         if (user) {
              try {
                 const docRef = doc(db, 'users', user.uid);
@@ -114,14 +115,19 @@ export const useStrategyManager = () => {
                     currentCloudStrategies = docSnap.data().strategies;
                 }
                 
-                // Find existing to preserve ID and CreatedAt if updating
-                const index = currentCloudStrategies.findIndex(s => s.id === (strategyData.id || ''));
+                // If the ID was missing in the arg, we can't reliably sync the *exact same* ID generated inside the setState callback
+                // unless we change how we call this. 
+                // Assumption: strategyData.id is provided by the caller (StrategyView) now.
+                const idToUse = strategyData.id || newStrategy!.id; // Fallback to captured (risky if async timing off, but mostly safe in single thread event loop)
+
+                const index = currentCloudStrategies.findIndex(s => s.id === idToUse);
                 
                 const finalStrategy: Strategy = {
-                    id: strategyData.id || newStrategy!.id,
+                    id: idToUse,
                     name: strategyData.name,
                     criteria: strategyData.criteria,
-                    createdAt: index !== -1 ? currentCloudStrategies[index].createdAt : newStrategy!.createdAt
+                    // If updating, preserve creation date from cloud if possible, else use new
+                    createdAt: index !== -1 ? currentCloudStrategies[index].createdAt : new Date().toISOString()
                 };
 
                 if (index !== -1) {

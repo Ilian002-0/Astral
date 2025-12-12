@@ -1,5 +1,5 @@
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Account, AppView, CalendarSettings, NotificationSettings, ProcessedData, Strategy } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import Header from './Header';
@@ -48,7 +48,17 @@ interface AppViewsProps {
     deleteStrategy: (id: string) => void;
     selectedStrategyId: string | null;
     onStrategySelect: (strategy: Strategy) => void;
+    linkStrategyToAccount: (id: string) => void;
+    unlinkStrategyFromAccount: (id: string) => void;
 }
+
+const RedirectToStrategy: React.FC<{ setView: (view: AppView) => void }> = ({ setView }) => {
+    useEffect(() => {
+        const t = setTimeout(() => setView('strategy'), 0);
+        return () => clearTimeout(t);
+    }, [setView]);
+    return <GenericSkeleton />;
+};
 
 const AppViews: React.FC<AppViewsProps> = ({
     view,
@@ -73,12 +83,15 @@ const AppViews: React.FC<AppViewsProps> = ({
     saveStrategy,
     deleteStrategy,
     selectedStrategyId,
-    onStrategySelect
+    onStrategySelect,
+    linkStrategyToAccount,
+    unlinkStrategyFromAccount
 }) => {
     const { t } = useLanguage();
 
-    // Show Skeleton if global loading or if we have an account but data isn't processed yet
-    if (isLoading || (currentAccount && !processedData)) {
+    // 1. Loading State
+    // If we are loading, show skeletons.
+    if (isLoading) {
         switch(view) {
             case 'dashboard': return <DashboardSkeleton />;
             case 'trades': return <TradesListSkeleton />;
@@ -91,6 +104,9 @@ const AppViews: React.FC<AppViewsProps> = ({
         }
     }
 
+    // 2. Empty State (No Account / Guest Mode)
+    // If we are NOT loading, but we have no account or no data, we MUST show the welcome screen.
+    // This blocks any attempt to render sub-components that require data.
     if (!currentAccount || !processedData) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-fade-in">
@@ -103,7 +119,10 @@ const AppViews: React.FC<AppViewsProps> = ({
         );
     }
 
-    const commonProps = { currency: currentAccount.currency || 'USD' };
+    // 3. Main Views (Data Guaranteed)
+    const currency = currentAccount.currency || 'USD';
+    const commonProps = { currency };
+    const safeStrategies = Array.isArray(strategies) ? strategies : [];
 
     const getSuspenseFallback = () => {
          switch(view) {
@@ -146,24 +165,37 @@ const AppViews: React.FC<AppViewsProps> = ({
                         );
                     case 'trades': return <TradesList trades={processedData.closedTrades} {...commonProps} />;
                     case 'calendar': return <CalendarView trades={processedData.closedTrades} onDayClick={handleDayClick} transitioningDay={transitioningDay} calendarSettings={calendarSettings} {...commonProps} />;
-                    case 'analysis': return <AnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} strategies={strategies} {...commonProps} />;
+                    case 'analysis': return <AnalysisView trades={processedData.closedTrades} initialBalance={currentAccount.initialBalance} onBackToDashboard={() => setView('dashboard')} strategies={safeStrategies} {...commonProps} />;
                     case 'goals': return <GoalsView metrics={processedData.metrics} accountGoals={currentAccount.goals || {}} onSaveGoals={saveGoals} {...commonProps} />;
-                    case 'strategy': return <StrategyView processedData={processedData} initialBalance={currentAccount.initialBalance} onLogout={onLogout} strategies={strategies} onSaveStrategy={saveStrategy} onDeleteStrategy={deleteStrategy} onStrategySelect={onStrategySelect} {...commonProps} />;
+                    case 'strategy': return <StrategyView 
+                        processedData={processedData} 
+                        initialBalance={currentAccount.initialBalance} 
+                        onLogout={onLogout} 
+                        strategies={safeStrategies} 
+                        onSaveStrategy={saveStrategy} 
+                        onDeleteStrategy={deleteStrategy} 
+                        onStrategySelect={onStrategySelect} 
+                        currentAccount={currentAccount} 
+                        linkStrategyToAccount={linkStrategyToAccount}
+                        unlinkStrategyFromAccount={unlinkStrategyFromAccount}
+                        {...commonProps} 
+                    />;
                     case 'strategy-detail': 
-                        const selectedStrategy = strategies.find(s => s.id === selectedStrategyId);
+                        const selectedStrategy = safeStrategies.find(s => s.id === selectedStrategyId);
                         if (!selectedStrategy) {
-                            setView('strategy'); // Fallback
-                            return null;
+                            return <RedirectToStrategy setView={setView} />;
                         }
-                        const filteredTrades = processedData.closedTrades.filter(t => 
-                            selectedStrategy.criteria.comment ? t.comment === selectedStrategy.criteria.comment : true
-                        );
+                        const filterComment = selectedStrategy.criteria?.comment;
+                        const filteredTrades = filterComment 
+                            ? processedData.closedTrades.filter(t => t.comment === filterComment)
+                            : []; 
+
                         return (
                             <StrategyDetailView 
                                 strategy={selectedStrategy}
                                 trades={filteredTrades}
                                 initialBalance={currentAccount.initialBalance}
-                                onBack={() => window.history.back()}
+                                onBack={() => setView('strategy')} 
                                 {...commonProps} 
                             />
                         );

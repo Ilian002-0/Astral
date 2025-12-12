@@ -36,10 +36,11 @@ const StrategyImportModal: React.FC<StrategyImportModalProps> = ({ isOpen, onClo
 
     const enhancedStrategies = useMemo(() => {
         const commentsSet = new Set(existingComments);
+        
         return availableStrategies.map(s => ({
             ...s,
-            isRecommended: s.criteria.comment ? commentsSet.has(s.criteria.comment) : false
-        })).sort((a, b) => (b.isRecommended ? 1 : 0) - (a.isRecommended ? 1 : 0)); // Show recommended first
+            isMatch: s.criteria.comment ? commentsSet.has(s.criteria.comment) : false
+        })).sort((a, b) => (b.isMatch ? 1 : 0) - (a.isMatch ? 1 : 0)); // Show matches first
     }, [availableStrategies, existingComments]);
 
     if (!isOpen) return null;
@@ -73,9 +74,9 @@ const StrategyImportModal: React.FC<StrategyImportModalProps> = ({ isOpen, onClo
                                     <div className="flex-1 min-w-0 mr-4">
                                         <div className="flex items-center gap-2 mb-1">
                                             <h3 className="font-bold text-white truncate">{strategy.name}</h3>
-                                            {strategy.isRecommended && (
+                                            {strategy.isMatch && (
                                                 <span className="px-2 py-0.5 rounded-md bg-green-500/20 text-green-400 text-[10px] uppercase font-bold tracking-wide">
-                                                    {t('strategy.recommended_badge')}
+                                                    Match Found
                                                 </span>
                                             )}
                                         </div>

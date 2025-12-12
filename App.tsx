@@ -57,7 +57,10 @@ const App: React.FC = () => {
         saveAccount, 
         deleteAccount, 
         saveGoals,
-        updateAccountTrades
+        updateAccountTrades,
+        linkStrategyToAccount,
+        unlinkStrategyFromAccount,
+        migrateLegacyStrategies
     } = useAccountManager();
 
     // 2. Strategy Management (Global Sync)
@@ -104,7 +107,15 @@ const App: React.FC = () => {
     const displayError = syncError || pwaError;
     const isDesktop = useMediaQuery('(min-width: 768px)');
 
-    // 7. Preload Lazy Components
+    // 7. Migration for Legacy Accounts
+    useEffect(() => {
+        if (currentAccount && currentAccount.activeStrategyIds === undefined && strategies.length > 0) {
+            // If the account has no strategy config but we have strategies, assume they should be visible (legacy behavior migration)
+            migrateLegacyStrategies(strategies.map(s => s.id));
+        }
+    }, [currentAccount, strategies, migrateLegacyStrategies]);
+
+    // 8. Preload Lazy Components
     useEffect(() => {
         const preloadTimer = setTimeout(() => {
             // Main Views
@@ -353,6 +364,8 @@ const App: React.FC = () => {
                                     deleteStrategy={deleteStrategy}
                                     selectedStrategyId={selectedStrategyId}
                                     onStrategySelect={handleStrategySelect}
+                                    linkStrategyToAccount={linkStrategyToAccount}
+                                    unlinkStrategyFromAccount={unlinkStrategyFromAccount}
                                 />
                             </div>
                         </main>

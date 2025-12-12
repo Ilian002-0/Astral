@@ -1,16 +1,12 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Trade, Strategy, ProcessedData } from '../types';
+import { Strategy, ProcessedData, Account } from '../types';
 import AddStrategyModal from './AddStrategyModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import StrategyActionModal from './StrategyActionModal';
 import StrategyImportModal from './StrategyImportModal';
-import LoginRequiredModal from './LoginRequiredModal';
 import { triggerHaptic } from '../utils/haptics';
-import { useAuth } from '../contexts/AuthContext';
-import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 interface StrategyViewProps {
     processedData: ProcessedData | null;
@@ -20,8 +16,82 @@ interface StrategyViewProps {
     strategies: Strategy[];
     onSaveStrategy: (strategyData: { name: string, criteria: any, id?: string }) => void;
     onDeleteStrategy: (id: string) => void;
-    onStrategySelect: (strategy: Strategy) => void; // New Prop for navigation
+    onStrategySelect: (strategy: Strategy) => void;
+    currentAccount: Account | null;
+    linkStrategyToAccount: (id: string) => void;
+    unlinkStrategyFromAccount: (id: string) => void;
 }
+
+// Safe ID Generator
+const generateId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
+// Detailed SVG for Rank 2 (Silver)
+const BadgeRank2 = () => {
+    // Replaced useId with manual ID to prevent compatibility issues
+    const gradientId = useMemo(() => "silverGradient-" + Math.random().toString(36).substr(2, 9), []);
+    return (
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-8 h-8 animate-spring-up drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">
+            <defs>
+                <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style={{stopColor: '#F3F4F6', stopOpacity: 1}} />
+                    <stop offset="100%" style={{stopColor: '#9CA3AF', stopOpacity: 1}} />
+                </linearGradient>
+            </defs>
+            <g fill={`url(#${gradientId})`}>
+                <path d="M123.9,10.4c-1.2,0.3-4.1,1.6-6.5,2.8c-15.7,8.1-13.7,7.5-28.1,9.3c-6.8,0.9-10.1,2.1-13.1,4.8c-3.2,2.9-4.8,5.3-8.1,12.6c-1.6,3.5-3.6,7.4-4.4,8.6c-0.8,1.2-4.8,5.5-8.7,9.4c-8.5,8.4-9.7,10.2-10,16.1c-0.2,2.9,0.1,5.1,1.3,11c2,9.8,2,13.5,0,22.9c-1.3,5.9-1.5,7.9-1.3,11c0.4,6.2,1.3,7.7,10.7,17l8,7.9l4.5,9.3c4,8.2,4.9,9.6,7.4,12c2.2,2.2,3.5,3,5.8,3.8c3,1,4.3,1.2,14.8,2.6c6.5,0.9,9.4,2,16.9,6.2c7.9,4.5,11.5,5.7,16,5.4c4.4-0.3,7.1-1.3,14.3-5.5c7.9-4.5,10.2-5.3,19.1-6.5c8.7-1.1,10.9-1.5,13.7-2.7c5-2.2,7.6-5.6,12.1-15.7c3.5-7.7,5.9-11,12.2-16.6c11.1-9.8,12.4-13.7,9.6-27.9c-2-9.9-2-13.5,0-23.3c1.2-5.7,1.5-8.2,1.3-10.9c-0.3-5.9-1.5-7.6-10.8-16.8l-8-7.9l-4.4-9.2c-7-14.5-9.6-16.4-23.9-17.9c-5.9-0.6-11-1.6-13.6-2.8c-1.1-0.5-4.5-2.4-7.7-4.2c-3.2-1.8-6.9-3.7-8.3-4.2C131.4,10,126.7,9.7,123.9,10.4z M138.3,37.9c11.9,1.9,23,7.7,32.1,16.8c17.6,17.6,22.4,44.9,11.8,67.1c-5.6,11.6-13.5,20.3-24.2,26.6c-19.3,11.2-43.4,10.7-62.1-1.3c-13.5-8.6-23-22.4-26.4-38.2c-1.2-5.3-1.4-15.9-0.5-21.4c4.5-27.4,26.4-47.9,53.9-50.4C127.6,36.7,132.8,36.9,138.3,37.9z"/>
+                <path d="M118,53.5c-1.8,0.3-4.8,1.1-6.6,1.6c-3.5,1.1-11.2,4.8-12.2,5.9c-0.5,0.6,0.6,3.8,5.4,16c0.3,0.6,0.7,0.5,3.1-1c5.9-3.8,12.8-5.6,18.1-4.6c3.6,0.6,5,1.3,6.8,3.4c4.2,4.7,3,11.2-3.5,19.3c-3.4,4.3-10.2,10.8-22,21L98,123l0.1,6.9l0.1,6.9h30.5h30.5l0.1-9.3l0.1-9.4L145,118l-14.5-0.1l5.6-4.4c12-9.6,18.5-17.9,20.9-26.8c0.9-3.6,1.1-10.3,0.2-13.8c-2.2-9.3-9.1-16-19.3-18.8C134.2,52.9,122.4,52.7,118,53.5z"/>
+                <path d="M71.2,199.7c-5.6,15.6-10.1,28.4-10,28.5c0.2,0.1,7.3-2.3,15.8-5.2c8.5-2.9,15.7-5.3,16-5.3c0.3,0,4.4,6.5,9.3,14.4c4.8,7.9,8.9,14.2,9.1,14c0.4-0.4,22.2-60.6,22.2-61.2c0-0.2-0.7-0.2-1.5,0c-5.4,1.5-12.6-0.5-21.9-6.1c-6.4-3.9-8.2-4.5-14.8-5.3c-6.2-0.7-11.3-1.5-13-1.9C81.6,171.3,80.5,173.9,71.2,199.7z"/>
+                <path d="M167.3,172.6c-14.6,1.8-11.6,0.7-26.6,8.7l-4.2,2.2l-3.6,9.8c-1.9,5.4-3.6,10.2-3.6,10.6c0,0.9,14.6,41.5,15.2,42.1c0.2,0.2,4.3-6.1,9.1-14c4.8-7.9,9-14.4,9.3-14.4s7.5,2.4,16,5.3c8.5,2.9,15.6,5.3,15.8,5.2c0.2-0.1-6.7-19.5-18.2-51.1c-1.7-4.5-2-5.2-2.9-5.1C173.1,171.9,170.2,172.2,167.3,172.6z"/>
+            </g>
+        </svg>
+    );
+};
+
+const RankBadge: React.FC<{ rank: number }> = ({ rank }) => {
+    if (rank > 3) return null;
+
+    if (rank === 2) {
+        return <BadgeRank2 />;
+    }
+
+    // Placeholders for 1 and 3
+    let bgClass = '';
+    let shadowClass = '';
+    let textClass = '';
+    let Icon = null;
+
+    switch (rank) {
+        case 1:
+            bgClass = 'bg-gradient-to-br from-yellow-300 via-amber-400 to-amber-600';
+            shadowClass = 'shadow-[0_0_15px_rgba(251,191,36,0.6)]';
+            textClass = 'text-yellow-950';
+            Icon = (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.699-3.181a1 1 0 011.827 1.035l-1.74 3.237 4.063 1.742a1 1 0 01-1.353 1.666l-4.22-1.746-.732 4.192a1 1 0 01-1.956.096L10 9.771l-2.542 2.176a1 1 0 01-1.956-.096l-.732-4.192-4.22 1.746a1 1 0 01-1.353-1.666l4.063-1.742-1.74-3.237a1 1 0 011.827-1.035l1.699 3.181L9 4.323V3a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+            ); 
+            break;
+        case 3:
+            bgClass = 'bg-gradient-to-br from-orange-200 via-orange-400 to-red-500';
+            shadowClass = 'shadow-[0_0_10px_rgba(249,115,22,0.5)]';
+            textClass = 'text-red-950';
+            Icon = <span className="text-xs font-black leading-none">3</span>;
+            break;
+        default:
+            return null;
+    }
+
+    return (
+        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${bgClass} ${shadowClass} ${textClass} ring-2 ring-white/10 ml-1 animate-spring-up`} style={{ animationDelay: `${rank * 100}ms` }}>
+            {Icon}
+        </div>
+    );
+};
 
 const StrategyCard: React.FC<{
     strategy: Strategy;
@@ -30,16 +100,16 @@ const StrategyCard: React.FC<{
     onClick: () => void;
     onMenuClick: (rect: DOMRect) => void;
     currency: 'USD' | 'EUR';
-}> = ({ strategy, totalProfit, tradeCount, onClick, onMenuClick, currency }) => {
+    rank: number;
+}> = ({ strategy, totalProfit, tradeCount, onClick, onMenuClick, currency, rank }) => {
     const { language } = useLanguage();
-    const timerRef = React.useRef<number | null>(null);
+    const timerRef = useRef<number | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
 
     const handleTouchStart = () => {
         timerRef.current = window.setTimeout(() => {
             triggerHaptic('medium');
             if (cardRef.current) {
-                // Pass the card's rect for the animation origin on long press
                 onMenuClick(cardRef.current.getBoundingClientRect());
             }
         }, 500);
@@ -85,16 +155,14 @@ const StrategyCard: React.FC<{
             <div className="flex justify-between items-start mb-3">
                 <div className="bg-cyan-900/30 p-2 rounded-xl text-cyan-400">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                 </div>
                 
-                {/* Kebab Menu Button */}
                 <button 
                     className="p-2 -mr-2 -mt-2 text-gray-500 hover:text-white hover:bg-gray-700/50 rounded-full transition-colors z-10"
                     onClick={(e) => {
                         e.stopPropagation();
-                        // Clear the long press timer if the button is clicked directly
                         if (timerRef.current) clearTimeout(timerRef.current);
                         onMenuClick(e.currentTarget.getBoundingClientRect());
                     }}
@@ -105,11 +173,14 @@ const StrategyCard: React.FC<{
                 </button>
             </div>
             
-            <h3 className="text-lg font-bold text-white mb-1 truncate pr-6">{strategy.name}</h3>
+            <div className="flex items-center mb-1 pr-6 gap-2">
+                <h3 className="text-lg font-bold text-white truncate max-w-[70%]">{strategy.name}</h3>
+                <RankBadge rank={rank} />
+            </div>
             
             <div className="flex items-center text-xs text-gray-400 mb-4">
                 <span className="truncate">
-                    {strategy.criteria.comment ? `Comment: ${strategy.criteria.comment}` : 'Magic: N/A'}
+                    {strategy.criteria?.comment ? `Comment: ${strategy.criteria.comment}` : 'Magic: N/A'}
                 </span>
             </div>
 
@@ -121,25 +192,20 @@ const StrategyCard: React.FC<{
     );
 };
 
-const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = 'USD', initialBalance, onLogout, strategies, onSaveStrategy, onDeleteStrategy, onStrategySelect }) => {
+const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = 'USD', initialBalance, onLogout, strategies, onSaveStrategy, onDeleteStrategy, onStrategySelect, currentAccount, linkStrategyToAccount, unlinkStrategyFromAccount }) => {
     const { t } = useLanguage();
-    const { user } = useAuth();
     
     // Modal states
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
-    // Action Menu State
     const [activeStrategyForAction, setActiveStrategyForAction] = useState<Strategy | null>(null);
     const [actionMenuOrigin, setActionMenuOrigin] = useState<DOMRect | null>(null);
 
     const [strategyToEdit, setStrategyToEdit] = useState<Strategy | null>(null);
     const [strategyToDelete, setStrategyToDelete] = useState<Strategy | null>(null);
-    
-    const [cloudStrategies, setCloudStrategies] = useState<Strategy[]>([]);
-    const [isLoadingCloud, setIsLoadingCloud] = useState(false);
+    const [strategyToUnlink, setStrategyToUnlink] = useState<Strategy | null>(null);
 
     // Filter closed trades once
     const allTrades = useMemo(() => processedData?.closedTrades || [], [processedData]);
@@ -153,8 +219,51 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
         return Array.from(comments);
     }, [allTrades]);
 
+    // Compute stats AND Sort by Profit Descending
+    const sortedStrategies = useMemo(() => {
+        if (!currentAccount) return []; 
+        // Explicitly handle potentially undefined activeStrategyIds using optional chaining and defaulting
+        const activeIds = currentAccount?.activeStrategyIds ?? [];
+        const activeSet = new Set(activeIds);
+        
+        const visibleStrategies = strategies.filter(s => activeSet.has(s.id));
+
+        const withStats = visibleStrategies.map(s => {
+            let filtered = [];
+            // Safe check for criteria and comment. Ensure criteria object exists!
+            if (s.criteria && s.criteria.comment) {
+                filtered = allTrades.filter(t => t.comment === s.criteria.comment);
+            }
+            const totalProfit = filtered.reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0);
+            return { 
+                strategy: s, 
+                totalProfit, 
+                tradeCount: filtered.length, 
+                filteredTrades: filtered 
+            };
+        });
+
+        // Sort: High Profit -> Low Profit. 
+        return withStats.sort((a, b) => b.totalProfit - a.totalProfit);
+    }, [strategies, currentAccount, allTrades]);
+
+    // Available for import: Global list minus active ones
+    const availableForImport = useMemo(() => {
+        const activeIds = new Set(currentAccount?.activeStrategyIds || []);
+        return strategies.filter(s => !activeIds.has(s.id));
+    }, [strategies, currentAccount]);
+
     const handleSaveStrategy = (strategyData: { name: string, criteria: any, id?: string }) => {
-        onSaveStrategy(strategyData);
+        // Generate ID once if it doesn't exist, safely
+        const id = strategyData.id || generateId();
+        const finalStrategy = { ...strategyData, id };
+
+        // 1. Save to Global Strategy Manager (Updates Firestore / Local)
+        onSaveStrategy(finalStrategy);
+        
+        // 2. Link to CURRENT account immediately
+        linkStrategyToAccount(id);
+
         setIsFormModalOpen(false);
         setStrategyToEdit(null);
         triggerHaptic('success');
@@ -170,8 +279,15 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
     const handleEditAction = () => {
         if (activeStrategyForAction) {
             setStrategyToEdit(activeStrategyForAction);
-            // Close action modal first, then open form
             setTimeout(() => setIsFormModalOpen(true), 100);
+        }
+    };
+
+    const handleUnlinkAction = () => {
+        if (activeStrategyForAction) {
+            setStrategyToUnlink(activeStrategyForAction);
+            unlinkStrategyFromAccount(activeStrategyForAction.id);
+            setActiveStrategyForAction(null);
         }
     };
 
@@ -189,51 +305,12 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
         }
     };
 
-    // --- Import Logic ---
-    const handleOpenImport = async () => {
-        if (!user) {
-            setIsLoginModalOpen(true);
-            return;
-        }
-        setIsLoadingCloud(true);
-        try {
-            const docRef = doc(db, 'users', user.uid);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists() && docSnap.data().strategies) {
-                const remote: Strategy[] = docSnap.data().strategies;
-                const localIds = new Set(strategies.map(s => s.id));
-                const newOnes = remote.filter(s => !localIds.has(s.id));
-                setCloudStrategies(newOnes);
-                setIsImportModalOpen(true);
-            } else {
-                setCloudStrategies([]);
-                setIsImportModalOpen(true);
-            }
-        } catch (e) {
-            console.error("Error fetching cloud strategies:", e);
-            alert(t('strategy.fetch_failed'));
-        } finally {
-            setIsLoadingCloud(false);
-        }
-    };
-
     const handleImportStrategies = (imported: Strategy[]) => {
         imported.forEach(s => {
-            onSaveStrategy({ name: s.name, criteria: s.criteria, id: s.id });
+            linkStrategyToAccount(s.id);
         });
         triggerHaptic('success');
     };
-
-    const strategyStats = useMemo(() => {
-        return strategies.map(s => {
-            let filtered = [];
-            if (s.criteria.comment) {
-                filtered = allTrades.filter(t => t.comment === s.criteria.comment);
-            }
-            const totalProfit = filtered.reduce((sum, t) => sum + t.profit + t.commission + t.swap, 0);
-            return { id: s.id, totalProfit, tradeCount: filtered.length, filteredTrades: filtered };
-        });
-    }, [strategies, allTrades]);
 
     return (
         <div className="h-full flex flex-col pb-24 md:pb-0">
@@ -242,18 +319,13 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                 <div className="flex gap-2">
                     {/* Import Button */}
                     <button
-                        onClick={handleOpenImport}
-                        disabled={isLoadingCloud}
-                        className="flex items-center justify-center p-2 bg-gray-700 hover:bg-gray-600 text-cyan-400 rounded-2xl shadow-md transition-all disabled:opacity-50"
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center justify-center p-2 bg-gray-700 hover:bg-gray-600 text-cyan-400 rounded-2xl shadow-md transition-all"
                         title={t('strategy.import_button')}
                     >
-                        {isLoadingCloud ? (
-                            <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                        )}
+                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
                     </button>
 
                     <button 
@@ -272,7 +344,7 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                 </div>
             </div>
 
-            {strategies.length === 0 ? (
+            {sortedStrategies.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#16152c] rounded-3xl border border-gray-700/50 border-dashed">
                     <div className="bg-gray-800/50 p-6 rounded-full mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -283,17 +355,17 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {strategies.map((strategy) => {
-                        const stats = strategyStats.find(s => s.id === strategy.id);
+                    {sortedStrategies.map((item, index) => {
                         return (
                             <StrategyCard
-                                key={strategy.id}
-                                strategy={strategy}
-                                totalProfit={stats?.totalProfit || 0}
-                                tradeCount={stats?.tradeCount || 0}
-                                onClick={() => onStrategySelect(strategy)}
-                                onMenuClick={(rect) => handleMenuOpen(strategy, rect)}
+                                key={item.strategy.id}
+                                strategy={item.strategy}
+                                totalProfit={item.totalProfit}
+                                tradeCount={item.tradeCount}
+                                onClick={() => onStrategySelect(item.strategy)}
+                                onMenuClick={(rect) => handleMenuOpen(item.strategy, rect)}
                                 currency={currency}
+                                rank={index + 1}
                             />
                         );
                     })}
@@ -315,25 +387,19 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 onImport={handleImportStrategies}
-                availableStrategies={cloudStrategies}
+                availableStrategies={availableForImport}
                 existingComments={uniqueComments}
-            />
-
-            <LoginRequiredModal
-                isOpen={isLoginModalOpen}
-                onClose={() => setIsLoginModalOpen(false)}
-                onLogin={onLogout}
             />
 
             <StrategyActionModal
                 isOpen={isActionModalOpen}
                 onClose={() => setIsActionModalOpen(false)}
                 onEdit={handleEditAction}
-                onDelete={handleDeleteAction}
+                onDelete={handleDeleteAction} // This is the 'Global Delete'
                 strategyName={activeStrategyForAction?.name || ''}
                 originRect={actionMenuOrigin}
             />
-
+            
             <DeleteConfirmationModal
                 isOpen={!!strategyToDelete}
                 onClose={() => setStrategyToDelete(null)}
