@@ -1,3 +1,4 @@
+
 import { Trade } from '../types';
 
 export const parseCSV = (content: string): Trade[] => {
@@ -50,7 +51,18 @@ export const parseCSV = (content: string): Trade[] => {
         return null;
       }
       
-      const getCleanString = (index: number) => (data[index] || '').trim().replace(/"/g, '');
+      const getCleanString = (index: number) => {
+          let val = data[index] || '';
+          // Remove quotes
+          val = val.replace(/"/g, '');
+          // Remove control characters (ASCII 0-31, 127) and Replacement Character (UFFFD)
+          // This strips Null bytes (\0), Carriage Returns (\r), and other binary artifacts
+          // that often appear as boxes at the end of strings in MT5 exports.
+          // Note: This also removes Tabs (\t) which is usually fine for single fields.
+          val = val.replace(/[\u0000-\u001F\u007F\uFFFD]/g, '');
+          return val.trim();
+      };
+
       const type = getCleanString(colMap['type']);
       const profit = parseDecimal(data[colMap['profit']]);
       

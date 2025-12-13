@@ -1,6 +1,11 @@
 
 import { useEffect } from 'react';
 
+// Global counter to handle nested/stacked modals correctly and prevent scroll locking bugs.
+// This ensures that if multiple components request a lock (e.g. overlapping modals),
+// the scroll is only unlocked when the last one releases it.
+let lockCount = 0;
+
 /**
  * A custom hook to lock body scroll when a component (like a modal) is active.
  * Enhanced to handle the specific app layout where scrolling occurs in <main>.
@@ -9,22 +14,31 @@ import { useEffect } from 'react';
 function useLockBodyScroll(isLocked: boolean): void {
   useEffect(() => {
     if (isLocked) {
-      // 1. Lock Body (Standard)
-      const originalBodyOverflow = window.getComputedStyle(document.body).overflow;
-      // 2. Lock Main Container (App specific)
+      lockCount++;
       const mainElement = document.querySelector('main');
-      const originalMainOverflow = mainElement ? window.getComputedStyle(mainElement).overflowY : '';
-
+      
+      // Lock body (Standard)
       document.body.style.overflow = 'hidden';
+      
+      // Lock Main Container (App specific)
+      // We apply this directly to the main element which handles the app's scrolling
       if (mainElement) {
           mainElement.style.overflowY = 'hidden';
       }
 
-      // Re-enable scrolling when component unmounts
       return () => {
-        document.body.style.overflow = originalBodyOverflow;
-        if (mainElement) {
-            mainElement.style.overflowY = originalMainOverflow;
+        lockCount--;
+        
+        // Safety check to ensure we don't go negative in weird edge cases
+        if (lockCount < 0) lockCount = 0;
+
+        if (lockCount === 0) {
+            // Only unlock if no other components are requesting a lock (count is 0)
+            document.body.style.removeProperty('overflow');
+            if (mainElement) {
+                // Removing the inline style allows the CSS class (overflow-y-auto) to take over
+                mainElement.style.removeProperty('overflow-y');
+            }
         }
       };
     }

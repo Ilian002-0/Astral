@@ -11,13 +11,14 @@ type TimeRange = 'today' | 'week' | 'month' | 'all';
 
 interface BalanceChartProps {
   data: ChartDataPoint[];
-  onAdvancedAnalysisClick: () => void;
+  onAdvancedAnalysisClick?: () => void;
   initialBalance: number;
   currency: 'USD' | 'EUR';
   goals: Goals;
+  hideControls?: boolean;
 }
 
-const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisClick, initialBalance, currency, goals }) => {
+const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisClick, initialBalance, currency, goals, hideControls = false }) => {
   const { t, language } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [isDropdownOpen, setDropdownOpen] = useState(false);
@@ -128,6 +129,11 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
 
   const filteredData = useMemo(() => {
     if (!data || data.length < 1) return []; // Should have at least the initial point
+
+    // If controls are hidden (e.g. strategy detail), we typically want to show ALL data or default behavior
+    // But keeping it consistent with 'month' default or 'all' might be better. 
+    // Let's stick to the selected timeRange logic, but if hidden, maybe default to 'all' is better?
+    // For now, we respect the state.
 
     if (timeRange === 'all') {
       return data; // The original data is already complete
@@ -244,44 +250,49 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ data, onAdvancedAnalysisCli
     <div className="bg-[#16152c] p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-700/50 overflow-hidden">
       <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
         <h3 className="text-lg font-semibold text-white">{t('dashboard.balance_chart_title')}</h3>
-        <div className="flex items-center gap-2">
-             <button
-                onClick={onAdvancedAnalysisClick}
-                className="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-cyan-300 rounded-2xl shadow-sm transition-colors"
-                >
-                {t('dashboard.advanced_analysis')}
-            </button>
-            <div className="relative" ref={dropdownRef}>
-                <button
-                onClick={() => setDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-between w-36 px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-gray-300 rounded-2xl shadow-sm transition-colors"
-                aria-haspopup="true"
-                aria-expanded={isDropdownOpen}
-                >
-                <span className="truncate">{currentLabel}</span>
-                <svg className={`w-4 h-4 ml-2 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-                </button>
-                {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-36 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg z-10 animate-fade-in-fast overflow-hidden">
-                        <ul className="py-1">
-                            {timeRangeOptions.map(({ key, label }) => (
-                                <li key={key}>
-                                    <a
-                                    href="#"
-                                    onClick={(e) => { e.preventDefault(); handleSelect(key); }}
-                                    className={`block px-4 py-2 text-sm mx-1 my-1 rounded-xl transition-all ${key === timeRange ? 'bg-cyan-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
-                                    >
-                                    {label}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+        
+        {!hideControls && (
+            <div className="flex items-center gap-2">
+                {onAdvancedAnalysisClick && (
+                    <button
+                        onClick={onAdvancedAnalysisClick}
+                        className="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-cyan-300 rounded-2xl shadow-sm transition-colors"
+                        >
+                        {t('dashboard.advanced_analysis')}
+                    </button>
                 )}
+                <div className="relative" ref={dropdownRef}>
+                    <button
+                    onClick={() => setDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center justify-between w-36 px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 text-sm text-gray-300 rounded-2xl shadow-sm transition-colors"
+                    aria-haspopup="true"
+                    aria-expanded={isDropdownOpen}
+                    >
+                    <span className="truncate">{currentLabel}</span>
+                    <svg className={`w-4 h-4 ml-2 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    </button>
+                    {isDropdownOpen && (
+                        <div className="absolute right-0 mt-2 w-36 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg z-10 animate-fade-in-fast overflow-hidden">
+                            <ul className="py-1">
+                                {timeRangeOptions.map(({ key, label }) => (
+                                    <li key={key}>
+                                        <a
+                                        href="#"
+                                        onClick={(e) => { e.preventDefault(); handleSelect(key); }}
+                                        className={`block px-4 py-2 text-sm mx-1 my-1 rounded-xl transition-all ${key === timeRange ? 'bg-cyan-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+                                        >
+                                        {label}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+        )}
       </div>
       <div style={{ width: '100%', height: isMobile ? 300 : 400 }} ref={chartRef}>
         {hasAnyData ? (

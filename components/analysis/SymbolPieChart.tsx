@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import CustomTooltip from '../charts/CustomTooltip';
 
@@ -9,15 +9,37 @@ interface SymbolPieChartProps {
     data: any[];
     currency: 'USD' | 'EUR';
     title: string;
-    isMounted: boolean;
 }
 
-const SymbolPieChart: React.FC<SymbolPieChartProps> = ({ data, currency, title, isMounted }) => {
+const SymbolPieChart: React.FC<SymbolPieChartProps> = ({ data, currency, title }) => {
+    const [isChartReady, setIsChartReady] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const { width, height } = entry.contentRect;
+                if (width > 0 && height > 0) {
+                    setTimeout(() => {
+                        setIsChartReady(true);
+                    }, 0);
+                    resizeObserver.disconnect();
+                }
+            }
+        });
+
+        resizeObserver.observe(containerRef.current);
+
+        return () => resizeObserver.disconnect();
+    }, []);
+
     return (
         <div className="bg-[#16152c] p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-700/50">
             <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
-            <div style={{ width: '100%', height: 300 }}>
-                {isMounted && (
+            <div ref={containerRef} style={{ width: '100%', height: 300 }}>
+                {isChartReady && (
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <PieChart>
                             <Pie

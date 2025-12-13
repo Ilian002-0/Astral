@@ -1,7 +1,8 @@
+
 importScripts('https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js');
 
 // --- CONSTANTS & CONFIG ---
-const CACHE_NAME = 'atlas-cache-v34'; // Incremented cache version
+const CACHE_NAME = 'atlas-cache-v35'; // Incremented cache version
 const ASSETS_TO_CACHE = [
     './', // Relative root
     './index.html', 
@@ -157,7 +158,15 @@ const parseCSV_SW = (content) => {
         return parseFloat(value.replace(/"/g, '').trim().replace(',', '.'));
     };
     
-    const getCleanString = (index, data) => (data[index] || '').trim().replace(/"/g, '');
+    const getCleanString = (index, data) => {
+        let val = data[index] || '';
+        val = val.replace(/"/g, '');
+        // Remove control characters (ASCII 0-31, 127) and Replacement Character (UFFFD)
+        // This effectively removes the box artifact (\0) and other garbage
+        val = val.replace(/[\u0000-\u001F\u007F\uFFFD]/g, '');
+        return val.trim();
+    };
+
     const parseMT5Date = (dateStr) => (dateStr && dateStr.trim() ? new Date(dateStr.replace(/"/g, '').replace(/\./g, '-').trim()) : new Date(0));
 
     return lines.slice(1).map(line => {

@@ -101,10 +101,10 @@ const StrategyDetailView: React.FC<StrategyDetailViewProps> = ({ strategy, trade
             <div className="animate-fade-in-up animation-delay-100">
                 <BalanceChart 
                     data={chartData} 
-                    onAdvancedAnalysisClick={() => {}} 
                     initialBalance={initialBalance} 
                     currency={currency} 
-                    goals={{}} 
+                    goals={{}}
+                    hideControls={true}
                 />
             </div>
 

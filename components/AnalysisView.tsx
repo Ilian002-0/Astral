@@ -91,28 +91,29 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   const [endDate, setEndDate] = useState('');
   const [splitMode, setSplitMode] = useState<SplitMode>('none');
   
-  const [isMounted, setIsMounted] = useState(false);
+  const [isMainChartMounted, setIsMainChartMounted] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const chartRef = useRef<HTMLDivElement>(null);
+  const mainChartRef = useRef<HTMLDivElement>(null);
   const lastActiveIndex = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!mainChartRef.current) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
             const { width, height } = entry.contentRect;
             if (width > 0 && height > 0) {
-                // Fix: Use setTimeout to avoid Recharts "width(-1)" warning
+                // Fix: Use setTimeout instead of requestAnimationFrame to ensure the layout is fully stable
+                // before rendering the ResponsiveContainer. This prevents the "width(-1)" warning.
                 setTimeout(() => {
-                    setIsMounted(true);
+                    setIsMainChartMounted(true);
                 }, 0);
                 resizeObserver.disconnect();
             }
         }
     });
 
-    resizeObserver.observe(chartRef.current);
+    resizeObserver.observe(mainChartRef.current);
 
     return () => resizeObserver.disconnect();
   }, []);
@@ -173,7 +174,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
   
   // Mobile touch handling for tooltips
   useEffect(() => {
-    const node = chartRef.current;
+    const node = mainChartRef.current;
     if (node && isMobile) {
         const hideTooltip = () => {
             const mouseLeaveEvent = new MouseEvent('mouseleave', {
@@ -522,9 +523,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 </div>
             </div>
 
-            <div style={{ width: '100%', height: isMobile ? 300 : 450 }} ref={chartRef}>
+            <div style={{ width: '100%', height: isMobile ? 300 : 450 }} ref={mainChartRef}>
                 {chartData.length > 1 ? (
-                    isMounted ? (
+                    isMainChartMounted ? (
                         // CRITICAL FIX: minWidth={0} and minHeight={0} are required to prevent Recharts "width(-1)" warning
                         // during initial render or layout shifts. Do not remove.
                         <ResponsiveContainer width="100%" height={isMobile ? 300 : 450} minWidth={0} minHeight={0}>
@@ -632,14 +633,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ trades, initialBalance, onB
                 currency={currency}
                 yAxisTickFormatter={yAxisTickFormatter}
                 title={t('analysis.monthly_performance')}
-                isMounted={isMounted}
             />
 
             <SymbolPieChart 
                 data={symbolData}
                 currency={currency}
                 title={t('analysis.trade_volume_by_symbol')}
-                isMounted={isMounted}
             />
 
             <BiasCard 

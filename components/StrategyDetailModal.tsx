@@ -144,7 +144,6 @@ const StrategyDetailModal: React.FC<StrategyDetailModalProps> = ({ isOpen, onClo
                         <div className="mb-8 bg-[#16152c] rounded-3xl p-1 shadow-lg border border-gray-700/30">
                             <BalanceChart 
                                 data={chartData} 
-                                onAdvancedAnalysisClick={() => {}} 
                                 initialBalance={initialBalance} 
                                 currency={currency} 
                                 goals={{}} 
