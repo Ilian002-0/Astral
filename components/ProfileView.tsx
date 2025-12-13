@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleDriveBackup from './GoogleDriveBackup';
@@ -196,6 +197,21 @@ const ProfileView: React.FC<ProfileViewProps> = ({ canInstall, onInstallClick, n
                         </svg>
                         Sign Out
                     </button>
+                </div>
+
+                {/* FEEDBACK BUTTON */}
+                <div className="flex justify-center mt-6">
+                    <a 
+                        href="https://forms.gle/fADzgC77P2Lrc7up7" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-xl border border-gray-700 transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        {t('profile.send_comments')}
+                    </a>
                 </div>
 
                 <div className="text-center text-gray-500 text-sm pt-4 border-t border-gray-700/50">
