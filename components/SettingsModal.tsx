@@ -12,6 +12,8 @@ interface SettingsModalProps {
     onNotificationSettingsChange: (settings: NotificationSettings) => void;
     onLogout: () => void;
     originRect?: DOMRect | null;
+    canInstall: boolean;
+    onInstallClick: () => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
@@ -20,7 +22,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     notificationSettings, 
     onNotificationSettingsChange, 
     onLogout,
-    originRect
+    originRect,
+    canInstall,
+    onInstallClick
 }) => {
     const { t, language, setLanguage } = useLanguage();
     const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
@@ -128,6 +132,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 <div className="space-y-6">
+                    {/* Install App Section */}
+                    {canInstall && (
+                        <div className="bg-[#0c0b1e] p-4 rounded-2xl">
+                            <h3 className="text-sm font-bold text-gray-300 mb-2">{t('settings.install_title')}</h3>
+                            <p className="text-xs text-gray-400 mb-3">{t('settings.install_description')}</p>
+                            <button 
+                                onClick={onInstallClick}
+                                className="w-full px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-bold rounded-xl shadow-md transition-all transform active:scale-95"
+                            >
+                                {t('settings.install_button')}
+                            </button>
+                        </div>
+                    )}
+
                     {/* Notifications Section */}
                     <div className="bg-[#0c0b1e] p-4 rounded-2xl">
                         <h3 className="text-sm font-bold text-gray-300 mb-3">{t('settings.notifications_title')}</h3>

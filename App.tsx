@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, Suspense, useRef } from 'react';
 import { Account, AppView, CalendarSettings, NotificationSettings, Strategy } from './types';
 import { getDayIdentifier } from './utils/calendar';
@@ -403,6 +402,8 @@ const App: React.FC = () => {
                     onNotificationSettingsChange={setNotificationSettings}
                     onLogout={handleLogout}
                     originRect={settingsOrigin}
+                    canInstall={!!installPrompt}
+                    onInstallClick={handleInstallClick}
                 />
             </Suspense>
         </>
