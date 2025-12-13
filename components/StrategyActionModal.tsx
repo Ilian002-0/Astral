@@ -53,8 +53,9 @@ const StrategyActionModal: React.FC<StrategyActionModalProps> = ({ isOpen, onClo
     return (
         <div 
             className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isVisible ? '' : 'pointer-events-none'}`}
-            // Prevent scrolling on the backdrop layer to lock the background view completely on mobile
+            // Prevent scrolling on the backdrop layer to lock the background view completely on mobile and PC
             onTouchMove={(e) => e.preventDefault()}
+            onWheel={(e) => e.preventDefault()}
         >
             <div 
                 className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}

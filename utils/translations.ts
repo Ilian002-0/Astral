@@ -83,6 +83,7 @@ export const translations = {
       "actions_subtitle": "Manage this strategy", 
       "edit_strategy": "Edit Strategy", 
       "delete_strategy": "Delete Strategy", 
+      "unlink_strategy": "Remove from Dashboard",
       "modal_title_edit": "Edit Strategy", 
       "update_strategy": "Update Strategy",
       "import_button": "Import from Cloud",
@@ -92,7 +93,10 @@ export const translations = {
       "recommended_badge": "Recommended",
       "import_selected": "Import Selected",
       "login_required": "Please sign in to import strategies.",
-      "fetch_failed": "Failed to fetch cloud strategies."
+      "fetch_failed": "Failed to fetch cloud strategies.",
+      "login_modal_title": "Connection Required",
+      "login_modal_message": "To import strategies from the cloud, you must be connected to a Google account. Guest mode does not support cloud sync.",
+      "login_button": "Log In"
     }
   },
   fr: {
@@ -177,6 +181,7 @@ export const translations = {
       "actions_subtitle": "Gérer cette stratégie", 
       "edit_strategy": "Modifier la stratégie", 
       "delete_strategy": "Supprimer la stratégie", 
+      "unlink_strategy": "Retirer de l'affichage",
       "modal_title_edit": "Modifier la stratégie", 
       "update_strategy": "Mettre à jour",
       "import_button": "Importer du Cloud",
@@ -186,7 +191,10 @@ export const translations = {
       "recommended_badge": "Recommandé",
       "import_selected": "Importer la sélection",
       "login_required": "Veuillez vous connecter pour importer des stratégies.",
-      "fetch_failed": "Échec de la récupération des stratégies cloud."
+      "fetch_failed": "Échec de la récupération des stratégies cloud.",
+      "login_modal_title": "Connexion Requise",
+      "login_modal_message": "Pour importer des stratégies depuis le cloud, vous devez être connecté à un compte Google. Le mode invité ne prend pas en charge la synchronisation cloud.",
+      "login_button": "Se connecter"
     }
   }
 };
