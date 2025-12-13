@@ -110,7 +110,7 @@ const App: React.FC = () => {
     // 7. Migration for Legacy Accounts
     useEffect(() => {
         if (currentAccount && currentAccount.activeStrategyIds === undefined && strategies.length > 0) {
-            // If the account has no strategy config but we have strategies, assume they should be visible (legacy behavior migration)
+            // Run one-time migration to link all existing strategies to this legacy account
             migrateLegacyStrategies(strategies.map(s => s.id));
         }
     }, [currentAccount, strategies, migrateLegacyStrategies]);

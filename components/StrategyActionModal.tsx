@@ -7,12 +7,13 @@ interface StrategyActionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onEdit: () => void;
-    onDelete: () => void;
+    onUnlink: () => void; // New: Hide from view
+    onDelete: () => void; // Global Delete
     strategyName: string;
     originRect?: DOMRect | null;
 }
 
-const StrategyActionModal: React.FC<StrategyActionModalProps> = ({ isOpen, onClose, onEdit, onDelete, strategyName, originRect }) => {
+const StrategyActionModal: React.FC<StrategyActionModalProps> = ({ isOpen, onClose, onEdit, onUnlink, onDelete, strategyName, originRect }) => {
     const { t } = useLanguage();
     useLockBodyScroll(isOpen);
     const [isVisible, setIsVisible] = useState(false);
@@ -50,7 +51,11 @@ const StrategyActionModal: React.FC<StrategyActionModalProps> = ({ isOpen, onClo
     if (!isOpen) return null;
 
     return (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isVisible ? '' : 'pointer-events-none'}`}>
+        <div 
+            className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isVisible ? '' : 'pointer-events-none'}`}
+            // Prevent scrolling on the backdrop layer to lock the background view completely on mobile
+            onTouchMove={(e) => e.preventDefault()}
+        >
             <div 
                 className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={handleClose}
@@ -74,6 +79,13 @@ const StrategyActionModal: React.FC<StrategyActionModalProps> = ({ isOpen, onClo
                         {t('strategy.edit_strategy')}
                     </button>
                     
+                    <button
+                        onClick={() => { onUnlink(); handleClose(); }}
+                        className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-yellow-400 font-bold rounded-2xl transition-colors shadow-sm border border-yellow-900/30"
+                    >
+                        {t('strategy.unlink_strategy')}
+                    </button>
+
                     <button
                         onClick={() => { onDelete(); handleClose(); }}
                         className="w-full py-3 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-900/30 font-bold rounded-2xl transition-colors"

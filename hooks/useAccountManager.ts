@@ -121,7 +121,7 @@ export const useAccountManager = () => {
                     trades: sortedTrades, 
                     goals: {}, 
                     lastUpdated: new Date().toISOString(),
-                    activeStrategyIds: [] 
+                    activeStrategyIds: [] // Explicitly empty for new accounts
                 };
                 newAccountsList = [...prevAccounts, newAccount];
                 setCurrentAccountName(newAccount.name);
@@ -185,7 +185,7 @@ export const useAccountManager = () => {
         );
     }, [setLocalAccounts]);
 
-    // Strategy Linking
+    // Strategy Linking Logic
     const linkStrategyToAccount = useCallback((strategyId: string) => {
         if (!currentAccountName) return;
         setLocalAccounts(prev => {
@@ -207,6 +207,10 @@ export const useAccountManager = () => {
         setLocalAccounts(prev => {
             const newList = prev.map(acc => {
                 if (acc.name === currentAccountName) {
+                    // Remove specific ID or all if 'all' passed (helper)
+                    if (strategyId === 'ALL') {
+                         return { ...acc, activeStrategyIds: [] };
+                    }
                     const ids = (acc.activeStrategyIds || []).filter(id => id !== strategyId);
                     return { ...acc, activeStrategyIds: ids };
                 }
@@ -218,13 +222,17 @@ export const useAccountManager = () => {
         triggerHaptic('medium');
     }, [currentAccountName, setLocalAccounts, user]);
 
-    // Migration helper (can be used in App.tsx)
+    // Migration: If activeStrategyIds is missing on an account, populate it with ALL current strategy IDs.
+    // This ensures legacy users don't see their strategies disappear suddenly.
     const migrateLegacyStrategies = useCallback((allStrategyIds: string[]) => {
         if (!currentAccountName) return;
         setLocalAccounts(prev => {
+            // Check if current account needs migration
+            const current = prev.find(a => a.name === currentAccountName);
+            if (current && current.activeStrategyIds !== undefined) return prev; // Already migrated
+
             const newList = prev.map(acc => {
                 if (acc.name === currentAccountName && acc.activeStrategyIds === undefined) {
-                    // Initialize legacy accounts with ALL strategies so nothing disappears
                     return { ...acc, activeStrategyIds: allStrategyIds };
                 }
                 return acc;

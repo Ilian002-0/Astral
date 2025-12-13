@@ -64,7 +64,7 @@ const BadgeRank2 = () => {
             </defs>
             <g fill={`url(#${gradientId})`}>
                 <path d="M123.9,10.4c-1.2,0.3-4.1,1.6-6.5,2.8c-15.7,8.1-13.7,7.5-28.1,9.3c-6.8,0.9-10.1,2.1-13.1,4.8c-3.2,2.9-4.8,5.3-8.1,12.6c-1.6,3.5-3.6,7.4-4.4,8.6c-0.8,1.2-4.8,5.5-8.7,9.4c-8.5,8.4-9.7,10.2-10,16.1c-0.2,2.9,0.1,5.1,1.3,11c2,9.8,2,13.5,0,22.9c-1.3,5.9-1.5,7.9-1.3,11c0.4,6.2,1.3,7.7,10.7,17l8,7.9l4.5,9.3c4,8.2,4.9,9.6,7.4,12c2.2,2.2,3.5,3,5.8,3.8c3,1,4.3,1.2,14.8,2.6c6.5,0.9,9.4,2,16.9,6.2c7.9,4.5,11.5,5.7,16,5.4c4.4-0.3,7.1-1.3,14.3-5.5c7.9-4.5,10.2-5.3,19.1-6.5c8.7-1.1,10.9-1.5,13.7-2.7c5-2.2,7.6-5.6,12.1-15.7c3.5-7.7,5.9-11,12.2-16.6c11.1-9.8,12.4-13.7,9.6-27.9c-2-9.9-2-13.5,0-23.3c1.2-5.7,1.5-8.2,1.3-10.9c-0.3-5.9-1.5-7.6-10.8-16.8l-8-7.9l-4.4-9.2c-7-14.5-9.6-16.4-23.9-17.9c-5.9-0.6-11-1.6-13.6-2.8c-1.1-0.5-4.5-2.4-7.7-4.2c-3.2-1.8-6.9-3.7-8.3-4.2C131.4,10,126.7,9.7,123.9,10.4z M138.3,37.9c11.9,1.9,23,7.7,32.1,16.8c17.6,17.6,22.4,44.9,11.8,67.1c-5.6,11.6-13.5,20.3-24.2,26.6c-19.3,11.2-43.4,10.7-62.1-1.3c-13.5-8.6-23-22.4-26.4-38.2c-1.2-5.3-1.4-15.9-0.5-21.4c4.5-27.4,26.4-47.9,53.9-50.4C127.6,36.7,132.8,36.9,138.3,37.9z"/>
-                <path d="M118,53.5c-1.8,0.3-4.8,1.1-6.6,1.6c-3.5,1.1-11.2,4.8-12.2,5.9c-0.5,0.6,0.6,3.8,5.4,16c0.3,0.6,0.7,0.5,3.1-1c5.9-3.8,12.8-5.6,18.1-4.6c3.6,0.6,5,1.3,6.8,3.4c4.2,4.7,3,11.2-3.5,19.3c-3.4,4.3-10.2,10.8-22,21L98,123l0.1,6.9l0.1,6.9h30.5h30.5l0.1-9.3l0.1-9.4L145,118l-14.5-0.1l5.6-4.4c12-9.6,18.5-17.9,20.9-26.8c0.9-3.6,1.1-10.3,0.2-13.8c-2.2-9.3-9.1-16-19.3-18.8C134.2,52.9,122.4,52.7,118,53.5z"/>
+                <path d="M111,60.4c-8.7,3.8-11.7,5.4-11.7,6c0,1,3.2,15.7,3.5,16.1c0.1,0.1,3.7-1.3,7.9-3.2c4.3-1.9,7.9-3.5,8.1-3.6c0.2-0.1,0.4,13.8,0.4,31.1V138h11.1h11.1V96.6V55.2l-9.3,0h-9.4L111,60.4z"/>
                 <path d="M71.2,199.7c-5.6,15.6-10.1,28.4-10,28.5c0.2,0.1,7.3-2.3,15.8-5.2c8.5-2.9,15.7-5.3,16-5.3c0.3,0,4.4,6.5,9.3,14.4c4.8,7.9,8.9,14.2,9.1,14c0.4-0.4,22.2-60.6,22.2-61.2c0-0.2-0.7-0.2-1.5,0c-5.4,1.5-12.6-0.5-21.9-6.1c-6.4-3.9-8.2-4.5-14.8-5.3c-6.2-0.7-11.3-1.5-13-1.9C81.6,171.3,80.5,173.9,71.2,199.7z"/>
                 <path d="M167.3,172.6c-14.6,1.8-11.6,0.7-26.6,8.7l-4.2,2.2l-3.6,9.8c-1.9,5.4-3.6,10.2-3.6,10.6c0,0.9,14.6,41.5,15.2,42.1c0.2,0.2,4.3-6.1,9.1-14c4.8-7.9,9-14.4,9.3-14.4s7.5,2.4,16,5.3c8.5,2.9,15.6,5.3,15.8,5.2c0.2-0.1-6.7-19.5-18.2-51.1c-1.7-4.5-2-5.2-2.9-5.1C173.1,171.9,170.2,172.2,167.3,172.6z"/>
             </g>
@@ -85,9 +85,9 @@ const BadgeRank3 = () => {
             </defs>
             <g fill={`url(#${gradientId})`}>
                 <path d="M123.9,10.4c-1.2,0.3-4.1,1.6-6.5,2.8c-15.7,8.1-13.7,7.5-28.1,9.3c-6.8,0.9-10.1,2.1-13.1,4.8c-3.2,2.9-4.8,5.3-8.1,12.6c-1.6,3.5-3.6,7.4-4.4,8.6c-0.8,1.2-4.8,5.5-8.7,9.4c-8.5,8.4-9.7,10.2-10,16.1c-0.2,2.9,0.1,5.1,1.3,11c2,9.8,2,13.5,0,22.9c-1.3,5.9-1.5,7.9-1.3,11c0.4,6.2,1.3,7.7,10.7,17l8,7.9l4.5,9.3c4,8.2,4.9,9.6,7.4,12c2.2,2.2,3.5,3,5.8,3.8c3,1,4.3,1.2,14.8,2.6c6.5,0.9,9.4,2,16.9,6.2c7.9,4.5,11.5,5.7,16,5.4c4.4-0.3,7.1-1.3,14.3-5.5c7.9-4.5,10.2-5.3,19.1-6.5c8.7-1.1,10.9-1.5,13.7-2.7c5-2.2,7.6-5.6,12.1-15.7c3.5-7.7,5.9-11,12.2-16.6c11.1-9.8,12.4-13.7,9.6-27.9c-2-9.9-2-13.5,0-23.3c1.2-5.7,1.5-8.2,1.3-10.9c-0.3-5.9-1.5-7.6-10.8-16.8l-8-7.9l-4.4-9.2c-7-14.5-9.6-16.4-23.9-17.9c-5.9-0.6-11-1.6-13.6-2.8c-1.1-0.5-4.5-2.4-7.7-4.2c-3.2-1.8-6.9-3.7-8.3-4.2C131.4,10,126.7,9.7,123.9,10.4z M138.3,37.9c11.9,1.9,23,7.7,32.1,16.8c17.6,17.6,22.4,44.9,11.8,67.1c-5.6,11.6-13.5,20.3-24.2,26.6c-19.3,11.2-43.4,10.7-62.1-1.3c-13.5-8.6-23-22.4-26.4-38.2c-1.2-5.3-1.4-15.9-0.5-21.4c4.5-27.4,26.4-47.9,53.9-50.4C127.6,36.7,132.8,36.9,138.3,37.9z"/>
-                <path d="M119.9,52.4c-7.5,0.9-18.5,4.3-19.1,5.8c-0.2,0.5,3.3,15.3,3.7,16.2c0,0,1.9-0.6,4-1.5c9.8-3.9,18.8-4,22.8-0.3c3.6,3.3,2.7,7.5-2.2,10c-2.6,1.3-3,1.4-9.8,1.5l-7.1,0.2v8.2v8.2l7.3,0.2c8,0.2,10.3,0.8,13.2,3.5c3.9,3.7,3.4,9.8-1,12.6c-5.3,3.4-16.2,2.8-26.4-1.3c-1.6-0.6-3.1-1.1-3.1-1c-0.1,0.1-1,3.6-2.1,7.8c-1,4.2-2,8-2.1,8.4c-0.1,0.6,0.6,1.1,3,2.2c6.9,3.1,15.6,4.5,25.3,4.1c11.6-0.5,20.2-3.6,26.2-9.6c12-11.9,7.3-30.7-8.7-34.9l-2.2-0.6l3.2-1.6c4.4-2.2,8.5-6.1,10.2-9.8c1.2-2.6,1.3-3.4,1.3-7.8c0-4.6-0.1-5.1-1.5-8c-2.8-5.8-8.5-9.9-16.5-11.9C134,52.2,125.4,51.7,119.9,52.4z"/>
+                <path d="M118,53.5c-1.8,0.3-4.8,1.1-6.6,1.6c-3.5,1.1-11.2,4.8-12.2,5.9c-0.5,0.6,0.6,3.8,5.4,16c0.3,0.6,0.7,0.5,3.1-1c5.9-3.8,12.8-5.6,18.1-4.6c3.6,0.6,5,1.3,6.8,3.4c4.2,4.7,3,11.2-3.5,19.3c-3.4,4.3-10.2,10.8-22,21L98,123l0.1,6.9l0.1,6.9h30.5h30.5l0.1-9.3l0.1-9.4L145,118l-14.5-0.1l5.6-4.4c12-9.6,18.5-17.9,20.9-26.8c0.9-3.6,1.1-10.3,0.2-13.8c-2.2-9.3-9.1-16-19.3-18.8C134.2,52.9,122.4,52.7,118,53.5z"/>
                 <path d="M71.2,199.7c-5.6,15.6-10.1,28.4-10,28.5c0.2,0.1,7.3-2.3,15.8-5.2c8.5-2.9,15.7-5.3,16-5.3c0.3,0,4.4,6.5,9.3,14.4c4.8,7.9,8.9,14.2,9.1,14c0.4-0.4,22.2-60.6,22.2-61.2c0-0.2-0.7-0.2-1.5,0c-5.4,1.5-12.6-0.5-21.9-6.1c-6.4-3.9-8.2-4.5-14.8-5.3c-6.2-0.7-11.3-1.5-13-1.9C81.6,171.3,80.5,173.9,71.2,199.7z"/>
-                <path d="M167.3,172.6c-14.6,1.8-11.6,0.7-26.6,8.7l-4.2,2.2l-3.6,9.8c-1.9,5.4-3.6,10.2-3.6,10.6c0,0.9,14.6,41.5,15.2,42.1c0.2,0.2,4.3-6.1,9.1-14c4.8-7.9,9-14.4,9.3-14.4s7.5,2.4,16,5.3c8.5,2.9,15.6,5.3,15.8,5.2c0.1,0-3.4-10.4-8-23c-13.2-36.4-11.9-33.3-13.1-33.3C173.1,171.9,170.2,172.2,167.3,172.6z"/>
+                <path d="M167.3,172.6c-14.6,1.8-11.6,0.7-26.6,8.7l-4.2,2.2l-3.6,9.8c-1.9,5.4-3.6,10.2-3.6,10.6c0,0.9,14.6,41.5,15.2,42.1c0.2,0.2,4.3-6.1,9.1-14c4.8-7.9,9-14.4,9.3-14.4s7.5,2.4,16,5.3c8.5,2.9,15.6,5.3,15.8,5.2c0.2-0.1-6.7-19.5-18.2-51.1c-1.7-4.5-2-5.2-2.9-5.1C173.1,171.9,170.2,172.2,167.3,172.6z"/>
             </g>
         </svg>
     );
@@ -113,21 +113,7 @@ const StrategyCard: React.FC<{
     rank: number;
 }> = ({ strategy, totalProfit, tradeCount, onClick, onMenuClick, currency, rank }) => {
     const { language } = useLanguage();
-    const timerRef = useRef<number | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
-
-    const handleTouchStart = () => {
-        timerRef.current = window.setTimeout(() => {
-            triggerHaptic('medium');
-            if (cardRef.current) {
-                onMenuClick(cardRef.current.getBoundingClientRect());
-            }
-        }, 500);
-    };
-
-    const handleTouchEnd = () => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-    };
 
     const handleClick = () => {
         onClick();
@@ -155,11 +141,6 @@ const StrategyCard: React.FC<{
             ref={cardRef}
             className="bg-[#16152c] p-5 rounded-3xl border border-gray-700/50 shadow-lg relative overflow-hidden group animate-spring-up transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(34,211,238,0.15)] hover:border-cyan-500/30 cursor-pointer"
             onClick={handleClick}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onMouseDown={handleTouchStart}
-            onMouseUp={handleTouchEnd}
-            onMouseLeave={handleTouchEnd}
             onContextMenu={(e) => e.preventDefault()}
         >
             <div className="flex justify-between items-start mb-3">
@@ -171,7 +152,8 @@ const StrategyCard: React.FC<{
                     className="p-2 -mr-2 -mt-2 text-gray-500 hover:text-white hover:bg-gray-700/50 rounded-full transition-colors z-10"
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (timerRef.current) clearTimeout(timerRef.current);
+                        // Removed timer and touch handling logic from here. 
+                        // Only click on this button opens the menu.
                         onMenuClick(e.currentTarget.getBoundingClientRect());
                     }}
                 >
@@ -261,6 +243,15 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
         return strategies.filter(s => !activeIds.has(s.id));
     }, [strategies, currentAccount]);
 
+    const handleAddStrategyClick = () => {
+        if (sortedStrategies.length >= 8) {
+            alert("Maximum limit of 8 strategies reached for this account.");
+            return;
+        }
+        setStrategyToEdit(null);
+        setIsFormModalOpen(true);
+    };
+
     const handleSaveStrategy = (strategyData: { name: string, criteria: any, id?: string }) => {
         // Generate ID once if it doesn't exist, safely
         const id = strategyData.id || generateId();
@@ -299,34 +290,26 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
         }
     };
 
-    const handleDeleteAction = () => {
+    const handleGlobalDeleteAction = () => {
         if (activeStrategyForAction) {
             setStrategyToDelete(activeStrategyForAction);
         }
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmGlobalDelete = () => {
         if (strategyToDelete) {
-            // Check if we just want to remove it from view or delete globally.
-            // Current UX suggests removing from view (unlinking) is safer unless explicit global management is added.
-            // However, the prompt implies "deleting" the strategy itself.
-            // Let's assume the delete button here means "Remove from view" for safety in this context,
-            // OR we provide a distinct "Unlink" option.
-            
-            // Actually, let's make the trash icon perform the UNLINK action for this specific view,
-            // as global deletion might affect other accounts.
-            // But usually the trash icon implies destruction.
-            // Let's execute Global Delete for now based on previous logic, but strictly speaking,
-            // users might want to just Unlink.
-            
-            // Decision: The delete button in the menu calls onDeleteStrategy (Global).
-            // Users should probably "Unlink" if they just want to hide it.
-            // Let's assume the user knows what "Delete" means (Global).
             onDeleteStrategy(strategyToDelete.id);
             setStrategyToDelete(null);
             triggerHaptic('heavy');
         }
     };
+
+    const handleResetView = () => {
+        if (window.confirm("Are you sure you want to remove all strategies from this view? They will remain saved in the cloud.")) {
+            unlinkStrategyFromAccount('ALL');
+            triggerHaptic('medium');
+        }
+    }
 
     const handleImportStrategies = (imported: Strategy[]) => {
         imported.forEach(s => {
@@ -338,7 +321,20 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
     return (
         <div className="h-full flex flex-col pb-24 md:pb-0">
             <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-                <h2 className="text-2xl font-bold text-white">{t('strategy.title')}</h2>
+                <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-bold text-white">{t('strategy.title')}</h2>
+                    {sortedStrategies.length > 0 && (
+                        <button 
+                            onClick={handleResetView} 
+                            className="text-gray-500 hover:text-red-400 p-1 transition-colors" 
+                            title="Reset View (Unlink All)"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
                 <div className="flex gap-2">
                     {/* Import Button */}
                     <button
@@ -352,10 +348,7 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                     </button>
 
                     <button 
-                        onClick={() => {
-                            setStrategyToEdit(null);
-                            setIsFormModalOpen(true);
-                        }}
+                        onClick={handleAddStrategyClick}
                         className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-2xl shadow-lg transition-transform transform hover:scale-105"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -418,7 +411,8 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                 isOpen={isActionModalOpen}
                 onClose={() => setIsActionModalOpen(false)}
                 onEdit={handleEditAction}
-                onDelete={handleUnlinkAction} // CHANGED: The trash icon in the menu now unlinks from the view instead of deleting globally
+                onUnlink={handleUnlinkAction} // Local remove
+                onDelete={handleGlobalDeleteAction} // Global delete
                 strategyName={activeStrategyForAction?.name || ''}
                 originRect={actionMenuOrigin}
             />
@@ -426,7 +420,7 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
             <DeleteConfirmationModal
                 isOpen={!!strategyToDelete}
                 onClose={() => setStrategyToDelete(null)}
-                onConfirm={handleConfirmDelete}
+                onConfirm={handleConfirmGlobalDelete}
                 accountName={strategyToDelete ? strategyToDelete.name : ''}
             />
         </div>
