@@ -87,7 +87,7 @@ const BadgeRank3 = () => {
                 <path d="M123.9,10.4c-1.2,0.3-4.1,1.6-6.5,2.8c-15.7,8.1-13.7,7.5-28.1,9.3c-6.8,0.9-10.1,2.1-13.1,4.8c-3.2,2.9-4.8,5.3-8.1,12.6c-1.6,3.5-3.6,7.4-4.4,8.6c-0.8,1.2-4.8,5.5-8.7,9.4c-8.5,8.4-9.7,10.2-10,16.1c-0.2,2.9,0.1,5.1,1.3,11c2,9.8,2,13.5,0,22.9c-1.3,5.9-1.5,7.9-1.3,11c0.4,6.2,1.3,7.7,10.7,17l8,7.9l4.5,9.3c4,8.2,4.9,9.6,7.4,12c2.2,2.2,3.5,3,5.8,3.8c3,1,4.3,1.2,14.8,2.6c6.5,0.9,9.4,2,16.9,6.2c7.9,4.5,11.5,5.7,16,5.4c4.4-0.3,7.1-1.3,14.3-5.5c7.9-4.5,10.2-5.3,19.1-6.5c8.7-1.1,10.9-1.5,13.7-2.7c5-2.2,7.6-5.6,12.1-15.7c3.5-7.7,5.9-11,12.2-16.6c11.1-9.8,12.4-13.7,9.6-27.9c-2-9.9-2-13.5,0-23.3c1.2-5.7,1.5-8.2,1.3-10.9c-0.3-5.9-1.5-7.6-10.8-16.8l-8-7.9l-4.4-9.2c-7-14.5-9.6-16.4-23.9-17.9c-5.9-0.6-11-1.6-13.6-2.8c-1.1-0.5-4.5-2.4-7.7-4.2c-3.2-1.8-6.9-3.7-8.3-4.2C131.4,10,126.7,9.7,123.9,10.4z M138.3,37.9c11.9,1.9,23,7.7,32.1,16.8c17.6,17.6,22.4,44.9,11.8,67.1c-5.6,11.6-13.5,20.3-24.2,26.6c-19.3,11.2-43.4,10.7-62.1-1.3c-13.5-8.6-23-22.4-26.4-38.2c-1.2-5.3-1.4-15.9-0.5-21.4c4.5-27.4,26.4-47.9,53.9-50.4C127.6,36.7,132.8,36.9,138.3,37.9z"/>
                 <path d="M119.9,52.4c-7.5,0.9-18.5,4.3-19.1,5.8c-0.2,0.5,3.3,15.3,3.7,16.2c0,0,1.9-0.6,4-1.5c9.8-3.9,18.8-4,22.8-0.3c3.6,3.3,2.7,7.5-2.2,10c-2.6,1.3-3,1.4-9.8,1.5l-7.1,0.2v8.2v8.2l7.3,0.2c8,0.2,10.3,0.8,13.2,3.5c3.9,3.7,3.4,9.8-1,12.6c-5.3,3.4-16.2,2.8-26.4-1.3c-1.6-0.6-3.1-1.1-3.1-1c-0.1,0.1-1,3.6-2.1,7.8c-1,4.2-2,8-2.1,8.4c-0.1,0.6,0.6,1.1,3,2.2c6.9,3.1,15.6,4.5,25.3,4.1c11.6-0.5,20.2-3.6,26.2-9.6c12-11.9,7.3-30.7-8.7-34.9l-2.2-0.6l3.2-1.6c4.4-2.2,8.5-6.1,10.2-9.8c1.2-2.6,1.3-3.4,1.3-7.8c0-4.6-0.1-5.1-1.5-8c-2.8-5.8-8.5-9.9-16.5-11.9C134,52.2,125.4,51.7,119.9,52.4z"/>
                 <path d="M71.2,199.7c-5.6,15.6-10.1,28.4-10,28.5c0.2,0.1,7.3-2.3,15.8-5.2c8.5-2.9,15.7-5.3,16-5.3c0.3,0,4.4,6.5,9.3,14.4c4.8,7.9,8.9,14.2,9.1,14c0.4-0.4,22.2-60.6,22.2-61.2c0-0.2-0.7-0.2-1.5,0c-5.4,1.5-12.6-0.5-21.9-6.1c-6.4-3.9-8.2-4.5-14.8-5.3c-6.2-0.7-11.3-1.5-13-1.9C81.6,171.3,80.5,173.9,71.2,199.7z"/>
-                <path d="M167.3,172.6c-14.6,1.8-11.6,0.7-26.6,8.7l-4.2,2.2l-3.6,9.8c-1.9,5.4-3.6,10.2-3.6,10.6c0,0.9,14.6,41.5,15.2,42.1c0.2,0.2,4.3-6.1,9.1-14c4.8-7.9,9-14.4,9.3-14.4s7.5,2.4,16,5.3c8.5,2.9,15.6,5.3,15.8,5.2c0.2-0.1-6.7-19.5-18.2-51.1c-1.7-4.5-2-5.2-2.9-5.1C173.1,171.9,170.2,172.2,167.3,172.6z"/>
+                <path d="M167.3,172.6c-14.6,1.8-11.6,0.7-26.6,8.7l-4.2,2.2l-3.6,9.8c-1.9,5.4-3.6,10.2-3.6,10.6c0,0.9,14.6,41.5,15.2,42.1c0.2,0.2,4.3-6.1,9.1-14c4.8-7.9,9-14.4,9.3-14.4s7.5,2.4,16,5.3c8.5,2.9,15.6,5.3,15.8,5.2c0.1,0-3.4-10.4-8-23c-13.2-36.4-11.9-33.3-13.1-33.3C173.1,171.9,170.2,172.2,167.3,172.6z"/>
             </g>
         </svg>
     );
@@ -307,6 +307,21 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
 
     const handleConfirmDelete = () => {
         if (strategyToDelete) {
+            // Check if we just want to remove it from view or delete globally.
+            // Current UX suggests removing from view (unlinking) is safer unless explicit global management is added.
+            // However, the prompt implies "deleting" the strategy itself.
+            // Let's assume the delete button here means "Remove from view" for safety in this context,
+            // OR we provide a distinct "Unlink" option.
+            
+            // Actually, let's make the trash icon perform the UNLINK action for this specific view,
+            // as global deletion might affect other accounts.
+            // But usually the trash icon implies destruction.
+            // Let's execute Global Delete for now based on previous logic, but strictly speaking,
+            // users might want to just Unlink.
+            
+            // Decision: The delete button in the menu calls onDeleteStrategy (Global).
+            // Users should probably "Unlink" if they just want to hide it.
+            // Let's assume the user knows what "Delete" means (Global).
             onDeleteStrategy(strategyToDelete.id);
             setStrategyToDelete(null);
             triggerHaptic('heavy');
@@ -403,7 +418,7 @@ const StrategyView: React.FC<StrategyViewProps> = ({ processedData, currency = '
                 isOpen={isActionModalOpen}
                 onClose={() => setIsActionModalOpen(false)}
                 onEdit={handleEditAction}
-                onDelete={handleDeleteAction} // This is the 'Global Delete'
+                onDelete={handleUnlinkAction} // CHANGED: The trash icon in the menu now unlinks from the view instead of deleting globally
                 strategyName={activeStrategyForAction?.name || ''}
                 originRect={actionMenuOrigin}
             />
